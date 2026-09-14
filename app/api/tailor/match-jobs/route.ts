@@ -203,6 +203,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ matches: parsedMatches, allLiveJobs: finalLiveJobs });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Failed to pull live matches" }, { status: 500 });
-  }
+  console.error("CRITICAL PRODUCTION ERROR:", error);
+  return NextResponse.json({ error: "Failed to pull live matches" }, { status: 500 });
+}
 }
