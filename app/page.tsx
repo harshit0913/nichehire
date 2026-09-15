@@ -32,13 +32,12 @@ export default function JobDashboard() {
 
   // --- PROFILE STATE ---
   const [profile, setProfile] = useState({
-    name: 'Sanjeev Kumar Mishra',
-    role: 'Assistant Manager of Sales and Godown',
-    location: 'Indore, Madhya Pradesh',
-    preference: 'Hybrid',
-    rawResume: 'Education: Current MBA Student\nCompany: Majhaulia Sugar Industries\nExperience: Managing godown operations, inventory tracking, hitting sales targets.'
-  });
-  
+  name: '',
+  role: '',
+  location: '',
+  preference: 'Hybrid',
+  rawResume: ''
+});
   const [searchQuery, setSearchQuery] = useState('');
   const [radius, setRadius] = useState(200);
   const [selectedType, setSelectedType] = useState('All');
