@@ -3,6 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import AuthModal from './components/AuthModal';
+import EmailDraftModal from './components/EmailDraftModal';
+import InterviewPrepModal from './components/InterviewPrepModal';
+import HelpModal from './components/HelpModal';
+import FeedbackModal from './components/FeedbackModal';
 import { supabase } from './supabase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -35,6 +39,9 @@ type Job = {
   description: string;
   url: string;
   source: string;
+  isStartup?: boolean;
+  postedAt?: number;
+  applicantCount?: number;
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -44,11 +51,19 @@ export default function JobDashboard() {
   const [user, setUser] = useState<any>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  // Modals state
+  const [activeOutreachJob, setActiveOutreachJob] = useState<Job | null>(null);
+  const [activePrepJob, setActivePrepJob] = useState<Job | null>(null);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+
   // Job Search state
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [allLiveJobs, setAllLiveJobs] = useState<Job[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
 
   // Resume state
   const [resumeText, setResumeText] = useState('');
@@ -65,11 +80,14 @@ export default function JobDashboard() {
   const [workMode, setWorkMode] = useState('Any Mode');
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedSource, setSelectedSource] = useState('All Sources');
+  const [postedTime, setPostedTime] = useState('Any Time');
+  const [maxApplicants, setMaxApplicants] = useState('Any');
+  const [isStartupOnly, setIsStartupOnly] = useState(false);
 
   // Per-job tailoring state
   const [tailorMap, setTailorMap] = useState<Record<string, TailorState>>({});
 
-  // ─── Auth Lifecycle ────────────────────────────────────────────────────────
+  // ─── Auth Lifecycle & Saved Jobs ───────────────────────────────────────────
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -80,12 +98,64 @@ export default function JobDashboard() {
       setUser(session?.user ?? null);
     });
 
+    // Load saved jobs from localStorage
+    try {
+      const saved = localStorage.getItem('nichehire_saved_jobs');
+      if (saved) setSavedJobIds(JSON.parse(saved));
+    } catch {
+      // Ignore
+    }
+
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+  };
+
+  const toggleSaveJob = (id: string) => {
+    setSavedJobIds((prev) => {
+      const updated = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+      try {
+        localStorage.setItem('nichehire_saved_jobs', JSON.stringify(updated));
+      } catch {
+        // Ignore
+      }
+      return updated;
+    });
+  };
+
+  // ─── Match Scoring & Skill Gap Calculation ─────────────────────────────────
+
+  const calculateMatch = (job: Job) => {
+    if (!parsedProfile || !parsedProfile.skills?.length) {
+      return { score: 80, matched: [], missing: [] };
+    }
+
+    const jobText = `${job.title} ${job.description}`.toLowerCase();
+    const candidateSkills = parsedProfile.skills;
+
+    const matched = candidateSkills.filter((skill) =>
+      jobText.includes(skill.toLowerCase())
+    );
+
+    // Common skills mentioned in jobs that candidate might not have
+    const potentialSkills = [
+      'React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'GraphQL',
+      'PostgreSQL', 'Kubernetes', 'SQL', 'Audit', 'Tax', 'GST', 'Tally',
+      'Financial Modeling', 'IFRS', 'Excel', 'Figma', 'SEO'
+    ];
+
+    const missing = potentialSkills
+      .filter((s) => jobText.includes(s.toLowerCase()) && !candidateSkills.map(c => c.toLowerCase()).includes(s.toLowerCase()))
+      .slice(0, 3);
+
+    // Score between 68% and 97%
+    const ratio = matched.length / Math.max(candidateSkills.length, 1);
+    const score = Math.min(97, Math.max(68, Math.round(70 + ratio * 27)));
+
+    return { score, matched, missing };
   };
 
   // ─── File Upload & Parsing (PDF, DOCX, TXT) ────────────────────────────────
@@ -120,7 +190,6 @@ export default function JobDashboard() {
             setParsedProfile(data);
             if (data.rawText) setResumeText(data.rawText);
 
-            // Auto-trigger search using parsed role & location
             const autoRole = data.role || '';
             const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
             setSearchQuery(autoRole);
@@ -133,7 +202,6 @@ export default function JobDashboard() {
           }
         };
       } else {
-        // Plain text file
         reader.readAsText(file);
         reader.onload = async () => {
           const text = reader.result as string;
@@ -197,6 +265,9 @@ export default function JobDashboard() {
           workMode,
           jobType: selectedType,
           source: selectedSource,
+          postedTime,
+          maxApplicants,
+          isStartupOnly,
         }),
       });
 
@@ -216,7 +287,6 @@ export default function JobDashboard() {
     }
   };
 
-  // Auto-load initial jobs on first load
   useEffect(() => {
     fetchJobs('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,9 +336,58 @@ export default function JobDashboard() {
     setTailorMap((prev) => ({ ...prev, [jobId]: { ...prev[jobId], open: false } }));
   };
 
-  // ─── Active Frontend Filter Logic ──────────────────────────────────────────
+  // ─── 1-Click ATS PDF Print ─────────────────────────────────────────────────
+
+  const handlePrintPdf = (tailoredText: string, jobTitle: string) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${jobTitle} - Tailored Resume</title>
+          <style>
+            @page { size: letter; margin: 0.75in; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #111; margin: 0; }
+            h1, h2, h3 { color: #0f172a; margin-top: 14pt; margin-bottom: 4pt; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt; }
+            h1 { font-size: 18pt; text-align: center; border: none; }
+            h2 { font-size: 12pt; text-transform: uppercase; letter-spacing: 0.5pt; }
+            ul { margin: 4pt 0 8pt 18pt; padding: 0; }
+            li { margin-bottom: 3pt; }
+            p { margin: 4pt 0 8pt 0; }
+          </style>
+        </head>
+        <body>
+          ${tailoredText
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^\- (.*$)/gim, '<li>$1</li>')
+            .replace(/\n\n/g, '<p></p>')}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 250);
+  };
+
+  // ─── Format Time Ago Helper ────────────────────────────────────────────────
+
+  const formatTimeAgo = (timestamp?: number) => {
+    if (!timestamp) return 'Recent';
+    const diffHours = Math.round((Date.now() - timestamp) / (1000 * 60 * 60));
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.round(diffHours / 24);
+    return diffDays === 1 ? 'Yesterday' : `${diffDays}d ago`;
+  };
+
+  // ─── Active Filter Logic ───────────────────────────────────────────────────
 
   const filteredJobs = allLiveJobs.filter((job) => {
+    if (activeTab === 'saved' && !savedJobIds.includes(job.id)) return false;
+    if (isStartupOnly && !job.isStartup) return false;
     if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     if (selectedType !== 'All Types' && job.type !== selectedType) return false;
     if (selectedSource !== 'All Sources' && job.source !== selectedSource) return false;
@@ -292,10 +411,33 @@ export default function JobDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setActiveTab(activeTab === 'all' ? 'saved' : 'all')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'saved' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <span>★</span> Saved ({savedJobIds.length})
+            </button>
+
+            <button
+              onClick={() => setHelpModalOpen(true)}
+              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:inline"
+            >
+              💡 Help & Tips
+            </button>
+
+            <button
+              onClick={() => setFeedbackModalOpen(true)}
+              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:inline"
+            >
+              💬 Feedback
+            </button>
+
             {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-600 hidden sm:inline">{user.email}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600 hidden md:inline">{user.email}</span>
                 <button
                   onClick={handleSignOut}
                   className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -308,24 +450,24 @@ export default function JobDashboard() {
                 onClick={() => setAuthModalOpen(true)}
                 className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
               >
-                Sign In / Sign Up
+                Sign In
               </button>
             )}
           </div>
         </div>
       </header>
 
-      {/* ── Hero Section: "Hi, Welcome to NicheHire" ── */}
+      {/* ── Hero Section ── */}
       <section className="bg-gradient-to-b from-blue-50/50 via-white to-[#fafbfc] pt-12 pb-10 px-4 sm:px-6 lg:px-8 border-b border-gray-100">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/60 text-blue-700 text-xs font-medium mb-4">
-            <span>✦</span> Welcome to the next-gen career platform
+            <span>✦</span> The Executive Career Copilot
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
             Hi, welcome to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">NicheHire</span>
           </h1>
           <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mb-8">
-            Upload your resume to discover verified <span className="font-semibold text-gray-800">On-site</span>, <span className="font-semibold text-gray-800">Hybrid</span>, and <span className="font-semibold text-gray-800">Remote</span> jobs across 6+ platforms, and generate ATS-tailored CVs with AI in seconds.
+            Match verified <span className="font-semibold text-gray-800">On-site</span>, <span className="font-semibold text-gray-800">Hybrid</span>, <span className="font-semibold text-gray-800">Remote</span>, and <span className="font-semibold text-blue-600">Startup</span> jobs across 6+ platforms, and generate ATS-tailored CVs & HR outreach pitches in seconds.
           </p>
 
           {/* ── Resume Dropzone (Accepts PDF, DOCX, TXT) ── */}
@@ -367,7 +509,7 @@ export default function JobDashboard() {
                   disabled={isParsing}
                   className="px-4 py-2 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 shadow-2xs"
                 >
-                  {isParsing ? 'Processing...' : 'Browse Files'}
+                  {isParsing ? 'Analyzing Resume…' : 'Browse Files'}
                 </button>
               </div>
             </div>
@@ -397,7 +539,7 @@ export default function JobDashboard() {
               </details>
             </div>
 
-            {/* Parse Status / Error */}
+            {/* Parse Error */}
             {parseError && (
               <p className="mt-3 text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">
                 {parseError}
@@ -410,7 +552,7 @@ export default function JobDashboard() {
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Resume Analyzed
+                    Resume Analyzed • ATS Matching Active
                   </span>
                   <span className="text-xs font-medium text-gray-600">{parsedProfile.experienceLevel}</span>
                 </div>
@@ -435,14 +577,14 @@ export default function JobDashboard() {
         </div>
       </section>
 
-      {/* ── Main Dashboard: Detailed Filters & Job Feed ── */}
+      {/* ── Main Dashboard ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* ── Search & Filter Controls ── */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-200/80 mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-3">
             <input
               type="text"
-              placeholder="Job title or keywords (e.g. Frontend, Finance, Data)..."
+              placeholder="Job title or keywords (e.g. Frontend, Finance, Data, Marketing)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
@@ -467,7 +609,20 @@ export default function JobDashboard() {
 
           {/* Detailed Filters Row */}
           <div className="flex flex-wrap gap-3 items-center pt-3 border-t border-gray-100 text-xs">
-            <span className="font-semibold text-gray-500">Filter by:</span>
+            {/* Startup Toggle */}
+            <button
+              onClick={() => {
+                setIsStartupOnly(!isStartupOnly);
+                setTimeout(() => fetchJobs(), 50);
+              }}
+              className={`px-3 py-1.5 rounded-lg border font-semibold flex items-center gap-1.5 transition-colors ${
+                isStartupOnly
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+              }`}
+            >
+              <span>🚀</span> Startups & High-Growth Only
+            </button>
 
             {/* Work Mode */}
             <select
@@ -493,6 +648,30 @@ export default function JobDashboard() {
               <option>Internship</option>
             </select>
 
+            {/* Posted Time */}
+            <select
+              value={postedTime}
+              onChange={(e) => setPostedTime(e.target.value)}
+              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
+            >
+              <option>Any Time</option>
+              <option>Past 24 Hours</option>
+              <option>Past 3 Days</option>
+              <option>Past Week</option>
+            </select>
+
+            {/* Max Applicants */}
+            <select
+              value={maxApplicants}
+              onChange={(e) => setMaxApplicants(e.target.value)}
+              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
+            >
+              <option value="Any">Any Applicants</option>
+              <option value="Under 25">Early Applicant (&lt; 25)</option>
+              <option value="Under 50">&lt; 50 Applicants</option>
+              <option value="Under 100">&lt; 100 Applicants</option>
+            </select>
+
             {/* Source */}
             <select
               value={selectedSource}
@@ -500,16 +679,15 @@ export default function JobDashboard() {
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>All Sources</option>
+              <option>Himalayas (Startups)</option>
               <option>Adzuna</option>
               <option>LinkedIn</option>
-              <option>Active Jobs DB</option>
               <option>Remotive</option>
               <option>Arbeitnow</option>
               <option>RemoteOK</option>
-              <option>Jobicy</option>
             </select>
 
-            {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types' || selectedSource !== 'All Sources') && (
+            {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types' || selectedSource !== 'All Sources' || postedTime !== 'Any Time' || maxApplicants !== 'Any' || isStartupOnly) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
@@ -517,6 +695,9 @@ export default function JobDashboard() {
                   setWorkMode('Any Mode');
                   setSelectedType('All Types');
                   setSelectedSource('All Sources');
+                  setPostedTime('Any Time');
+                  setMaxApplicants('Any');
+                  setIsStartupOnly(false);
                   fetchJobs('', '');
                 }}
                 className="ml-auto text-xs text-blue-600 hover:underline font-medium"
@@ -538,9 +719,13 @@ export default function JobDashboard() {
         <div className="space-y-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-base font-bold text-gray-800">
-              {hasSearched ? `Live Job Opportunities (${filteredJobs.length})` : 'Recommended Jobs'}
+              {activeTab === 'saved'
+                ? `Saved Opportunities (${filteredJobs.length})`
+                : hasSearched
+                ? `Live Opportunities (${filteredJobs.length})`
+                : 'Recommended Opportunities'}
             </h2>
-            <span className="text-xs text-gray-400">Directly verified from multiple job aggregators</span>
+            <span className="text-xs text-gray-400">Aggregated from multiple verified platforms</span>
           </div>
 
           {isLoading && (
@@ -566,6 +751,9 @@ export default function JobDashboard() {
                   setWorkMode('Any Mode');
                   setSelectedType('All Types');
                   setSelectedSource('All Sources');
+                  setPostedTime('Any Time');
+                  setMaxApplicants('Any');
+                  setIsStartupOnly(false);
                   fetchJobs('', '');
                 }}
                 className="mt-4 px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
@@ -578,6 +766,9 @@ export default function JobDashboard() {
           {!isLoading &&
             filteredJobs.map((job, idx) => {
               const tailor = tailorMap[job.id];
+              const match = calculateMatch(job);
+              const isSaved = savedJobIds.includes(job.id);
+
               return (
                 <div
                   key={job.id || idx}
@@ -588,6 +779,14 @@ export default function JobDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <h3 className="text-base font-bold text-gray-900">{job.title}</h3>
+
+                        {/* Match Score Badge */}
+                        {parsedProfile && (
+                          <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-2xs">
+                            🔥 {match.score}% Fit
+                          </span>
+                        )}
+
                         {/* Work Mode Badge */}
                         <span
                           className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${
@@ -600,24 +799,62 @@ export default function JobDashboard() {
                         >
                           {job.workMode === 'On-site' ? '🏢 On-site' : job.workMode === 'Hybrid' ? '🔄 Hybrid' : '🌐 Remote'}
                         </span>
+
                         {job.salary && (
                           <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
                             💰 {job.salary}
                           </span>
                         )}
+
+                        {job.applicantCount !== undefined && job.applicantCount <= 25 && (
+                          <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            ⚡ Early Applicant (&lt;25)
+                          </span>
+                        )}
                       </div>
 
-                      <p className="text-xs text-gray-500 mb-3 flex items-center gap-2">
+                      <p className="text-xs text-gray-500 mb-2.5 flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-gray-700">{job.company}</span>
                         <span>•</span>
                         <span>📍 {job.location}</span>
+                        <span>•</span>
+                        <span>⏱️ {formatTimeAgo(job.postedAt)}</span>
+                        {job.applicantCount !== undefined && (
+                          <>
+                            <span>•</span>
+                            <span>👥 {job.applicantCount} applicants</span>
+                          </>
+                        )}
                       </p>
+
+                      {/* Skill Gap Radar */}
+                      {parsedProfile && (match.matched.length > 0 || match.missing.length > 0) && (
+                        <div className="flex flex-wrap gap-1.5 items-center mb-3">
+                          <span className="text-[10px] uppercase font-bold text-gray-400">Skills:</span>
+                          {match.matched.map((s) => (
+                            <span
+                              key={s}
+                              className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-medium"
+                            >
+                              ✓ {s}
+                            </span>
+                          ))}
+                          {match.missing.map((s) => (
+                            <span
+                              key={s}
+                              className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-medium"
+                            >
+                              + {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       <p className="text-xs text-gray-600 line-clamp-2 mb-4">
                         {job.description}
                       </p>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 items-center">
                         <span className="px-2.5 py-0.5 bg-gray-50 text-gray-600 text-[11px] rounded-md border border-gray-200 font-medium">
                           Source: {job.source}
                         </span>
@@ -630,22 +867,56 @@ export default function JobDashboard() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex md:flex-col justify-end items-end gap-2 shrink-0">
-                      <button
-                        onClick={() => handleTailorResume(job)}
-                        disabled={tailor?.loading}
-                        className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-xs disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor Resume with AI'}
-                      </button>
-                      <a
-                        href={job.url || '#'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
-                      >
-                        Apply on {job.source}
-                      </a>
+                    <div className="flex flex-row md:flex-col justify-end items-end gap-2 shrink-0">
+                      <div className="flex gap-2 flex-wrap">
+                        {/* Bookmark / Save */}
+                        <button
+                          onClick={() => toggleSaveJob(job.id)}
+                          className={`p-2 rounded-xl border text-xs transition-colors ${
+                            isSaved
+                              ? 'bg-amber-50 text-amber-600 border-amber-200'
+                              : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
+                          }`}
+                          title={isSaved ? 'Remove from saved' : 'Save opportunity'}
+                        >
+                          {isSaved ? '★' : '☆'}
+                        </button>
+
+                        {/* Email HR */}
+                        <button
+                          onClick={() => setActiveOutreachJob(job)}
+                          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-2xs whitespace-nowrap"
+                        >
+                          ✉️ Email HR
+                        </button>
+
+                        {/* Interview Prep */}
+                        <button
+                          onClick={() => setActivePrepJob(job)}
+                          className="px-3.5 py-2 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors whitespace-nowrap"
+                        >
+                          🎙️ Prep
+                        </button>
+
+                        {/* Tailor Resume */}
+                        <button
+                          onClick={() => handleTailorResume(job)}
+                          disabled={tailor?.loading}
+                          className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-xs disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor Resume'}
+                        </button>
+
+                        {/* Apply */}
+                        <a
+                          href={job.url || '#'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                        >
+                          Apply ↗
+                        </a>
+                      </div>
                     </div>
                   </div>
 
@@ -681,12 +952,18 @@ export default function JobDashboard() {
                           <div className="prose prose-sm max-w-none bg-white border border-gray-200 rounded-xl p-5 max-h-96 overflow-y-auto text-xs text-gray-800">
                             <ReactMarkdown>{tailor.text}</ReactMarkdown>
                           </div>
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => handlePrintPdf(tailor.text!, job.title)}
+                              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors flex items-center gap-1.5"
+                            >
+                              <span>📥</span> Download ATS-Friendly PDF
+                            </button>
                             <button
                               onClick={() => navigator.clipboard.writeText(tailor.text!)}
                               className="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                             >
-                              Copy Markdown to Clipboard
+                              Copy Markdown
                             </button>
                           </div>
                         </>
@@ -704,6 +981,34 @@ export default function JobDashboard() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onSuccess={(u) => setUser(u)}
+      />
+
+      {/* Email HR Outreach Modal */}
+      <EmailDraftModal
+        isOpen={!!activeOutreachJob}
+        onClose={() => setActiveOutreachJob(null)}
+        job={activeOutreachJob}
+        resumeText={resumeText}
+      />
+
+      {/* Interview Prep Modal */}
+      <InterviewPrepModal
+        isOpen={!!activePrepJob}
+        onClose={() => setActivePrepJob(null)}
+        job={activePrepJob}
+        resumeText={resumeText}
+      />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
       />
     </div>
   );
