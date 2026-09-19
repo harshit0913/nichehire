@@ -10,15 +10,8 @@ export default function JobDashboard() {
 
   // --- DATA STATE ---
   const [allLiveJobs, setAllLiveJobs] = useState<any[]>([]);
-  const [aiMatches, setAiMatches] = useState<any[]>([]);
 
-  // --- ANALYTICS STATE ---
-  const [userStats, setUserStats] = useState({
-    totalScraped: 0,
-    totalTailored: 0,
-  });
-
-  // --- PROFILE STATE (Now Blank by Default) ---
+  // --- PROFILE STATE (Blank by default) ---
   const [profile, setProfile] = useState({
     name: '',
     role: '',
@@ -31,7 +24,7 @@ export default function JobDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [radius, setRadius] = useState(200);
   const [selectedType, setSelectedType] = useState('All Types');
-  const [workMode, setWorkMode] = useState('Hybrid');
+  const [workMode, setWorkMode] = useState('Any Mode');
   const [postedTime, setPostedTime] = useState('Any Time');
   const [maxApplicants, setMaxApplicants] = useState(200);
   const [onlyVerified, setOnlyVerified] = useState(false);
@@ -41,21 +34,19 @@ export default function JobDashboard() {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/tailor/match-jobs', {
+      // Pointing to our new, fast search route
+      const res = await fetch('/api/jobs/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          resume: profile.rawResume || 'Experienced professional looking for roles.',
-          role: searchQuery || profile.role || 'Sales', 
-          location: profile.location || 'India' 
+          role: searchQuery || 'marketing'
         })
       });
       
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch jobs');
       
-      setAllLiveJobs(data.allLiveJobs || []);
-      setAiMatches(data.matches || []);
+      setAllLiveJobs(data.jobs || []);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -65,7 +56,7 @@ export default function JobDashboard() {
 
   const handleEmailHR = (hrEmail: string, jobTitle: string) => {
     const safeSubject = encodeURIComponent(`Application for ${jobTitle}`);
-    const safeBody = encodeURIComponent(`Hello,\n\I am writing to express my interest in the ${jobTitle} position.\n\nBest regards,\n${profile.name || 'Applicant'}`);
+    const safeBody = encodeURIComponent(`Hello,\n\nI am writing to express my interest in the ${jobTitle} position.\n\nBest regards,\n${profile.name || 'Applicant'}`);
     window.location.href = `mailto:${hrEmail}?subject=${safeSubject}&body=${safeBody}`;
   };
 
@@ -75,7 +66,6 @@ export default function JobDashboard() {
       job.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
       job.company?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Add additional filter logic here later (like location, workMode)
     return matchesSearch;
   });
 
@@ -119,7 +109,7 @@ export default function JobDashboard() {
           </p>
         </div>
 
-        {/* Advanced Filters (UI Only for now) */}
+        {/* Advanced Filters */}
         <div>
           <h3 className="text-sm font-semibold mb-4">Advanced Filters</h3>
           
@@ -156,6 +146,7 @@ export default function JobDashboard() {
             placeholder="Search jobs by title or company..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
             className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button 
@@ -175,6 +166,7 @@ export default function JobDashboard() {
             <option>Contract</option>
           </select>
           <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none">
+            <option>Any Mode</option>
             <option>Hybrid</option>
             <option>Remote</option>
             <option>On-site</option>
@@ -225,7 +217,7 @@ export default function JobDashboard() {
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedType('All Types');
-                  setWorkMode('Hybrid');
+                  setWorkMode('Any Mode');
                 }}
                 className="mt-6 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
               >
@@ -241,11 +233,11 @@ export default function JobDashboard() {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">{job.title}</h3>
                 <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                  <span>{job.location}</span> • <span>{job.company}</span>
+                  <span>{job.location}</span> • <span className="font-medium text-gray-700">{job.company}</span>
                 </p>
                 
                 <div className="flex flex-wrap gap-2 mb-4 md:mb-0">
-                  <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs rounded-full border border-gray-100">{job.source || 'External'}</span>
+                  <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs rounded-full border border-gray-200">{job.source || 'External'}</span>
                 </div>
               </div>
 
