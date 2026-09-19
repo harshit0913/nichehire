@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as cheerio from 'cheerio';
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -103,74 +104,53 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- 2. RAPIDAPI / LINKEDIN & ACTIVE JOBS (Local & Global On-site/Hybrid) ---
-    const RAPID_API_KEY = process.env.RAPIDAPI_KEY || '';
-    if (RAPID_API_KEY) {
-      // 2A. Active Jobs DB
-      try {
-        const res = await fetchWithTimeout(
-          `https://active-jobs-db.p.rapidapi.com/active-jobs?title=${encodeURIComponent(query || 'Developer')}&location=${encodeURIComponent(location || '')}`,
-          {
-            headers: {
-              'x-rapidapi-key': RAPID_API_KEY,
-              'x-rapidapi-host': 'active-jobs-db.p.rapidapi.com',
-            },
-          }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const formatted = (data.data || []).slice(0, 25).map((j: any) => {
-            const loc = j.location || location || 'On-site';
-            return {
-              id: `ajdb_${Math.random().toString(36).slice(2, 11)}`,
-              title: j.title || query,
-              company: j.company || 'Direct Employer',
-              location: loc,
-              type: normalizeType(j.type),
-              workMode: detectWorkMode(loc, j.title, ''),
-              description: cleanDescription(j.description || 'Verified job posting from Active Jobs DB.'),
-              url: j.url || 'https://www.linkedin.com/jobs/',
-              source: 'Active Jobs DB',
-            };
-          });
-          allJobs = [...allJobs, ...formatted];
-        }
-      } catch (e) {
-        console.error('Active Jobs DB error:', e);
-      }
+    // --- 2. LINKEDIN PUBLIC SEARCH (Real live postings without RapidAPI 404s) ---
+    try {
+      const linkedInQuery = encodeURIComponent(query || 'Software Engineer');
+      const linkedInLoc = encodeURIComponent(location || 'worldwide');
+      const linkedInUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${linkedInQuery}&location=${linkedInLoc}&start=0`;
 
-      // 2B. LinkedIn Job Search API
-      try {
-        const res = await fetchWithTimeout(
-          `https://linkedin-job-search-api.p.rapidapi.com/search?keyword=${encodeURIComponent(query || 'Engineer')}&location=${encodeURIComponent(location || 'worldwide')}`,
-          {
-            headers: {
-              'x-rapidapi-key': RAPID_API_KEY,
-              'x-rapidapi-host': 'linkedin-job-search-api.p.rapidapi.com',
-            },
-          }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const formatted = (data.jobs || []).slice(0, 25).map((j: any) => {
-            const loc = j.location || location || 'Worldwide';
-            return {
+      const res = await fetchWithTimeout(linkedInUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+      });
+
+      if (res.ok) {
+        const html = await res.text();
+        const $ = cheerio.load(html);
+        const linkedInJobs: any[] = [];
+
+        $('li').each((_i, el) => {
+          const title = $(el).find('.base-search-card__title').text().trim();
+          const company = $(el).find('.base-search-card__subtitle').text().trim();
+          const loc = $(el).find('.job-search-card__location').text().trim();
+          const link = $(el).find('a.base-card__full-link').attr('href');
+
+          if (title && company) {
+            linkedInJobs.push({
               id: `li_${Math.random().toString(36).slice(2, 11)}`,
-              title: j.title,
-              company: j.company,
-              location: loc,
-              type: normalizeType(j.employmentType),
-              workMode: detectWorkMode(loc, j.title, ''),
-              description: cleanDescription(j.description),
-              url: j.jobUrl,
+              title,
+              company,
+              location: loc || location || 'Worldwide',
+              type: 'Full-Time',
+              workMode: detectWorkMode(loc, title, ''),
+              description: `Verified position on LinkedIn: ${title} at ${company}. Apply directly on LinkedIn.`,
+              url: link || 'https://www.linkedin.com/jobs/',
               source: 'LinkedIn',
-            };
-          });
-          allJobs = [...allJobs, ...formatted];
-        }
-      } catch (e) {
-        console.error('LinkedIn API error:', e);
+            });
+          }
+        });
+
+        allJobs = [...allJobs, ...linkedInJobs];
+      } else {
+        failedSources.push('LinkedIn');
       }
+    } catch (e) {
+      console.error('LinkedIn fetch error:', e);
+      failedSources.push('LinkedIn');
     }
 
     // --- 3. REMOTIVE API (Remote Specialist) ---
