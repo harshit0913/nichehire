@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import AuthModal from './components/AuthModal';
+import { supabase } from './supabase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -11,6 +13,8 @@ type ParsedProfile = {
   skills: string[];
   experienceLevel: string;
   location: string;
+  summary?: string;
+  rawText?: string;
 };
 
 type TailorState = {
@@ -20,46 +24,180 @@ type TailorState = {
   open: boolean;
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
+type Job = {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  workMode: 'On-site' | 'Hybrid' | 'Remote';
+  salary?: string;
+  description: string;
+  url: string;
+  source: string;
+};
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function JobDashboard() {
-  // Core state
+  // Auth state
+  const [user, setUser] = useState<any>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Job Search state
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [allLiveJobs, setAllLiveJobs] = useState<any[]>([]);
+  const [allLiveJobs, setAllLiveJobs] = useState<Job[]>([]);
 
-  // Resume & profile state
+  // Resume state
   const [resumeText, setResumeText] = useState('');
-  const [resumeOpen, setResumeOpen] = useState(true);
+  const [fileName, setFileName] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parsedProfile, setParsedProfile] = useState<ParsedProfile | null>(null);
   const [parseError, setParseError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Search filters
+  // Detailed Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('All Types');
   const [workMode, setWorkMode] = useState('Any Mode');
+  const [selectedType, setSelectedType] = useState('All Types');
+  const [selectedSource, setSelectedSource] = useState('All Sources');
 
-  // Per-job tailoring state keyed by job.id
+  // Per-job tailoring state
   const [tailorMap, setTailorMap] = useState<Record<string, TailorState>>({});
 
-  // ─── Job Fetch ─────────────────────────────────────────────────────────────
+  // ─── Auth Lifecycle ────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  // ─── File Upload & Parsing (PDF, DOCX, TXT) ────────────────────────────────
+
+  const processFile = async (file: File) => {
+    setIsParsing(true);
+    setParseError('');
+    setFileName(file.name);
+
+    try {
+      const reader = new FileReader();
+      const isPdfOrDocx = file.type === 'application/pdf' || file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc');
+
+      if (isPdfOrDocx) {
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          try {
+            const base64Data = (reader.result as string).split(',')[1];
+            const res = await fetch('/api/resume/parse', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fileBase64: base64Data,
+                mimeType: file.type || 'application/pdf',
+                fileName: file.name,
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to parse file');
+
+            setParsedProfile(data);
+            if (data.rawText) setResumeText(data.rawText);
+
+            // Auto-trigger search using parsed role & location
+            const autoRole = data.role || '';
+            const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
+            setSearchQuery(autoRole);
+            if (autoLoc) setLocationQuery(autoLoc);
+            await fetchJobs(autoRole, autoLoc);
+          } catch (err: any) {
+            setParseError(err.message || 'Failed to parse resume file.');
+          } finally {
+            setIsParsing(false);
+          }
+        };
+      } else {
+        // Plain text file
+        reader.readAsText(file);
+        reader.onload = async () => {
+          const text = reader.result as string;
+          setResumeText(text);
+          await analyzeResumeText(text);
+        };
+      }
+    } catch (err: any) {
+      setParseError(err.message || 'Error reading file.');
+      setIsParsing(false);
+    }
+  };
+
+  const analyzeResumeText = async (text: string) => {
+    if (!text.trim()) {
+      setParseError('Please paste your resume text first.');
+      return;
+    }
+    setIsParsing(true);
+    setParseError('');
+
+    try {
+      const res = await fetch('/api/resume/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to analyze resume');
+
+      setParsedProfile(data);
+      const autoRole = data.role || '';
+      const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
+      setSearchQuery(autoRole);
+      if (autoLoc) setLocationQuery(autoLoc);
+      await fetchJobs(autoRole, autoLoc);
+    } catch (err: any) {
+      setParseError(err.message || 'Failed to analyze resume.');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  // ─── Fetch Jobs ────────────────────────────────────────────────────────────
 
   const fetchJobs = async (overrideQuery?: string, overrideLoc?: string) => {
     setIsLoading(true);
     setErrorMsg('');
     setHasSearched(true);
 
-    const roleToUse = overrideQuery ?? searchQuery;
-    const locToUse = overrideLoc ?? locationQuery;
+    const roleToUse = overrideQuery !== undefined ? overrideQuery : searchQuery;
+    const locToUse = overrideLoc !== undefined ? overrideLoc : locationQuery;
 
     try {
       const res = await fetch('/api/jobs/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: roleToUse, location: locToUse }),
+        body: JSON.stringify({
+          role: roleToUse,
+          location: locToUse,
+          workMode,
+          jobType: selectedType,
+          source: selectedSource,
+        }),
       });
 
       const data = await res.json();
@@ -72,59 +210,26 @@ export default function JobDashboard() {
         );
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Something went wrong. Please try again.');
+      setErrorMsg(err.message || 'Failed to pull live jobs.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ─── Resume Parse → Auto-Match ─────────────────────────────────────────────
+  // Auto-load initial jobs on first load
+  useEffect(() => {
+    fetchJobs('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleAnalyzeResume = async () => {
-    if (!resumeText.trim()) {
-      setParseError('Please paste your resume text first.');
-      return;
-    }
+  // ─── Tailor Resume ─────────────────────────────────────────────────────────
 
-    setIsParsing(true);
-    setParseError('');
-    setParsedProfile(null);
-
-    try {
-      const res = await fetch('/api/resume/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeText }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to parse resume');
-
-      setParsedProfile(data);
-      setResumeOpen(false);
-
-      // Auto-fill search query from parsed role and trigger job search
-      const autoRole = data.role || '';
-      const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
-      setSearchQuery(autoRole);
-      setLocationQuery(autoLoc);
-      await fetchJobs(autoRole, autoLoc);
-    } catch (err: any) {
-      setParseError(err.message || 'Failed to analyze resume. Please try again.');
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
-  // ─── Resume Tailor ─────────────────────────────────────────────────────────
-
-  const handleTailorResume = async (job: any) => {
+  const handleTailorResume = async (job: Job) => {
     if (!resumeText.trim()) {
       setTailorMap((prev) => ({
         ...prev,
-        [job.id]: { loading: false, open: true, error: 'Paste your resume in the sidebar first.' },
+        [job.id]: { loading: false, open: true, error: 'Please upload or paste your resume first.' },
       }));
-      setResumeOpen(true);
       return;
     }
 
@@ -141,6 +246,7 @@ export default function JobDashboard() {
           jobDescription: job.description,
         }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to tailor resume');
 
@@ -151,7 +257,7 @@ export default function JobDashboard() {
     } catch (err: any) {
       setTailorMap((prev) => ({
         ...prev,
-        [job.id]: { loading: false, open: true, error: err.message || 'Something went wrong.' },
+        [job.id]: { loading: false, open: true, error: err.message || 'Tailoring failed.' },
       }));
     }
   };
@@ -160,342 +266,427 @@ export default function JobDashboard() {
     setTailorMap((prev) => ({ ...prev, [jobId]: { ...prev[jobId], open: false } }));
   };
 
-  const copyTailored = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fail silently — text is visible for manual copy
-    }
-  };
-
-  // ─── Active Filters ────────────────────────────────────────────────────────
+  // ─── Active Frontend Filter Logic ──────────────────────────────────────────
 
   const filteredJobs = allLiveJobs.filter((job) => {
-    const jobLoc = (job.location || '').toLowerCase();
-
-    let matchesMode = true;
-    if (workMode === 'Remote') {
-      matchesMode = jobLoc.includes('remote') || jobLoc.includes('worldwide') || jobLoc.includes('anywhere');
-    } else if (workMode === 'On-site') {
-      matchesMode = !jobLoc.includes('remote') && !jobLoc.includes('worldwide');
-    } else if (workMode === 'Hybrid') {
-      matchesMode = jobLoc.includes('hybrid');
-    }
-
-    let matchesType = true;
-    if (selectedType !== 'All Types') {
-      matchesType = job.type === selectedType;
-    }
-
-    return matchesMode && matchesType;
+    if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
+    if (selectedType !== 'All Types' && job.type !== selectedType) return false;
+    if (selectedSource !== 'All Sources' && job.source !== selectedSource) return false;
+    return true;
   });
 
-  // Auto-load default jobs on first visit
-  useEffect(() => {
-    fetchJobs('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ─── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row font-sans">
-      {/* ── Sidebar ── */}
-      <aside className="w-full md:w-80 p-6 border-r border-gray-100 flex flex-col gap-6 shrink-0">
-        {/* Logo */}
-        <div>
-          <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-            <span className="text-3xl">⚡</span> NicheHire
-          </h1>
-          <p className="text-xs text-gray-400 mt-1">AI-powered job matching</p>
-        </div>
-
-        {/* Parsed Profile Card — shown once resume is analyzed */}
-        {parsedProfile && (
-          <div className="border border-blue-100 bg-blue-50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">
-                Resume Analyzed
+    <div className="min-h-screen bg-[#fafbfc] text-gray-900 font-sans">
+      {/* ── Top Navigation Bar ── */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚡</span>
+            <div>
+              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                NicheHire
+              </span>
+              <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 rounded-full border border-blue-100">
+                Exclusive
               </span>
             </div>
-            <p className="text-sm font-bold text-gray-900">{parsedProfile.name || 'Your Profile'}</p>
-            <p className="text-xs text-gray-500 mb-3">
-              {parsedProfile.role}
-              {parsedProfile.experienceLevel ? ` · ${parsedProfile.experienceLevel}` : ''}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {(parsedProfile.skills || []).map((skill) => (
-                <span
-                  key={skill}
-                  className="px-2 py-0.5 bg-white text-blue-700 border border-blue-200 rounded text-[11px] font-medium"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
           </div>
-        )}
 
-        {/* Resume Input Panel */}
-        <div className="border border-gray-100 rounded-xl p-4 shadow-sm">
-          <button
-            onClick={() => setResumeOpen((v) => !v)}
-            className="w-full flex justify-between items-center mb-2 text-left"
-          >
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${resumeText.trim() ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-              Your Resume
-            </h2>
-            <span className="text-xs text-blue-600">{resumeOpen ? 'Collapse' : 'Edit'}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-600 hidden sm:inline">{user.email}</span>
+                <button
+                  onClick={handleSignOut}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
+              >
+                Sign In / Sign Up
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
 
-          {resumeOpen && (
-            <>
-              <textarea
-                value={resumeText}
+      {/* ── Hero Section: "Hi, Welcome to NicheHire" ── */}
+      <section className="bg-gradient-to-b from-blue-50/50 via-white to-[#fafbfc] pt-12 pb-10 px-4 sm:px-6 lg:px-8 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/60 text-blue-700 text-xs font-medium mb-4">
+            <span>✦</span> Welcome to the next-gen career platform
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
+            Hi, welcome to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">NicheHire</span>
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mb-8">
+            Upload your resume to discover verified <span className="font-semibold text-gray-800">On-site</span>, <span className="font-semibold text-gray-800">Hybrid</span>, and <span className="font-semibold text-gray-800">Remote</span> jobs across 6+ platforms, and generate ATS-tailored CVs with AI in seconds.
+          </p>
+
+          {/* ── Resume Dropzone (Accepts PDF, DOCX, TXT) ── */}
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
+              }}
+              className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                isDragging ? 'border-blue-500 bg-blue-50/40' : 'border-gray-200 hover:border-blue-400 bg-gray-50/50'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.txt"
                 onChange={(e) => {
-                  setResumeText(e.target.value);
-                  setParsedProfile(null); // Reset profile card when resume is edited
+                  if (e.target.files?.[0]) processFile(e.target.files[0]);
                 }}
-                placeholder="Paste your resume text here. Click 'Analyze & Match Jobs' to auto-search jobs tailored to your profile."
-                rows={10}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="hidden"
               />
 
-              {parseError && (
-                <p className="mt-1 text-xs text-red-600">{parseError}</p>
-              )}
-
-              <button
-                onClick={handleAnalyzeResume}
-                disabled={isParsing || !resumeText.trim()}
-                className="mt-3 w-full px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {isParsing ? '⏳ Analyzing resume...' : '🔍 Analyze & Match Jobs'}
-              </button>
-
-              <p className="mt-2 text-xs text-gray-400">
-                Your resume stays in your browser session and is only sent to the server when you click above or tailor to a specific job.
+              <div className="text-3xl mb-2">📄</div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-1">
+                {fileName ? fileName : 'Drop your resume here (PDF, DOCX, TXT)'}
+              </h3>
+              <p className="text-xs text-gray-400 mb-3">
+                Supports Adobe PDF, Microsoft Word, or plain text
               </p>
-            </>
-          )}
 
-          {!resumeOpen && (
-            <p className="text-xs text-gray-500">
-              {resumeText.trim()
-                ? `${resumeText.trim().split(/\s+/).length} words saved`
-                : 'No resume pasted yet'}
-            </p>
-          )}
-        </div>
-      </aside>
-
-      {/* ── Main Content ── */}
-      <main className="flex-1 p-6 md:p-10 max-w-5xl">
-        {/* Search Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Job title or keywords..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            placeholder="City, state, or country..."
-            value={locationQuery}
-            onChange={(e) => setLocationQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={() => fetchJobs()}
-            disabled={isLoading}
-            className="px-6 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 min-w-[140px]"
-          >
-            {isLoading ? 'Searching...' : 'Search Jobs'}
-          </button>
-        </div>
-
-        {/* Filter Bar */}
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none"
-          >
-            <option>All Types</option>
-            <option>Full-Time</option>
-            <option>Contract</option>
-          </select>
-          <select
-            value={workMode}
-            onChange={(e) => setWorkMode(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none"
-          >
-            <option>Any Mode</option>
-            <option>Hybrid</option>
-            <option>Remote</option>
-            <option>On-site</option>
-          </select>
-          {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types') && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setLocationQuery('');
-                setWorkMode('Any Mode');
-                setSelectedType('All Types');
-                fetchJobs('', '');
-              }}
-              className="px-4 py-2 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        {/* Error Banner */}
-        {errorMsg && (
-          <div className="p-4 mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
-            <span className="font-bold text-red-500">⊗</span> {errorMsg}
-          </div>
-        )}
-
-        {/* Job List */}
-        <div className="space-y-4">
-          {/* Loading skeletons */}
-          {isLoading && (
-            <div className="space-y-4">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="p-6 border rounded-lg shadow-sm animate-pulse border-gray-100 bg-white">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-5 bg-gray-100 rounded w-16"></div>
-                  </div>
-                  <div className="space-y-2 mb-6">
-                    <div className="h-4 bg-gray-100 rounded w-1/4"></div>
-                    <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-                  </div>
-                  <div className="h-8 bg-gray-100 rounded w-32"></div>
-                </div>
-              ))}
+              <div className="flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isParsing}
+                  className="px-4 py-2 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 shadow-2xs"
+                >
+                  {isParsing ? 'Processing...' : 'Browse Files'}
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Empty state */}
-          {!isLoading && hasSearched && filteredJobs.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-12 mt-6 text-center border-2 border-dashed rounded-lg bg-gray-50 border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">No jobs match your filters</h3>
-              <p className="mt-2 text-sm text-gray-500">Try broadening your search terms or clearing your filters.</p>
+            {/* Alternative: Plain Text Toggle */}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-center">
+              <details className="w-full text-left">
+                <summary className="text-xs text-blue-600 hover:underline cursor-pointer text-center font-medium">
+                  Or paste resume text manually
+                </summary>
+                <div className="mt-3">
+                  <textarea
+                    rows={4}
+                    value={resumeText}
+                    onChange={(e) => setResumeText(e.target.value)}
+                    placeholder="Paste resume text here..."
+                    className="w-full p-3 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => analyzeResumeText(resumeText)}
+                    disabled={isParsing || !resumeText.trim()}
+                    className="mt-2 w-full py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isParsing ? 'Analyzing...' : 'Analyze Pasted Text'}
+                  </button>
+                </div>
+              </details>
+            </div>
+
+            {/* Parse Status / Error */}
+            {parseError && (
+              <p className="mt-3 text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">
+                {parseError}
+              </p>
+            )}
+
+            {/* Parsed Profile Badge */}
+            {parsedProfile && (
+              <div className="mt-4 p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl text-left">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Resume Analyzed
+                  </span>
+                  <span className="text-xs font-medium text-gray-600">{parsedProfile.experienceLevel}</span>
+                </div>
+                <p className="text-sm font-bold text-gray-900">{parsedProfile.name || 'Candidate Profile'}</p>
+                <p className="text-xs text-gray-600 mb-2.5">
+                  Target Role: <strong className="text-gray-800">{parsedProfile.role}</strong>
+                  {parsedProfile.location && ` • ${parsedProfile.location}`}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {(parsedProfile.skills || []).map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-2 py-0.5 bg-white text-emerald-800 border border-emerald-200 rounded text-[11px] font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Main Dashboard: Detailed Filters & Job Feed ── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ── Search & Filter Controls ── */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-200/80 mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Job title or keywords (e.g. Frontend, Finance, Data)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="City, State, or Country (e.g. Bangalore, Delhi, New York)..."
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => fetchJobs()}
+              disabled={isLoading}
+              className="px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors shadow-2xs whitespace-nowrap"
+            >
+              {isLoading ? 'Searching...' : 'Search Jobs'}
+            </button>
+          </div>
+
+          {/* Detailed Filters Row */}
+          <div className="flex flex-wrap gap-3 items-center pt-3 border-t border-gray-100 text-xs">
+            <span className="font-semibold text-gray-500">Filter by:</span>
+
+            {/* Work Mode */}
+            <select
+              value={workMode}
+              onChange={(e) => setWorkMode(e.target.value)}
+              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
+            >
+              <option>Any Mode</option>
+              <option>On-site</option>
+              <option>Hybrid</option>
+              <option>Remote</option>
+            </select>
+
+            {/* Job Type */}
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
+            >
+              <option>All Types</option>
+              <option>Full-Time</option>
+              <option>Contract</option>
+              <option>Internship</option>
+            </select>
+
+            {/* Source */}
+            <select
+              value={selectedSource}
+              onChange={(e) => setSelectedSource(e.target.value)}
+              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
+            >
+              <option>All Sources</option>
+              <option>Adzuna</option>
+              <option>LinkedIn</option>
+              <option>Active Jobs DB</option>
+              <option>Remotive</option>
+              <option>Arbeitnow</option>
+              <option>RemoteOK</option>
+              <option>Jobicy</option>
+            </select>
+
+            {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types' || selectedSource !== 'All Sources') && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setLocationQuery('');
                   setWorkMode('Any Mode');
                   setSelectedType('All Types');
+                  setSelectedSource('All Sources');
                   fetchJobs('', '');
                 }}
-                className="mt-6 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                className="ml-auto text-xs text-blue-600 hover:underline font-medium"
               >
                 Clear all filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Error Banner */}
+        {errorMsg && (
+          <div className="p-4 mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* ── Job Feed ── */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-base font-bold text-gray-800">
+              {hasSearched ? `Live Job Opportunities (${filteredJobs.length})` : 'Recommended Jobs'}
+            </h2>
+            <span className="text-xs text-gray-400">Directly verified from multiple job aggregators</span>
+          </div>
+
+          {isLoading && (
+            <div className="space-y-4">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="p-6 border rounded-xl shadow-2xs animate-pulse border-gray-100 bg-white">
+                  <div className="h-5 bg-gray-200 rounded w-1/3 mb-3"></div>
+                  <div className="h-4 bg-gray-100 rounded w-1/4 mb-4"></div>
+                  <div className="h-8 bg-gray-100 rounded w-28"></div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isLoading && hasSearched && filteredJobs.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-2xl bg-white border-gray-200">
+              <h3 className="text-base font-semibold text-gray-900">No jobs match your selected filters</h3>
+              <p className="mt-1 text-xs text-gray-500">Try broadening your search query or selecting 'Any Mode'.</p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setLocationQuery('');
+                  setWorkMode('Any Mode');
+                  setSelectedType('All Types');
+                  setSelectedSource('All Sources');
+                  fetchJobs('', '');
+                }}
+                className="mt-4 px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+              >
+                Reset Filters
               </button>
             </div>
           )}
 
-          {/* Job Cards */}
           {!isLoading &&
             filteredJobs.map((job, idx) => {
               const tailor = tailorMap[job.id];
               return (
                 <div
                   key={job.id || idx}
-                  className="border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-white"
+                  className="border border-gray-200/80 rounded-2xl hover:shadow-md transition-shadow bg-white overflow-hidden"
                 >
                   <div className="p-6 flex flex-col md:flex-row justify-between gap-4">
-                    {/* Job Info */}
+                    {/* Job Details */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-gray-900 mb-1 truncate">{job.title}</h3>
-                      <p className="text-sm text-gray-500 mb-3 flex items-center gap-2">
-                        <span className="font-medium text-gray-700 truncate">{job.company}</span>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <h3 className="text-base font-bold text-gray-900">{job.title}</h3>
+                        {/* Work Mode Badge */}
+                        <span
+                          className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${
+                            job.workMode === 'On-site'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : job.workMode === 'Hybrid'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}
+                        >
+                          {job.workMode === 'On-site' ? '🏢 On-site' : job.workMode === 'Hybrid' ? '🔄 Hybrid' : '🌐 Remote'}
+                        </span>
+                        {job.salary && (
+                          <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
+                            💰 {job.salary}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-500 mb-3 flex items-center gap-2">
+                        <span className="font-semibold text-gray-700">{job.company}</span>
                         <span>•</span>
-                        <span className="truncate">{job.location}</span>
+                        <span>📍 {job.location}</span>
                       </p>
+
+                      <p className="text-xs text-gray-600 line-clamp-2 mb-4">
+                        {job.description}
+                      </p>
+
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs rounded-full border border-gray-200">
-                          {job.source}
+                        <span className="px-2.5 py-0.5 bg-gray-50 text-gray-600 text-[11px] rounded-md border border-gray-200 font-medium">
+                          Source: {job.source}
                         </span>
                         {job.type && job.type !== 'Other' && (
-                          <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-100">
+                          <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] rounded-md border border-blue-100 font-medium">
                             {job.type}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-row md:flex-col items-start md:items-end justify-start md:justify-between gap-2 shrink-0">
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={() => handleTailorResume(job)}
-                          disabled={tailor?.loading}
-                          className="px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50 whitespace-nowrap"
-                        >
-                          {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor Resume'}
-                        </button>
-                        <a
-                          href={job.url || '#'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 whitespace-nowrap"
-                        >
-                          Apply Now
-                        </a>
-                      </div>
+                    {/* Action Buttons */}
+                    <div className="flex md:flex-col justify-end items-end gap-2 shrink-0">
+                      <button
+                        onClick={() => handleTailorResume(job)}
+                        disabled={tailor?.loading}
+                        className="px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-xs disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor Resume with AI'}
+                      </button>
+                      <a
+                        href={job.url || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                      >
+                        Apply on {job.source}
+                      </a>
                     </div>
                   </div>
 
-                  {/* Tailored Resume Drawer (inline under the job card) */}
+                  {/* Inline Tailored Resume Drawer */}
                   {tailor?.open && (
-                    <div className="border-t border-gray-100 p-6 bg-gray-50 rounded-b-xl">
+                    <div className="border-t border-gray-100 p-6 bg-gray-50">
                       <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-sm font-semibold text-gray-800">
-                          ✦ Tailored Resume — <span className="font-normal text-gray-500">{job.title} at {job.company}</span>
+                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                          <span>✦</span> AI Tailored Resume for {job.title} at {job.company}
                         </h4>
                         <button
                           onClick={() => closeTailor(job.id)}
-                          className="text-xs text-gray-500 hover:text-gray-800 hover:underline"
+                          className="text-xs text-gray-500 hover:text-gray-800"
                         >
                           Close
                         </button>
                       </div>
 
                       {tailor.loading && (
-                        <div className="py-8 text-center text-sm text-gray-500 animate-pulse">
-                          AI is tailoring your resume to match this job description…
+                        <div className="py-8 text-center text-xs text-gray-500 animate-pulse">
+                          Optimizing achievements and keywords for {job.title}…
                         </div>
                       )}
 
                       {tailor.error && (
-                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
                           {tailor.error}
                         </p>
                       )}
 
                       {tailor.text && (
                         <>
-                          {/* Render Gemini's Markdown output as formatted HTML */}
-                          <div className="prose prose-sm max-w-none bg-white border border-gray-200 rounded-lg p-5 max-h-[500px] overflow-y-auto text-gray-800">
+                          <div className="prose prose-sm max-w-none bg-white border border-gray-200 rounded-xl p-5 max-h-96 overflow-y-auto text-xs text-gray-800">
                             <ReactMarkdown>{tailor.text}</ReactMarkdown>
                           </div>
                           <div className="mt-3 flex gap-2">
                             <button
-                              onClick={() => copyTailored(tailor.text!)}
-                              className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                              onClick={() => navigator.clipboard.writeText(tailor.text!)}
+                              className="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                             >
-                              Copy to clipboard
+                              Copy Markdown to Clipboard
                             </button>
                           </div>
                         </>
@@ -507,6 +698,13 @@ export default function JobDashboard() {
             })}
         </div>
       </main>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={(u) => setUser(u)}
+      />
     </div>
   );
 }
