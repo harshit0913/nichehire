@@ -1,51 +1,95 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+// Save this file as: app/api/resume/tailor/route.ts
+
+const GEMINI_TIMEOUT_MS = 25000;
+// Change this if your API key doesn't have access to this model — e.g. "gemini-2.5-flash"
+const GEMINI_MODEL = 'gemini-2.5-flash';
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = GEMINI_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const { jobTitle, jobTags, baseResume } = await request.json();
-    
-    // Your exact, valid API key
-   
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
-    const prompt = `
-      You are an expert Executive Recruiter and ATS (Applicant Tracking System) Optimizer.
-      Your task is to rewrite the provided Base Resume to perfectly match the Job Title and Tags, guaranteeing an ATS score of 80 or higher.
-      
-      Job Title: ${jobTitle}
-      Key Focus Areas: ${jobTags.join(', ')}
-      
-      Base Resume Context:
-      ${baseResume}
-      
-      Instructions:
-      1. Keep the candidate's actual job titles and employment dates entirely factual.
-      2. Rewrite the bullet points to heavily emphasize skills that overlap with the targeted Job Title.
-      3. Format the output in clean, readable text.
-    `;
+export async function POST(req: Request) {
+  try {
+    const { resumeText, jobTitle, company, jobDescription } = await req.json();
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GOOGLE_API_KEY!
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Google REST API Error:", data);
-      return NextResponse.json({ error: data.error?.message || "API Request Failed" }, { status: response.status });
+    if (!resumeText || !resumeText.trim()) {
+      return NextResponse.json({ error: 'Paste your resume text first.' }, { status: 400 });
+    }
+    if (!jobTitle) {
+      return NextResponse.json({ error: 'Missing job title.' }, { status: 400 });
     }
 
-    const tailoredResume = data.candidates[0].content.parts[0].text;
-    return NextResponse.json({ tailoredResume });
-    
-  } catch (error: any) {
-    console.error("Server Error:", error);
-    return NextResponse.json({ error: error.message || "Unknown error occurred" }, { status: 500 });
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Resume tailoring is not configured. Add GEMINI_API_KEY in your Vercel environment variables.' },
+        { status: 500 }
+      );
+    }
+
+    // Guardrail: instructed to reorganize/rephrase only, never invent experience.
+    // This matters — a "tailored" resume that fabricates skills gets candidates disqualified,
+    // or gets them into interviews they can't actually pass.
+    const prompt = `You are a professional resume editor. Rewrite the RESUME below so it is tailored to the JOB TARGET, while staying 100% truthful to the candidate's real experience.
+
+Rules:
+- You may reorder and rephrase existing bullet points to foreground experience relevant to this job.
+- You may mirror language and keywords from the job description, but only where the candidate genuinely already has that experience in the original resume.
+- Never invent employers, job titles, dates, metrics, tools, or skills that are not already present in the original resume.
+- Keep the resume roughly the same overall length as the original.
+- Output ONLY the rewritten resume text. No preamble, no explanation, no markdown headers like "Tailored Resume:".
+
+JOB TARGET
+Title: ${jobTitle}
+Company: ${company || 'Not specified'}
+Description: ${jobDescription || 'Not provided'}
+
+RESUME
+${resumeText}`;
+
+    const geminiRes = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4 },
+        }),
+      }
+    );
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      console.error('Gemini API error:', geminiRes.status, errText);
+      return NextResponse.json(
+        { error: `Resume tailoring failed (Gemini returned ${geminiRes.status}). Check your GEMINI_API_KEY and model name.` },
+        { status: 502 }
+      );
+    }
+
+    const data = await geminiRes.json();
+    const tailored =
+      data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') || '';
+
+    if (!tailored.trim()) {
+      return NextResponse.json({ error: 'The AI returned an empty response. Please try again.' }, { status: 502 });
+    }
+
+    return NextResponse.json({ tailoredResume: tailored.trim() });
+  } catch (error) {
+    console.error('Resume tailoring failed:', error);
+    return NextResponse.json({ error: 'Failed to tailor resume. Please try again.' }, { status: 500 });
   }
 }

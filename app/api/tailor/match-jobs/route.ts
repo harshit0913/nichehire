@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const RAPID_API_KEY = process.env.RAPIDAPI_KEY || "";
+const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
 
 // --- TIER 1: ADZUNA API ---
 async function fetchAdzuna(role: string, location: string, appId: string, appKey: string) {
@@ -182,7 +183,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ matches: [], allLiveJobs: [] });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `

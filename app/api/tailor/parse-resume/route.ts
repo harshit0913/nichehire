@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
+
 export async function POST(req: Request) {
   try {
     const { resumeText } = await req.json();
     
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+    const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Explicitly using the model Google requested in the terminal
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    // Using gemini-1.5-flash — fast, accurate, and available on all plans
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       Extract the candidate's details from this resume text.

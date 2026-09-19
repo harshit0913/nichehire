@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
+
 export async function POST(req: Request) {
   try {
     const { jobTitle, jobTags, baseResume } = await req.json();
 
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!apiKey) {
       return NextResponse.json({ error: "Missing Google API Key" }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       You are an elite Executive Resume Writer and ATS (Applicant Tracking System) optimization expert.

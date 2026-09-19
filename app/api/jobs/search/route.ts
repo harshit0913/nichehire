@@ -12,12 +12,20 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
   }
 }
 
-// Normalize messy job-type strings from different APIs into 3 consistent buckets
-function normalizeType(raw: string | undefined | null): 'Full-Time' | 'Contract' | 'Other' {
-  const t = (raw || '').toLowerCase();
-  if (t.includes('full')) return 'Full-Time';
-  if (t.includes('contract') || t.includes('freelance')) return 'Contract';
+// Normalize messy job-type data (string or array) from different APIs into 3 consistent buckets
+function normalizeType(raw: string | string[] | undefined | null): 'Full-Time' | 'Contract' | 'Other' {
+  const values = Array.isArray(raw) ? raw : [raw];
+  const joined = values.filter(Boolean).join(' ').toLowerCase();
+  if (joined.includes('full')) return 'Full-Time';
+  if (joined.includes('contract') || joined.includes('freelance')) return 'Contract';
   return 'Other';
+}
+
+// Strip HTML tags and cap length — used so job descriptions are safe/short for resume tailoring
+function cleanDescription(html: string | undefined | null, maxLen = 600): string {
+  if (!html) return '';
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
 
 export async function POST(req: Request) {
@@ -29,20 +37,21 @@ export async function POST(req: Request) {
     let allJobs: any[] = [];
     const failedSources: string[] = [];
 
-    // 1. Remotive — free, remote-only jobs
+    // 1. Remotive — free, remote-only jobs, supports server-side search
     try {
       const remotiveUrl = `https://remotive.com/api/remote-jobs?${
         query ? `search=${encodeURIComponent(query)}&` : ''
       }limit=50`;
-      const remotiveRes = await fetchWithTimeout(remotiveUrl);
-      if (remotiveRes.ok) {
-        const remotiveData = await remotiveRes.json();
-        let formatted = (remotiveData.jobs || []).map((j: any) => ({
+      const res = await fetchWithTimeout(remotiveUrl);
+      if (res.ok) {
+        const data = await res.json();
+        let formatted = (data.jobs || []).map((j: any) => ({
           id: `remo_${j.id}`,
           title: (j.title || '').replace(/<\/?[^>]+(>|$)/g, ''),
           company: j.company_name,
           location: j.candidate_required_location || 'Remote',
           type: normalizeType(j.job_type),
+          description: cleanDescription(j.description),
           url: j.url,
           source: 'Remotive',
         }));
@@ -51,14 +60,10 @@ export async function POST(req: Request) {
           formatted = formatted.filter((j: any) => {
             const loc = j.location.toLowerCase();
             return (
-              loc.includes(locQuery) ||
-              loc.includes('worldwide') ||
-              loc.includes('global') ||
-              loc.includes('anywhere')
+              loc.includes(locQuery) || loc.includes('worldwide') || loc.includes('global') || loc.includes('anywhere')
             );
           });
         }
-
         allJobs = [...allJobs, ...formatted];
       } else {
         failedSources.push('Remotive');
@@ -70,15 +75,16 @@ export async function POST(req: Request) {
 
     // 2. Arbeitnow — free, not remote-only, adds real inventory beyond Remotive
     try {
-      const arbeitnowRes = await fetchWithTimeout('https://arbeitnow.com/api/job-board-api');
-      if (arbeitnowRes.ok) {
-        const arbeitnowData = await arbeitnowRes.json();
-        let formatted = (arbeitnowData.data || []).map((j: any) => ({
+      const res = await fetchWithTimeout('https://arbeitnow.com/api/job-board-api');
+      if (res.ok) {
+        const data = await res.json();
+        let formatted = (data.data || []).map((j: any) => ({
           id: `arb_${j.slug}`,
           title: j.title,
           company: j.company_name,
           location: j.location || (j.remote ? 'Remote' : 'Not specified'),
-          type: normalizeType(Array.isArray(j.job_types) ? j.job_types[0] : j.job_types),
+          type: normalizeType(j.job_types),
+          description: cleanDescription(j.description),
           url: j.url,
           source: 'Arbeitnow',
         }));
@@ -89,11 +95,9 @@ export async function POST(req: Request) {
         }
         if (locQuery && locQuery !== 'remote') {
           formatted = formatted.filter(
-            (j: any) =>
-              j.location.toLowerCase().includes(locQuery) || j.location.toLowerCase().includes('remote')
+            (j: any) => j.location.toLowerCase().includes(locQuery) || j.location.toLowerCase().includes('remote')
           );
         }
-
         allJobs = [...allJobs, ...formatted];
       } else {
         failedSources.push('Arbeitnow');
@@ -103,11 +107,83 @@ export async function POST(req: Request) {
       failedSources.push('Arbeitnow');
     }
 
-    // 3. Optional premium source — only runs if you've set RAPIDAPI_KEY
+    // 3. RemoteOK — free, no key, official public JSON endpoint (remoteok.com/api).
+    //    Returns its ~100 most recent listings; no server-side search, so we filter here.
+    try {
+      const res = await fetchWithTimeout('https://remoteok.com/api');
+      if (res.ok) {
+        const data = await res.json();
+        let formatted = (data || [])
+          .filter((j: any) => j.id && j.position) // skip the first "legal notice" element
+          .map((j: any) => ({
+            id: `rok_${j.id}`,
+            title: j.position,
+            company: j.company,
+            location: j.location || 'Remote',
+            type: normalizeType(j.tags),
+            description: cleanDescription(j.description),
+            url: j.apply_url || j.url,
+            source: 'RemoteOK',
+          }));
+
+        if (query) {
+          const q = query.toLowerCase();
+          formatted = formatted.filter((j: any) => j.title.toLowerCase().includes(q));
+        }
+        if (locQuery && locQuery !== 'remote') {
+          formatted = formatted.filter(
+            (j: any) => j.location.toLowerCase().includes(locQuery) || j.location.toLowerCase() === ''
+          );
+        }
+        allJobs = [...allJobs, ...formatted];
+      } else {
+        failedSources.push('RemoteOK');
+      }
+    } catch (e) {
+      console.error('RemoteOK fetch failed:', e);
+      failedSources.push('RemoteOK');
+    }
+
+    // 4. Jobicy — free, no key, official public API (jobicy.com/api/v2/remote-jobs)
+    try {
+      const tagParam = query.length >= 3 ? `&tag=${encodeURIComponent(query)}` : '';
+      const res = await fetchWithTimeout(`https://jobicy.com/api/v2/remote-jobs?count=50${tagParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        let formatted = (data.jobs || []).map((j: any) => ({
+          id: `jbc_${j.id}`,
+          title: j.jobTitle,
+          company: j.companyName,
+          location: j.jobGeo || 'Remote',
+          type: normalizeType(j.jobType),
+          description: cleanDescription(j.jobExcerpt || j.jobDescription),
+          url: j.url,
+          source: 'Jobicy',
+        }));
+
+        if (query) {
+          const q = query.toLowerCase();
+          formatted = formatted.filter((j: any) => (j.title || '').toLowerCase().includes(q));
+        }
+        if (locQuery && locQuery !== 'remote') {
+          formatted = formatted.filter(
+            (j: any) => j.location.toLowerCase().includes(locQuery) || j.location.toLowerCase() === 'anywhere'
+          );
+        }
+        allJobs = [...allJobs, ...formatted];
+      } else {
+        failedSources.push('Jobicy');
+      }
+    } catch (e) {
+      console.error('Jobicy fetch failed:', e);
+      failedSources.push('Jobicy');
+    }
+
+    // 5. Optional premium source — only runs if you've set RAPIDAPI_KEY
     const RAPID_API_KEY = process.env.RAPIDAPI_KEY || '';
     if (RAPID_API_KEY) {
       try {
-        const linkedInRes = await fetchWithTimeout(
+        const res = await fetchWithTimeout(
           `https://linkedin-job-search-api.p.rapidapi.com/search?keyword=${encodeURIComponent(
             query
           )}&location=${encodeURIComponent(locQuery || 'worldwide')}`,
@@ -118,14 +194,15 @@ export async function POST(req: Request) {
             },
           }
         );
-        if (linkedInRes.ok) {
-          const liData = await linkedInRes.json();
-          const formatted = (liData.jobs || []).map((j: any) => ({
+        if (res.ok) {
+          const data = await res.json();
+          const formatted = (data.jobs || []).map((j: any) => ({
             id: `li_${Math.random().toString(36).slice(2, 11)}`,
             title: j.title,
             company: j.company,
             location: j.location || 'Remote',
             type: normalizeType(j.employmentType),
+            description: cleanDescription(j.description),
             url: j.jobUrl,
             source: 'LinkedIn',
           }));
