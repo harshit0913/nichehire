@@ -83,7 +83,6 @@ export default function JobDashboard() {
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedSource, setSelectedSource] = useState('All Sources');
   const [postedTime, setPostedTime] = useState('Any Time');
-  const [maxApplicants, setMaxApplicants] = useState('Any');
   const [isStartupOnly, setIsStartupOnly] = useState(false);
 
   // Per-job tailoring state
@@ -132,7 +131,7 @@ export default function JobDashboard() {
 
   const calculateMatch = (job: Job) => {
     if (!parsedProfile || !parsedProfile.skills?.length) {
-      return { score: 80, matched: [], missing: [] };
+      return { score: 0, matched: [] };
     }
 
     const jobText = `${job.title} ${job.description}`.toLowerCase();
@@ -142,22 +141,10 @@ export default function JobDashboard() {
       jobText.includes(skill.toLowerCase())
     );
 
-    // Common skills mentioned in jobs that candidate might not have
-    const potentialSkills = [
-      'React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'GraphQL',
-      'PostgreSQL', 'Kubernetes', 'SQL', 'Audit', 'Tax', 'GST', 'Tally',
-      'Financial Modeling', 'IFRS', 'Excel', 'Figma', 'SEO'
-    ];
-
-    const missing = potentialSkills
-      .filter((s) => jobText.includes(s.toLowerCase()) && !candidateSkills.map(c => c.toLowerCase()).includes(s.toLowerCase()))
-      .slice(0, 3);
-
-    // Score between 68% and 97%
     const ratio = matched.length / Math.max(candidateSkills.length, 1);
-    const score = Math.min(97, Math.max(68, Math.round(70 + ratio * 27)));
+    const score = Math.round(ratio * 100);
 
-    return { score, matched, missing };
+    return { score, matched };
   };
 
   // ─── File Upload & Parsing (PDF, DOCX, TXT) ────────────────────────────────
@@ -172,7 +159,10 @@ export default function JobDashboard() {
       const isPdfOrDocx = file.type === 'application/pdf' || file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc');
 
       if (isPdfOrDocx) {
-        reader.readAsDataURL(file);
+        reader.onerror = () => {
+          setParseError('Failed to read file.');
+          setIsParsing(false);
+        };
         reader.onload = async () => {
           try {
             const base64Data = (reader.result as string).split(',')[1];
@@ -203,13 +193,24 @@ export default function JobDashboard() {
             setIsParsing(false);
           }
         };
+        reader.readAsDataURL(file);
       } else {
-        reader.readAsText(file);
-        reader.onload = async () => {
-          const text = reader.result as string;
-          setResumeText(text);
-          await analyzeResumeText(text);
+        reader.onerror = () => {
+          setParseError('Failed to read file.');
+          setIsParsing(false);
         };
+        reader.onload = async () => {
+          try {
+            const text = reader.result as string;
+            setResumeText(text);
+            await analyzeResumeText(text);
+          } catch (err: any) {
+            setParseError(err.message || 'Error processing file.');
+          } finally {
+            setIsParsing(false);
+          }
+        };
+        reader.readAsText(file);
       }
     } catch (err: any) {
       setParseError(err.message || 'Error reading file.');
@@ -257,7 +258,6 @@ export default function JobDashboard() {
       jobType?: string;
       source?: string;
       postedTime?: string;
-      maxApplicants?: string;
       isStartupOnly?: boolean;
     }
   ) => {
@@ -271,7 +271,6 @@ export default function JobDashboard() {
     const jobTypeToUse = overrideFilters?.jobType ?? selectedType;
     const sourceToUse = overrideFilters?.source ?? selectedSource;
     const postedTimeToUse = overrideFilters?.postedTime ?? postedTime;
-    const maxApplicantsToUse = overrideFilters?.maxApplicants ?? maxApplicants;
     const startupToUse = overrideFilters?.isStartupOnly ?? isStartupOnly;
 
     try {
@@ -285,7 +284,6 @@ export default function JobDashboard() {
           jobType: jobTypeToUse,
           source: sourceToUse,
           postedTime: postedTimeToUse,
-          maxApplicants: maxApplicantsToUse,
           isStartupOnly: startupToUse,
         }),
       });
@@ -429,16 +427,6 @@ export default function JobDashboard() {
       } else if (postedTime === 'Past Week') {
         const matches1w = diffMs <= 7 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('yesterday') || text.includes('d ago') || text.includes('1 week') || text.includes('1w');
         if (!matches1w) return false;
-      }
-    }
-
-    // Filter by maxApplicants client-side
-    if (maxApplicants && maxApplicants !== 'Any') {
-      let limit = 100;
-      if (maxApplicants.includes('25')) limit = 25;
-      else if (maxApplicants.includes('50')) limit = 50;
-      if (job.applicantCount === undefined || job.applicantCount > limit) {
-        return false;
       }
     }
 
@@ -673,7 +661,7 @@ export default function JobDashboard() {
                   : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
               }`}
             >
-              <span>🚀</span> Startups & High-Growth Only
+              <span>🚀</span> Startup Jobs (Himalayas)
             </button>
 
             {/* Work Mode */}
@@ -724,22 +712,6 @@ export default function JobDashboard() {
               <option>Past Week</option>
             </select>
 
-            {/* Max Applicants */}
-            <select
-              value={maxApplicants}
-              onChange={(e) => {
-                const val = e.target.value;
-                setMaxApplicants(val);
-                fetchJobs(undefined, undefined, { maxApplicants: val });
-              }}
-              className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
-            >
-              <option value="Any">Any Applicants</option>
-              <option value="Under 25">Early Applicant (&lt; 25)</option>
-              <option value="Under 50">&lt; 50 Applicants</option>
-              <option value="Under 100">&lt; 100 Applicants</option>
-            </select>
-
             {/* Source */}
             <select
               value={selectedSource}
@@ -753,13 +725,12 @@ export default function JobDashboard() {
               <option>All Sources</option>
               <option>Himalayas (Startups)</option>
               <option>Adzuna</option>
-              <option>LinkedIn</option>
               <option>Remotive</option>
               <option>Arbeitnow</option>
               <option>RemoteOK</option>
             </select>
 
-            {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types' || selectedSource !== 'All Sources' || postedTime !== 'Any Time' || maxApplicants !== 'Any' || isStartupOnly) && (
+            {(searchQuery || locationQuery || workMode !== 'Any Mode' || selectedType !== 'All Types' || selectedSource !== 'All Sources' || postedTime !== 'Any Time' || isStartupOnly) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
@@ -768,7 +739,6 @@ export default function JobDashboard() {
                   setSelectedType('All Types');
                   setSelectedSource('All Sources');
                   setPostedTime('Any Time');
-                  setMaxApplicants('Any');
                   setIsStartupOnly(false);
                   fetchJobs('', '');
                 }}
@@ -824,7 +794,6 @@ export default function JobDashboard() {
                   setSelectedType('All Types');
                   setSelectedSource('All Sources');
                   setPostedTime('Any Time');
-                  setMaxApplicants('Any');
                   setIsStartupOnly(false);
                   fetchJobs('', '');
                 }}
@@ -877,12 +846,6 @@ export default function JobDashboard() {
                             💰 {job.salary}
                           </span>
                         )}
-
-                        {(job.applicantCount !== undefined && job.applicantCount <= 25 && (!job.applicantText || (!job.applicantText.toLowerCase().includes('over') && !job.applicantText.includes('100')))) && (
-                          <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                            ⚡ Early Applicant (&lt;25)
-                          </span>
-                        )}
                       </div>
 
                       <p className="text-xs text-gray-500 mb-2.5 flex items-center gap-2 flex-wrap">
@@ -904,24 +867,16 @@ export default function JobDashboard() {
                         ) : null}
                       </p>
 
-                      {/* Skill Gap Radar */}
-                      {parsedProfile && (match.matched.length > 0 || match.missing.length > 0) && (
+                      {/* Matched Skills */}
+                      {parsedProfile && match.matched.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 items-center mb-3">
-                          <span className="text-[10px] uppercase font-bold text-gray-400">Skills:</span>
+                          <span className="text-[10px] uppercase font-bold text-gray-400">Matched Skills:</span>
                           {match.matched.map((s) => (
                             <span
                               key={s}
                               className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-medium"
                             >
                               ✓ {s}
-                            </span>
-                          ))}
-                          {match.missing.map((s) => (
-                            <span
-                              key={s}
-                              className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-medium"
-                            >
-                              + {s}
                             </span>
                           ))}
                         </div>
