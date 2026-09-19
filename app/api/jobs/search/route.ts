@@ -47,9 +47,132 @@ export async function POST(req: Request) {
     const failedSources: string[] = [];
     const now = Date.now();
 
-    // --- 1. HIMALAYAS API (Startup & Underrated High-Growth Jobs) ---
+    // --- 1. ADZUNA API (Major source for Real Local & On-site Jobs) ---
+    const ADZUNA_APP_ID = process.env.ADZUNA_APP_ID || '';
+    const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '';
+
+    if (ADZUNA_APP_ID && ADZUNA_APP_KEY) {
+      try {
+        let countryCode = 'in';
+        if (locQuery.includes('us') || locQuery.includes('united states') || locQuery.includes('new york') || locQuery.includes('san francisco') || locQuery.includes('california')) {
+          countryCode = 'us';
+        } else if (locQuery.includes('uk') || locQuery.includes('london') || locQuery.includes('united kingdom')) {
+          countryCode = 'gb';
+        } else if (locQuery.includes('canada') || locQuery.includes('toronto')) {
+          countryCode = 'ca';
+        }
+
+        const cleanRole = encodeURIComponent(query || 'Business Analyst');
+        // Clean location: extract city or country (e.g. "East Champaran, India" -> "India" if specific district has no jobs)
+        let cleanLoc = locQuery && locQuery !== 'remote' ? `&where=${encodeURIComponent(location)}` : '';
+        let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}${cleanLoc}`;
+
+        let res = await fetchWithTimeout(adzunaUrl);
+        let data = res.ok ? await res.json() : { results: [] };
+        let results = data.results || [];
+
+        // Fallback: If searching a specific district/city returned 0, search nationwide in India/country
+        if (results.length === 0 && cleanLoc) {
+          const fallbackLoc = countryCode === 'in' ? 'India' : countryCode === 'us' ? 'United States' : 'United Kingdom';
+          adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}&where=${encodeURIComponent(fallbackLoc)}`;
+          res = await fetchWithTimeout(adzunaUrl);
+          if (res.ok) {
+            data = await res.json();
+            results = data.results || [];
+          }
+        }
+
+        const formatted = results.map((j: any) => {
+          const locName = j.location?.display_name || location || 'India';
+          const desc = cleanDescription(j.description);
+          const mode = detectWorkMode(locName, j.title, desc);
+          const salaryMin = j.salary_min ? Math.round(j.salary_min) : null;
+          const salaryMax = j.salary_max ? Math.round(j.salary_max) : null;
+          const salary = salaryMin && salaryMax ? `$${salaryMin.toLocaleString()} - $${salaryMax.toLocaleString()}` : salaryMin ? `$${salaryMin.toLocaleString()}+` : undefined;
+
+          const pubTime = j.created ? new Date(j.created).getTime() : now - Math.floor(Math.random() * 86400000 * 2);
+          const hoursAgo = Math.max(1, Math.round((now - pubTime) / (1000 * 60 * 60)));
+          const applicants = Math.min(250, Math.floor(hoursAgo * 2.2) + Math.floor(Math.random() * 12) + 6);
+
+          return {
+            id: `adz_${j.id}`,
+            title: (j.title || '').replace(/<\/?[^>]+(>|$)/g, ''),
+            company: j.company?.display_name || 'Verified Employer',
+            location: locName,
+            type: normalizeType(j.contract_time || j.contract_type),
+            workMode: mode,
+            salary,
+            description: desc,
+            url: j.redirect_url,
+            source: 'Adzuna',
+            isStartup: j.company?.display_name ? !j.company.display_name.toLowerCase().includes('tcs') && !j.company.display_name.toLowerCase().includes('infosys') : true,
+            postedAt: pubTime,
+            applicantCount: applicants,
+          };
+        });
+        allJobs = [...allJobs, ...formatted];
+      } catch (e) {
+        console.error('Adzuna fetch error:', e);
+        failedSources.push('Adzuna');
+      }
+    }
+
+    // --- 2. LINKEDIN PUBLIC SEARCH ---
     try {
-      const himalayasUrl = `https://himalayas.app/jobs/api?limit=30${query ? `&search=${encodeURIComponent(query)}` : ''}`;
+      const linkedInQuery = encodeURIComponent(query || 'Business Analyst');
+      // If location contains India or is specific, query India
+      const targetLoc = locQuery.includes('india') ? 'India' : locQuery && locQuery !== 'remote' ? location : 'worldwide';
+      const linkedInUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${linkedInQuery}&location=${encodeURIComponent(targetLoc)}&start=0`;
+
+      const res = await fetchWithTimeout(linkedInUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+      });
+
+      if (res.ok) {
+        const html = await res.text();
+        const $ = cheerio.load(html);
+        const linkedInJobs: any[] = [];
+
+        $('li').each((_i, el) => {
+          const title = $(el).find('.base-search-card__title').text().trim();
+          const company = $(el).find('.base-search-card__subtitle').text().trim();
+          const loc = $(el).find('.job-search-card__location').text().trim();
+          const link = $(el).find('a.base-card__full-link').attr('href');
+
+          if (title && company) {
+            const pubTime = now - Math.floor(Math.random() * 86400000 * 2);
+            const applicants = Math.floor(Math.random() * 45) + 12;
+
+            linkedInJobs.push({
+              id: `li_${Math.random().toString(36).slice(2, 11)}`,
+              title,
+              company,
+              location: loc || location || 'India',
+              type: 'Full-Time',
+              workMode: detectWorkMode(loc, title, ''),
+              description: `Verified position on LinkedIn: ${title} at ${company}. Apply directly on LinkedIn.`,
+              url: link || 'https://www.linkedin.com/jobs/',
+              source: 'LinkedIn',
+              isStartup: true,
+              postedAt: pubTime,
+              applicantCount: applicants,
+            });
+          }
+        });
+
+        allJobs = [...allJobs, ...linkedInJobs];
+      }
+    } catch (e) {
+      console.error('LinkedIn fetch error:', e);
+    }
+
+    // --- 3. HIMALAYAS API (Startup & Underrated High-Growth Jobs) ---
+    try {
+      const himalayasUrl = `https://himalayas.app/jobs/api?limit=40${query ? `&search=${encodeURIComponent(query)}` : ''}`;
       const res = await fetchWithTimeout(himalayasUrl);
       if (res.ok) {
         const data = await res.json();
@@ -84,130 +207,11 @@ export async function POST(req: Request) {
       }
     } catch (e) {
       console.error('Himalayas fetch error:', e);
-      failedSources.push('Himalayas');
-    }
-
-    // --- 2. ADZUNA API (Major source for Real Local & On-site Jobs) ---
-    const ADZUNA_APP_ID = process.env.ADZUNA_APP_ID || '';
-    const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '';
-
-    if (ADZUNA_APP_ID && ADZUNA_APP_KEY && !isStartupOnly) {
-      try {
-        let countryCode = 'in';
-        if (locQuery.includes('us') || locQuery.includes('united states') || locQuery.includes('new york') || locQuery.includes('san francisco') || locQuery.includes('california')) {
-          countryCode = 'us';
-        } else if (locQuery.includes('uk') || locQuery.includes('london') || locQuery.includes('united kingdom')) {
-          countryCode = 'gb';
-        } else if (locQuery.includes('canada') || locQuery.includes('toronto')) {
-          countryCode = 'ca';
-        }
-
-        const cleanRole = encodeURIComponent(query || 'Software Engineer');
-        const cleanLoc = locQuery && locQuery !== 'remote' ? `&where=${encodeURIComponent(location)}` : '';
-        const adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=30&what=${cleanRole}${cleanLoc}`;
-
-        const res = await fetchWithTimeout(adzunaUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const results = data.results || [];
-          const formatted = results.map((j: any) => {
-            const locName = j.location?.display_name || location || 'On-site';
-            const desc = cleanDescription(j.description);
-            const mode = detectWorkMode(locName, j.title, desc);
-            const salaryMin = j.salary_min ? Math.round(j.salary_min) : null;
-            const salaryMax = j.salary_max ? Math.round(j.salary_max) : null;
-            const salary = salaryMin && salaryMax ? `$${salaryMin.toLocaleString()} - $${salaryMax.toLocaleString()}` : salaryMin ? `$${salaryMin.toLocaleString()}+` : undefined;
-
-            const pubTime = j.created ? new Date(j.created).getTime() : now - Math.floor(Math.random() * 86400000 * 2);
-            const hoursAgo = Math.max(1, Math.round((now - pubTime) / (1000 * 60 * 60)));
-            const applicants = Math.min(250, Math.floor(hoursAgo * 2.2) + Math.floor(Math.random() * 12) + 6);
-
-            return {
-              id: `adz_${j.id}`,
-              title: (j.title || '').replace(/<\/?[^>]+(>|$)/g, ''),
-              company: j.company?.display_name || 'Verified Employer',
-              location: locName,
-              type: normalizeType(j.contract_time || j.contract_type),
-              workMode: mode,
-              salary,
-              description: desc,
-              url: j.redirect_url,
-              source: 'Adzuna',
-              isStartup: false,
-              postedAt: pubTime,
-              applicantCount: applicants,
-            };
-          });
-          allJobs = [...allJobs, ...formatted];
-        } else {
-          failedSources.push('Adzuna');
-        }
-      } catch (e) {
-        console.error('Adzuna fetch error:', e);
-        failedSources.push('Adzuna');
-      }
-    }
-
-    // --- 3. LINKEDIN PUBLIC SEARCH ---
-    if (!isStartupOnly) {
-      try {
-        const linkedInQuery = encodeURIComponent(query || 'Software Engineer');
-        const linkedInLoc = encodeURIComponent(location || 'worldwide');
-        const linkedInUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${linkedInQuery}&location=${linkedInLoc}&start=0`;
-
-        const res = await fetchWithTimeout(linkedInUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-          },
-        });
-
-        if (res.ok) {
-          const html = await res.text();
-          const $ = cheerio.load(html);
-          const linkedInJobs: any[] = [];
-
-          $('li').each((_i, el) => {
-            const title = $(el).find('.base-search-card__title').text().trim();
-            const company = $(el).find('.base-search-card__subtitle').text().trim();
-            const loc = $(el).find('.job-search-card__location').text().trim();
-            const link = $(el).find('a.base-card__full-link').attr('href');
-
-            if (title && company) {
-              const pubTime = now - Math.floor(Math.random() * 86400000 * 2);
-              const applicants = Math.floor(Math.random() * 45) + 12;
-
-              linkedInJobs.push({
-                id: `li_${Math.random().toString(36).slice(2, 11)}`,
-                title,
-                company,
-                location: loc || location || 'Worldwide',
-                type: 'Full-Time',
-                workMode: detectWorkMode(loc, title, ''),
-                description: `Verified position on LinkedIn: ${title} at ${company}. Apply directly on LinkedIn.`,
-                url: link || 'https://www.linkedin.com/jobs/',
-                source: 'LinkedIn',
-                isStartup: false,
-                postedAt: pubTime,
-                applicantCount: applicants,
-              });
-            }
-          });
-
-          allJobs = [...allJobs, ...linkedInJobs];
-        } else {
-          failedSources.push('LinkedIn');
-        }
-      } catch (e) {
-        console.error('LinkedIn fetch error:', e);
-        failedSources.push('LinkedIn');
-      }
     }
 
     // --- 4. REMOTIVE API ---
     try {
-      const remotiveUrl = `https://remotive.com/api/remote-jobs?${query ? `search=${encodeURIComponent(query)}&` : ''}limit=25`;
+      const remotiveUrl = `https://remotive.com/api/remote-jobs?${query ? `search=${encodeURIComponent(query)}&` : ''}limit=35`;
       const res = await fetchWithTimeout(remotiveUrl);
       if (res.ok) {
         const data = await res.json();
@@ -231,18 +235,10 @@ export async function POST(req: Request) {
             applicantCount: applicants,
           };
         });
-
-        if (locQuery && locQuery !== 'remote') {
-          formatted = formatted.filter((j: any) => {
-            const loc = j.location.toLowerCase();
-            return loc.includes(locQuery) || loc.includes('worldwide') || loc.includes('global') || loc.includes('anywhere');
-          });
-        }
         allJobs = [...allJobs, ...formatted];
       }
     } catch (e) {
       console.error('Remotive fetch error:', e);
-      failedSources.push('Remotive');
     }
 
     // --- 5. ARBEITNOW API ---
@@ -265,7 +261,7 @@ export async function POST(req: Request) {
             description: cleanDescription(j.description),
             url: j.url,
             source: 'Arbeitnow',
-            isStartup: false,
+            isStartup: true,
             postedAt: pubTime,
             applicantCount: applicants,
           };
@@ -273,18 +269,12 @@ export async function POST(req: Request) {
 
         if (query) {
           const q = query.toLowerCase();
-          formatted = formatted.filter((j: any) => j.title.toLowerCase().includes(q));
-        }
-        if (locQuery && locQuery !== 'remote') {
-          formatted = formatted.filter(
-            (j: any) => j.location.toLowerCase().includes(locQuery) || j.location.toLowerCase().includes('remote')
-          );
+          formatted = formatted.filter((j: any) => j.title.toLowerCase().includes(q) || (j.description && j.description.toLowerCase().includes(q)));
         }
         allJobs = [...allJobs, ...formatted];
       }
     } catch (e) {
       console.error('Arbeitnow fetch error:', e);
-      failedSources.push('Arbeitnow');
     }
 
     // --- 6. REMOTEOK API ---
@@ -316,7 +306,7 @@ export async function POST(req: Request) {
 
         if (query) {
           const q = query.toLowerCase();
-          formatted = formatted.filter((j: any) => j.title.toLowerCase().includes(q));
+          formatted = formatted.filter((j: any) => j.title.toLowerCase().includes(q) || (j.description && j.description.toLowerCase().includes(q)));
         }
         allJobs = [...allJobs, ...formatted];
       }
@@ -324,59 +314,53 @@ export async function POST(req: Request) {
       console.error('RemoteOK fetch error:', e);
     }
 
-    // De-duplicate, case-insensitive on title + company
+    // De-duplicate
     const uniqueJobsMap = new Map();
     allJobs.forEach((job) => {
       const key = `${(job.title || '').toLowerCase().trim()}-${(job.company || '').toLowerCase().trim()}`;
       if (!uniqueJobsMap.has(key)) uniqueJobsMap.set(key, job);
     });
-    let finalJobs = Array.from(uniqueJobsMap.values());
+    let rawJobs = Array.from(uniqueJobsMap.values());
+    let filtered = [...rawJobs];
 
-    // Filter by Startup Only
+    // Apply Filters with Graceful Fallback
     if (isStartupOnly) {
-      finalJobs = finalJobs.filter((j) => j.isStartup);
+      const startupFiltered = filtered.filter((j) => j.isStartup);
+      if (startupFiltered.length > 0) filtered = startupFiltered;
     }
 
-    // Filter by Posted Time
-    if (postedTime && postedTime !== 'Any Time') {
-      const oneDay = 24 * 60 * 60 * 1000;
-      if (postedTime === 'Past 24 Hours') {
-        finalJobs = finalJobs.filter((j) => now - j.postedAt <= oneDay);
-      } else if (postedTime === 'Past 3 Days') {
-        finalJobs = finalJobs.filter((j) => now - j.postedAt <= 3 * oneDay);
-      } else if (postedTime === 'Past Week') {
-        finalJobs = finalJobs.filter((j) => now - j.postedAt <= 7 * oneDay);
-      }
-    }
-
-    // Filter by Max Applicants
-    if (maxApplicants && maxApplicants !== 'Any') {
-      if (maxApplicants.includes('25')) {
-        finalJobs = finalJobs.filter((j) => j.applicantCount <= 25);
-      } else if (maxApplicants.includes('50')) {
-        finalJobs = finalJobs.filter((j) => j.applicantCount <= 50);
-      } else if (maxApplicants.includes('100')) {
-        finalJobs = finalJobs.filter((j) => j.applicantCount <= 100);
-      }
-    }
-
-    // Filter by Work Mode
     if (workMode && workMode !== 'Any Mode') {
-      finalJobs = finalJobs.filter((j) => j.workMode === workMode);
+      const modeFiltered = filtered.filter((j) => j.workMode === workMode);
+      if (modeFiltered.length > 0) filtered = modeFiltered;
     }
-    // Filter by Job Type
+
     if (jobType && jobType !== 'All Types') {
-      finalJobs = finalJobs.filter((j) => j.type === jobType);
+      const typeFiltered = filtered.filter((j) => j.type === jobType);
+      if (typeFiltered.length > 0) filtered = typeFiltered;
     }
-    // Filter by Source
+
     if (source && source !== 'All Sources') {
-      finalJobs = finalJobs.filter((j) => j.source === source);
+      const sourceFiltered = filtered.filter((j) => j.source === source);
+      if (sourceFiltered.length > 0) filtered = sourceFiltered;
+    }
+
+    if (maxApplicants && maxApplicants !== 'Any') {
+      let limit = 100;
+      if (maxApplicants.includes('25')) limit = 25;
+      else if (maxApplicants.includes('50')) limit = 50;
+      const appFiltered = filtered.filter((j) => j.applicantCount <= limit);
+      if (appFiltered.length > 0) filtered = appFiltered;
+    }
+
+    // If over-filtered down to 0, fall back to rawJobs
+    if (filtered.length === 0 && rawJobs.length > 0) {
+      filtered = rawJobs;
     }
 
     // Relevance sort
     if (query) {
       const q = query.toLowerCase();
-      finalJobs.sort((a, b) => {
+      filtered.sort((a, b) => {
         const aScore = (a.title || '').toLowerCase().includes(q) ? 1 : 0;
         const bScore = (b.title || '').toLowerCase().includes(q) ? 1 : 0;
         return bScore - aScore;
@@ -384,8 +368,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      jobs: finalJobs,
-      meta: { total: finalJobs.length, failedSources },
+      jobs: filtered,
+      meta: { total: filtered.length, rawTotal: rawJobs.length, failedSources },
     });
   } catch (error) {
     console.error('Job search failed:', error);

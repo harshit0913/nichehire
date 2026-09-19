@@ -191,9 +191,9 @@ export default function JobDashboard() {
             if (data.rawText) setResumeText(data.rawText);
 
             const autoRole = data.role || '';
-            const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
+            const autoLoc = data.location?.toLowerCase().includes('india') ? 'India' : data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
             setSearchQuery(autoRole);
-            if (autoLoc) setLocationQuery(autoLoc);
+            setLocationQuery(autoLoc);
             await fetchJobs(autoRole, autoLoc);
           } catch (err: any) {
             setParseError(err.message || 'Failed to parse resume file.');
@@ -234,9 +234,9 @@ export default function JobDashboard() {
 
       setParsedProfile(data);
       const autoRole = data.role || '';
-      const autoLoc = data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
+      const autoLoc = data.location?.toLowerCase().includes('india') ? 'India' : data.location?.toLowerCase().includes('remote') ? '' : (data.location || '');
       setSearchQuery(autoRole);
-      if (autoLoc) setLocationQuery(autoLoc);
+      setLocationQuery(autoLoc);
       await fetchJobs(autoRole, autoLoc);
     } catch (err: any) {
       setParseError(err.message || 'Failed to analyze resume.');
