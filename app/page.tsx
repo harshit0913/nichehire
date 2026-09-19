@@ -41,7 +41,9 @@ type Job = {
   source: string;
   isStartup?: boolean;
   postedAt?: number;
+  postedText?: string;
   applicantCount?: number;
+  applicantText?: string;
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -380,7 +382,11 @@ export default function JobDashboard() {
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.round(diffHours / 24);
-    return diffDays === 1 ? 'Yesterday' : `${diffDays}d ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < 30) return `${Math.round(diffDays / 7)}w ago`;
+    if (diffDays < 365) return `${Math.round(diffDays / 30)}mo ago`;
+    return `${Math.round(diffDays / 365)}y ago`;
   };
 
   // ─── Active Filter Logic ───────────────────────────────────────────────────
@@ -806,7 +812,7 @@ export default function JobDashboard() {
                           </span>
                         )}
 
-                        {job.applicantCount !== undefined && job.applicantCount <= 25 && (
+                        {(job.applicantCount !== undefined && job.applicantCount <= 25 && (!job.applicantText || !job.applicantText.includes('100'))) && (
                           <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                             ⚡ Early Applicant (&lt;25)
                           </span>
@@ -818,13 +824,18 @@ export default function JobDashboard() {
                         <span>•</span>
                         <span>📍 {job.location}</span>
                         <span>•</span>
-                        <span>⏱️ {formatTimeAgo(job.postedAt)}</span>
-                        {job.applicantCount !== undefined && (
+                        <span>⏱️ {job.postedText || formatTimeAgo(job.postedAt)}</span>
+                        {job.applicantText ? (
+                          <>
+                            <span>•</span>
+                            <span>👥 {job.applicantText}</span>
+                          </>
+                        ) : job.applicantCount !== undefined ? (
                           <>
                             <span>•</span>
                             <span>👥 {job.applicantCount} applicants</span>
                           </>
-                        )}
+                        ) : null}
                       </p>
 
                       {/* Skill Gap Radar */}
