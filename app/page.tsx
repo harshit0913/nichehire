@@ -5,6 +5,7 @@ import { useState } from 'react';
 export default function JobDashboard() {
   // --- UI STATE ---
   const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [activeView, setActiveView] = useState<'jobs' | 'analytics'>('jobs');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -33,8 +34,9 @@ export default function JobDashboard() {
   const fetchJobs = async () => {
     setIsLoading(true);
     setErrorMsg('');
+    setHasSearched(true);
+    
     try {
-      // Pointing to our new, fast search route
       const res = await fetch('/api/jobs/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,12 +63,12 @@ export default function JobDashboard() {
   };
 
   // --- FILTER LOGIC ---
+  // We removed the strict text match here. The backend handles the text search.
+  // We only filter by the dropdown selections if they aren't the defaults.
   const filteredJobs = allLiveJobs.filter(job => {
-    const matchesSearch = 
-      job.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      job.company?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return matchesSearch;
+    // Future dropdown logic (Location, Mode) can go here. 
+    // For now, we return everything the API found.
+    return true;
   });
 
   return (
@@ -209,7 +211,7 @@ export default function JobDashboard() {
           )}
 
           {/* Empty State */}
-          {!isLoading && allLiveJobs.length > 0 && filteredJobs.length === 0 && (
+          {!isLoading && hasSearched && filteredJobs.length === 0 && (
             <div className="flex flex-col items-center justify-center p-12 mt-6 text-center border-2 border-dashed rounded-lg bg-gray-50 border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">No jobs match your filters</h3>
               <p className="mt-2 text-sm text-gray-500">Try broadening your search terms or clearing your filters to see more results.</p>
