@@ -249,13 +249,30 @@ export default function JobDashboard() {
 
   // ─── Fetch Jobs ────────────────────────────────────────────────────────────
 
-  const fetchJobs = async (overrideQuery?: string, overrideLoc?: string) => {
+  const fetchJobs = async (
+    overrideQuery?: string,
+    overrideLoc?: string,
+    overrideFilters?: {
+      workMode?: string;
+      jobType?: string;
+      source?: string;
+      postedTime?: string;
+      maxApplicants?: string;
+      isStartupOnly?: boolean;
+    }
+  ) => {
     setIsLoading(true);
     setErrorMsg('');
     setHasSearched(true);
 
     const roleToUse = overrideQuery !== undefined ? overrideQuery : searchQuery;
     const locToUse = overrideLoc !== undefined ? overrideLoc : locationQuery;
+    const workModeToUse = overrideFilters?.workMode ?? workMode;
+    const jobTypeToUse = overrideFilters?.jobType ?? selectedType;
+    const sourceToUse = overrideFilters?.source ?? selectedSource;
+    const postedTimeToUse = overrideFilters?.postedTime ?? postedTime;
+    const maxApplicantsToUse = overrideFilters?.maxApplicants ?? maxApplicants;
+    const startupToUse = overrideFilters?.isStartupOnly ?? isStartupOnly;
 
     try {
       const res = await fetch('/api/jobs/search', {
@@ -264,12 +281,12 @@ export default function JobDashboard() {
         body: JSON.stringify({
           role: roleToUse,
           location: locToUse,
-          workMode,
-          jobType: selectedType,
-          source: selectedSource,
-          postedTime,
-          maxApplicants,
-          isStartupOnly,
+          workMode: workModeToUse,
+          jobType: jobTypeToUse,
+          source: sourceToUse,
+          postedTime: postedTimeToUse,
+          maxApplicants: maxApplicantsToUse,
+          isStartupOnly: startupToUse,
         }),
       });
 
@@ -646,8 +663,9 @@ export default function JobDashboard() {
             {/* Startup Toggle */}
             <button
               onClick={() => {
-                setIsStartupOnly(!isStartupOnly);
-                setTimeout(() => fetchJobs(), 50);
+                const next = !isStartupOnly;
+                setIsStartupOnly(next);
+                fetchJobs(undefined, undefined, { isStartupOnly: next });
               }}
               className={`px-3 py-1.5 rounded-lg border font-semibold flex items-center gap-1.5 transition-colors ${
                 isStartupOnly
@@ -661,7 +679,11 @@ export default function JobDashboard() {
             {/* Work Mode */}
             <select
               value={workMode}
-              onChange={(e) => setWorkMode(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setWorkMode(val);
+                fetchJobs(undefined, undefined, { workMode: val });
+              }}
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>Any Mode</option>
@@ -673,7 +695,11 @@ export default function JobDashboard() {
             {/* Job Type */}
             <select
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedType(val);
+                fetchJobs(undefined, undefined, { jobType: val });
+              }}
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>All Types</option>
@@ -685,7 +711,11 @@ export default function JobDashboard() {
             {/* Posted Time */}
             <select
               value={postedTime}
-              onChange={(e) => setPostedTime(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPostedTime(val);
+                fetchJobs(undefined, undefined, { postedTime: val });
+              }}
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>Any Time</option>
@@ -697,7 +727,11 @@ export default function JobDashboard() {
             {/* Max Applicants */}
             <select
               value={maxApplicants}
-              onChange={(e) => setMaxApplicants(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setMaxApplicants(val);
+                fetchJobs(undefined, undefined, { maxApplicants: val });
+              }}
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option value="Any">Any Applicants</option>
@@ -709,7 +743,11 @@ export default function JobDashboard() {
             {/* Source */}
             <select
               value={selectedSource}
-              onChange={(e) => setSelectedSource(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedSource(val);
+                fetchJobs(undefined, undefined, { source: val });
+              }}
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>All Sources</option>

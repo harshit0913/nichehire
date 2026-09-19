@@ -48,10 +48,12 @@ export async function POST(req: Request) {
     const now = Date.now();
 
     // --- 1. ADZUNA API (Major source for Real Local & On-site Jobs) ---
+    // Note: Adzuna does not track applicant count, so skip if applicant limit is requested
     const ADZUNA_APP_ID = process.env.ADZUNA_APP_ID || '';
     const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '';
+    const isApplicantFilterActive = maxApplicants && maxApplicants !== 'Any';
 
-    if (ADZUNA_APP_ID && ADZUNA_APP_KEY) {
+    if (ADZUNA_APP_ID && ADZUNA_APP_KEY && !isApplicantFilterActive) {
       try {
         let countryCode = 'in';
         if (locQuery.includes('us') || locQuery.includes('united states') || locQuery.includes('new york') || locQuery.includes('san francisco') || locQuery.includes('california')) {
@@ -63,9 +65,13 @@ export async function POST(req: Request) {
         }
 
         const cleanRole = encodeURIComponent(query || 'Business Analyst');
-        // Clean location: extract city or country (e.g. "East Champaran, India" -> "India" if specific district has no jobs)
         let cleanLoc = locQuery && locQuery !== 'remote' ? `&where=${encodeURIComponent(location)}` : '';
-        let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}${cleanLoc}`;
+        let adzunaTimeParam = '';
+        if (postedTime === 'Past 24 Hours') adzunaTimeParam = '&max_days_old=1';
+        else if (postedTime === 'Past 3 Days') adzunaTimeParam = '&max_days_old=3';
+        else if (postedTime === 'Past Week') adzunaTimeParam = '&max_days_old=7';
+
+        let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}${cleanLoc}${adzunaTimeParam}`;
 
         let res = await fetchWithTimeout(adzunaUrl);
         let data = res.ok ? await res.json() : { results: [] };
@@ -74,7 +80,7 @@ export async function POST(req: Request) {
         // Fallback: If searching a specific district/city returned 0, search nationwide in India/country
         if (results.length === 0 && cleanLoc) {
           const fallbackLoc = countryCode === 'in' ? 'India' : countryCode === 'us' ? 'United States' : 'United Kingdom';
-          adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}&where=${encodeURIComponent(fallbackLoc)}`;
+          adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50&what=${cleanRole}&where=${encodeURIComponent(fallbackLoc)}${adzunaTimeParam}`;
           res = await fetchWithTimeout(adzunaUrl);
           if (res.ok) {
             data = await res.json();
@@ -135,9 +141,23 @@ export async function POST(req: Request) {
     // --- 2. LINKEDIN PUBLIC SEARCH ---
     try {
       const linkedInQuery = encodeURIComponent(query || 'Business Analyst');
-      // If location contains India or is specific, query India
       const targetLoc = locQuery.includes('india') ? 'India' : locQuery && locQuery !== 'remote' ? location : 'worldwide';
-      const linkedInUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${linkedInQuery}&location=${encodeURIComponent(targetLoc)}&start=0`;
+
+      // Build native LinkedIn filters for accurate results
+      let linkedInFilterParams = '';
+      if (workMode === 'Remote') linkedInFilterParams += '&f_WT=2';
+      else if (workMode === 'On-site') linkedInFilterParams += '&f_WT=1';
+      else if (workMode === 'Hybrid') linkedInFilterParams += '&f_WT=3';
+
+      if (postedTime === 'Past 24 Hours') linkedInFilterParams += '&f_TPR=r86400';
+      else if (postedTime === 'Past 3 Days') linkedInFilterParams += '&f_TPR=r259200';
+      else if (postedTime === 'Past Week') linkedInFilterParams += '&f_TPR=r604800';
+
+      if (jobType === 'Full-Time') linkedInFilterParams += '&f_JT=F';
+      else if (jobType === 'Contract') linkedInFilterParams += '&f_JT=C';
+      else if (jobType === 'Internship') linkedInFilterParams += '&f_JT=I';
+
+      const linkedInUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${linkedInQuery}&location=${encodeURIComponent(targetLoc)}${linkedInFilterParams}&start=0`;
 
       const res = await fetchWithTimeout(linkedInUrl, {
         headers: {
@@ -239,7 +259,6 @@ export async function POST(req: Request) {
             };
           })
         );
-
         allJobs = [...allJobs, ...linkedInJobs.filter(Boolean)];
       }
     } catch (e) {
@@ -438,29 +457,25 @@ export async function POST(req: Request) {
     let rawJobs = Array.from(uniqueJobsMap.values());
     let filtered = [...rawJobs];
 
-    // Apply Filters with Graceful Fallback
+    // Apply Strict Filters - NEVER fall back or override active user filters
     if (isStartupOnly) {
-      const startupFiltered = filtered.filter((j) => j.isStartup);
-      if (startupFiltered.length > 0) filtered = startupFiltered;
+      filtered = filtered.filter((j) => j.isStartup);
     }
 
     if (workMode && workMode !== 'Any Mode') {
-      const modeFiltered = filtered.filter((j) => j.workMode === workMode);
-      if (modeFiltered.length > 0) filtered = modeFiltered;
+      filtered = filtered.filter((j) => j.workMode === workMode);
     }
 
     if (jobType && jobType !== 'All Types') {
-      const typeFiltered = filtered.filter((j) => j.type === jobType);
-      if (typeFiltered.length > 0) filtered = typeFiltered;
+      filtered = filtered.filter((j) => j.type === jobType);
     }
 
     if (source && source !== 'All Sources') {
-      const sourceFiltered = filtered.filter((j) => j.source === source);
-      if (sourceFiltered.length > 0) filtered = sourceFiltered;
+      filtered = filtered.filter((j) => j.source === source);
     }
 
     if (postedTime && postedTime !== 'Any Time') {
-      const timeFiltered = filtered.filter((j) => {
+      filtered = filtered.filter((j) => {
         if (!j.postedAt && !j.postedText) return false;
         const diffMs = j.postedAt ? now - j.postedAt : Infinity;
         const text = (j.postedText || '').toLowerCase();
@@ -475,20 +490,13 @@ export async function POST(req: Request) {
         }
         return true;
       });
-      if (timeFiltered.length > 0) filtered = timeFiltered;
     }
 
     if (maxApplicants && maxApplicants !== 'Any') {
       let limit = 100;
       if (maxApplicants.includes('25')) limit = 25;
       else if (maxApplicants.includes('50')) limit = 50;
-      const appFiltered = filtered.filter((j) => j.applicantCount !== undefined && j.applicantCount <= limit);
-      if (appFiltered.length > 0) filtered = appFiltered;
-    }
-
-    // If over-filtered down to 0, fall back to rawJobs
-    if (filtered.length === 0 && rawJobs.length > 0) {
-      filtered = rawJobs;
+      filtered = filtered.filter((j) => j.applicantCount !== undefined && j.applicantCount <= limit);
     }
 
     // Relevance sort
