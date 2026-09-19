@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// The key is now securely pulled ONLY from your .env.local file
 const RAPID_API_KEY = process.env.RAPIDAPI_KEY || "";
 
-// --- TIER 1: ADZUNA API (With Geographic Fallback) ---
+// --- TIER 1: ADZUNA API ---
 async function fetchAdzuna(role: string, location: string, appId: string, appKey: string) {
   try {
     let cleanRole = encodeURIComponent(role);
     let cleanLocation = encodeURIComponent(location);
-    let url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=30&what=${cleanRole}&where=${cleanLocation}`;
+    // Increased results from 30 to 50
+    let url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&what=${cleanRole}&where=${cleanLocation}`;
     
     let res = await fetch(url);
     if (!res.ok) return [];
@@ -18,7 +18,7 @@ async function fetchAdzuna(role: string, location: string, appId: string, appKey
     
     if (results.length === 0) {
       const broadRole = (role.toLowerCase().includes('ca') || role.toLowerCase().includes('article')) ? 'Audit Accounting Finance Tax' : role;
-      url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=40&what=${encodeURIComponent(broadRole)}&where=India`;
+      url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&what=${encodeURIComponent(broadRole)}&where=India`;
       res = await fetch(url);
       if (res.ok) {
         data = await res.json();
@@ -47,7 +47,8 @@ async function fetchActiveJobsDB(role: string) {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.data || []).slice(0, 15).map((j: any) => ({
+    // Removed the slice limit here
+    return (data.data || []).map((j: any) => ({
       id: `ajdb_${Math.random().toString(36).substr(2, 9)}`,
       title: j.title || role,
       company: j.company || 'Active Jobs DB Employer',
@@ -68,7 +69,8 @@ async function fetchRemoteJobs(role: string) {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.jobs || []).slice(0, 15).map((j: any) => ({
+    // Removed the slice limit here
+    return (data.jobs || []).map((j: any) => ({
       id: `rj_${Math.random().toString(36).substr(2, 9)}`,
       title: j.title || role,
       company: j.company_name || 'Remote Employer',
@@ -89,7 +91,8 @@ async function fetchLinkedInAPI(role: string, location: string) {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.jobs || []).slice(0, 15).map((j: any) => ({
+    // Removed the slice limit here
+    return (data.jobs || []).map((j: any) => ({
       id: `li_${Math.random().toString(36).substr(2, 9)}`,
       title: j.title || role,
       company: j.company || 'LinkedIn Employer',
@@ -116,7 +119,8 @@ async function fetchJobsSearchAPI(role: string, location: string) {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.results || []).slice(0, 15).map((j: any) => ({
+    // Removed the slice limit here
+    return (data.results || []).map((j: any) => ({
       id: `jsa_${Math.random().toString(36).substr(2, 9)}`,
       title: j.job_title || role,
       company: j.company_name || 'Unknown',
@@ -179,7 +183,7 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       You are an elite Recruiter. Analyze this candidate resume: "${resume}"
@@ -203,7 +207,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ matches: parsedMatches, allLiveJobs: finalLiveJobs });
 
   } catch (error: any) {
-  console.error("CRITICAL PRODUCTION ERROR:", error);
-  return NextResponse.json({ error: "Failed to pull live matches" }, { status: 500 });
-}
+    console.error("CRITICAL PRODUCTION ERROR:", error);
+    return NextResponse.json({ error: "Failed to pull live matches" }, { status: 500 });
+  }
 }
