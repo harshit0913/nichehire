@@ -360,6 +360,77 @@ export async function POST(req: Request) {
       failedSources.push('RemoteOK');
     }
 
+    // --- 6. JOOBLE API ---
+    const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY || '';
+    if (JOOBLE_API_KEY) {
+      try {
+        let countryPrefix = 'in';
+        if (locQuery) {
+          const matched = Object.entries(ADZUNA_COUNTRY_MAP).find(([k]) => locQuery.includes(k));
+          if (matched) countryPrefix = matched[1];
+        }
+        const joobleUrl = `https://${countryPrefix}.jooble.org/api/${JOOBLE_API_KEY}`;
+        const res = await fetchWithTimeout(joobleUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keywords: query || '',
+            location: location || '',
+            page: 1,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          let formatted = (data.jobs || []).map((j: any) => {
+            const pubTime = j.updated ? new Date(j.updated).getTime() : undefined;
+            let postedText = 'Recent';
+            if (pubTime) {
+              const diffMs = Math.max(0, now - pubTime);
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+              if (diffHours < 1) postedText = 'Just now';
+              else if (diffHours < 24) postedText = `${diffHours}h ago`;
+              else {
+                const diffDays = Math.floor(diffHours / 24);
+                if (diffDays === 1) postedText = 'Yesterday';
+                else if (diffDays < 7) postedText = `${diffDays}d ago`;
+                else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+                else if (diffDays < 365) postedText = `${Math.round(diffDays / 30)}mo ago`;
+                else postedText = `${Math.round(diffDays / 365)}y ago`;
+              }
+            }
+
+            const loc = j.location || location || 'India';
+            const desc = cleanDescription(j.snippet);
+
+            return {
+              id: `jooble_${j.id || Math.random().toString(36).substring(2, 9)}`,
+              title: j.title || 'Position',
+              company: j.company || 'Direct Employer',
+              location: loc,
+              type: normalizeType(j.type),
+              workMode: detectWorkMode(loc, j.title, desc),
+              salary: j.salary || undefined,
+              description: desc,
+              url: j.link || '#',
+              source: 'Jooble',
+              isStartup: false,
+              postedAt: pubTime,
+              postedText,
+              applicantCount: undefined,
+              applicantText: undefined,
+            };
+          });
+          allJobs = [...allJobs, ...formatted];
+        } else {
+          failedSources.push('Jooble');
+        }
+      } catch (e) {
+        console.error('Jooble fetch error:', e);
+        failedSources.push('Jooble');
+      }
+    }
+
     // De-duplicate
     const uniqueJobsMap = new Map();
     allJobs.forEach((job) => {

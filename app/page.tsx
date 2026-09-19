@@ -7,7 +7,9 @@ import EmailDraftModal from './components/EmailDraftModal';
 import InterviewPrepModal from './components/InterviewPrepModal';
 import HelpModal from './components/HelpModal';
 import FeedbackModal from './components/FeedbackModal';
+import PostWalkInModal from './components/PostWalkInModal';
 import { supabase } from './supabase';
+import type { WalkInJob } from './api/walkins/route';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,7 @@ export default function JobDashboard() {
   const [activePrepJob, setActivePrepJob] = useState<Job | null>(null);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [postWalkInOpen, setPostWalkInOpen] = useState(false);
 
   // Job Search state
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +68,12 @@ export default function JobDashboard() {
   const [errorMsg, setErrorMsg] = useState('');
   const [allLiveJobs, setAllLiveJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'saved' | 'walkins'>('all');
+
+  // Walk-Ins state
+  const [walkins, setWalkins] = useState<WalkInJob[]>([]);
+  const [isWalkinsLoading, setIsWalkinsLoading] = useState(false);
+  const [flaggedIds, setFlaggedIds] = useState<string[]>([]);
 
   // Resume state
   const [resumeText, setResumeText] = useState('');
@@ -304,8 +312,37 @@ export default function JobDashboard() {
     }
   };
 
+  const fetchWalkins = async () => {
+    setIsWalkinsLoading(true);
+    try {
+      const res = await fetch('/api/walkins');
+      const data = await res.json();
+      if (data.walkins) setWalkins(data.walkins);
+    } catch (err) {
+      console.error('Failed to load walk-ins:', err);
+    } finally {
+      setIsWalkinsLoading(false);
+    }
+  };
+
+  const handleFlagWalkin = async (id: string) => {
+    if (flaggedIds.includes(id)) return;
+    setFlaggedIds((prev) => [...prev, id]);
+    setWalkins((prev) => prev.filter((w) => w.id !== id));
+    try {
+      await fetch('/api/walkins/flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+    } catch (err) {
+      console.error('Flag walk-in error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchJobs('');
+    fetchWalkins();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -404,6 +441,25 @@ export default function JobDashboard() {
     return `${Math.round(diffDays / 365)}y ago`;
   };
 
+  const getDaysLeft = (expiresAt: string) => {
+    try {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return days > 0 ? days : 0;
+    } catch {
+      return 5;
+    }
+  };
+
+  const filteredWalkins = walkins.filter((w) => {
+    if (flaggedIds.includes(w.id)) return false;
+    const q = searchQuery.toLowerCase().trim();
+    const loc = locationQuery.toLowerCase().trim();
+    const textMatch = !q || w.title.toLowerCase().includes(q) || w.company.toLowerCase().includes(q) || (w.description && w.description.toLowerCase().includes(q));
+    const locMatch = !loc || w.location.toLowerCase().includes(loc);
+    return textMatch && locMatch;
+  });
+
   // ─── Active Filter Logic ───────────────────────────────────────────────────
 
   const filteredJobs = allLiveJobs.filter((job) => {
@@ -452,12 +508,39 @@ export default function JobDashboard() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={() => setActiveTab(activeTab === 'all' ? 'saved' : 'all')}
+              onClick={() => setActiveTab('all')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                activeTab === 'all' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              💼 All Jobs
+            </button>
+
+            <button
+              onClick={() => setActiveTab('saved')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
                 activeTab === 'saved' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               <span>★</span> Saved ({savedJobIds.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab('walkins')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'walkins'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs'
+                  : 'text-amber-800 bg-amber-50/80 hover:bg-amber-100 border border-amber-200'
+              }`}
+            >
+              <span>🚶</span> Walk-Ins ({walkins.length})
+            </button>
+
+            <button
+              onClick={() => setPostWalkInOpen(true)}
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all shadow-xs flex items-center gap-1"
+            >
+              <span>+</span> Post Walk-In
             </button>
 
             <button
@@ -725,6 +808,7 @@ export default function JobDashboard() {
               <option>All Sources</option>
               <option>Himalayas (Startups)</option>
               <option>Adzuna</option>
+              <option>Jooble</option>
               <option>Remotive</option>
               <option>Arbeitnow</option>
               <option>RemoteOK</option>
@@ -763,24 +847,181 @@ export default function JobDashboard() {
             <h2 className="text-base font-bold text-gray-800">
               {activeTab === 'saved'
                 ? `Saved Opportunities (${filteredJobs.length})`
+                : activeTab === 'walkins'
+                ? `🚶 Community Walk-Ins & Offline Jobs (${filteredWalkins.length})`
                 : hasSearched
                 ? `Live Opportunities (${filteredJobs.length})`
                 : 'Recommended Opportunities'}
             </h2>
-            <span className="text-xs text-gray-400">Aggregated from multiple verified platforms</span>
+            <span className="text-xs text-gray-400">
+              {activeTab === 'walkins'
+                ? 'Community-posted • Auto-expires in 5 days'
+                : 'Aggregated from multiple verified platforms'}
+            </span>
           </div>
 
-          {isLoading && (
+          {activeTab === 'walkins' ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="p-6 border rounded-xl shadow-2xs animate-pulse border-gray-100 bg-white">
-                  <div className="h-5 bg-gray-200 rounded w-1/3 mb-3"></div>
-                  <div className="h-4 bg-gray-100 rounded w-1/4 mb-4"></div>
-                  <div className="h-8 bg-gray-100 rounded w-28"></div>
+              <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                    <span>🏪</span> Direct Walk-Ins & Offline Opportunities
+                  </h3>
+                  <p className="text-xs text-amber-800/90 mt-0.5">
+                    Openings from physical stores, clinics, and local businesses posted by the community. Automatically prunes after 5 days.
+                  </p>
                 </div>
-              ))}
+                <button
+                  onClick={() => setPostWalkInOpen(true)}
+                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1.5"
+                >
+                  <span>+</span> Post a Walk-In Opening
+                </button>
+              </div>
+
+              {isWalkinsLoading && (
+                <div className="space-y-4">
+                  {[1, 2].map((n) => (
+                    <div key={n} className="p-6 border rounded-xl shadow-2xs animate-pulse border-gray-100 bg-white">
+                      <div className="h-5 bg-gray-200 rounded w-1/3 mb-3"></div>
+                      <div className="h-4 bg-gray-100 rounded w-1/4 mb-4"></div>
+                      <div className="h-8 bg-gray-100 rounded w-28"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isWalkinsLoading && filteredWalkins.length === 0 && (
+                <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-2xl bg-white border-gray-200">
+                  <div className="text-3xl mb-2">🚶</div>
+                  <h3 className="text-base font-semibold text-gray-900">No active walk-ins found</h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Know of a local business or shop that is currently hiring? Be the first to share it with the community!
+                  </p>
+                  <button
+                    onClick={() => setPostWalkInOpen(true)}
+                    className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition-colors"
+                  >
+                    + Post First Walk-In
+                  </button>
+                </div>
+              )}
+
+              {!isWalkinsLoading &&
+                filteredWalkins.map((w) => {
+                  const daysLeft = getDaysLeft(w.expires_at);
+
+                  return (
+                    <div
+                      key={w.id}
+                      className="border border-amber-200/90 rounded-2xl hover:shadow-md transition-shadow bg-white overflow-hidden"
+                    >
+                      <div className="p-6 flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 className="text-base font-bold text-gray-900">{w.title}</h3>
+
+                            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                              🏪 Community Walk-In
+                            </span>
+
+                            <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                              ⏳ Expires in {daysLeft}d
+                            </span>
+
+                            <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                              🏢 {w.company}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600 mb-3 bg-gray-50/70 p-3 rounded-xl border border-gray-100">
+                            <div>
+                              <strong className="text-gray-900">📍 Location:</strong> {w.location}
+                            </div>
+                            <div>
+                              <strong className="text-gray-900">🕒 Timings:</strong> {w.timings}
+                            </div>
+                            <div className="sm:col-span-2">
+                              <strong className="text-gray-900">📞 Contact / How to Apply:</strong>{' '}
+                              <span className="font-semibold text-blue-700">{w.contact_info}</span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-gray-700 mb-3 leading-relaxed">
+                            {w.description}
+                          </p>
+
+                          <div className="text-[11px] text-gray-400">
+                            Posted by {w.posted_by || 'Community Member'} • {formatTimeAgo(new Date(w.created_at).getTime())}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-row md:flex-col justify-end items-end gap-2 shrink-0">
+                          <div className="flex gap-2 flex-wrap">
+                            {/* Prep Interview */}
+                            <button
+                              onClick={() =>
+                                setActivePrepJob({
+                                  id: w.id,
+                                  title: w.title,
+                                  company: w.company,
+                                  location: w.location,
+                                  type: w.role_type || 'Full-Time',
+                                  workMode: 'On-site',
+                                  description: w.description,
+                                  url: '#',
+                                  source: 'Community Walk-In',
+                                })
+                              }
+                              className="px-3.5 py-2 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors whitespace-nowrap"
+                            >
+                              🎙️ Prep
+                            </button>
+
+                            {/* Contact / Copy */}
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${w.title} at ${w.company}\nContact: ${w.contact_info}\nLocation: ${w.location}`);
+                                alert('Contact & walk-in details copied to clipboard!');
+                              }}
+                              className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-2xs whitespace-nowrap"
+                            >
+                              📋 Copy Info
+                            </button>
+
+                            {/* Report / Expired */}
+                            <button
+                              onClick={() => {
+                                if (confirm('Report this walk-in as expired or inaccurate?')) {
+                                  handleFlagWalkin(w.id);
+                                }
+                              }}
+                              className="px-3 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors whitespace-nowrap"
+                              title="Report as expired or spam"
+                            >
+                              🚩 Report
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
-          )}
+          ) : (
+            <>
+              {isLoading && (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="p-6 border rounded-xl shadow-2xs animate-pulse border-gray-100 bg-white">
+                      <div className="h-5 bg-gray-200 rounded w-1/3 mb-3"></div>
+                      <div className="h-4 bg-gray-100 rounded w-1/4 mb-4"></div>
+                      <div className="h-8 bg-gray-100 rounded w-28"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
           {!isLoading && hasSearched && filteredJobs.length === 0 && (
             <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-2xl bg-white border-gray-200">
@@ -1005,6 +1246,8 @@ export default function JobDashboard() {
                 </div>
               );
             })}
+            </>
+          )}
         </div>
       </main>
 
@@ -1041,6 +1284,16 @@ export default function JobDashboard() {
       <FeedbackModal
         isOpen={feedbackModalOpen}
         onClose={() => setFeedbackModalOpen(false)}
+      />
+
+      {/* Post Walk-In Modal */}
+      <PostWalkInModal
+        isOpen={postWalkInOpen}
+        onClose={() => setPostWalkInOpen(false)}
+        onSuccess={(newW) => {
+          setWalkins((prev) => [newW, ...prev]);
+          setActiveTab('walkins');
+        }}
       />
     </div>
   );
