@@ -90,28 +90,21 @@ export async function POST(req: Request) {
           const salaryMax = j.salary_max ? Math.round(j.salary_max) : null;
           const salary = salaryMin && salaryMax ? `$${salaryMin.toLocaleString()} - $${salaryMax.toLocaleString()}` : salaryMin ? `$${salaryMin.toLocaleString()}+` : undefined;
 
-          const pubTime = j.created ? new Date(j.created).getTime() : now - 14 * 86400000;
-          const diffMs = now - pubTime;
-          const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+          const pubTime = j.created ? new Date(j.created).getTime() : undefined;
           let postedText = 'Recent';
-          if (diffDays === 0) postedText = 'Today';
-          else if (diffDays === 1) postedText = 'Yesterday';
-          else if (diffDays < 7) postedText = `${diffDays}d ago`;
-          else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
-          else if (diffDays < 365) postedText = `${Math.round(diffDays / 30)}mo ago`;
-          else postedText = `${Math.round(diffDays / 365)}y ago`;
-
-          let applicantText = 'Over 100 applicants';
-          let applicantCount = 150;
-          if (diffDays <= 2) {
-            applicantText = 'Under 25 applicants';
-            applicantCount = 16;
-          } else if (diffDays <= 7) {
-            applicantText = '48 applicants';
-            applicantCount = 48;
-          } else if (diffDays <= 20) {
-            applicantText = '85 applicants';
-            applicantCount = 85;
+          if (pubTime) {
+            const diffMs = Math.max(0, now - pubTime);
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            if (diffHours < 1) postedText = 'Just now';
+            else if (diffHours < 24) postedText = `${diffHours}h ago`;
+            else {
+              const diffDays = Math.floor(diffHours / 24);
+              if (diffDays === 1) postedText = 'Yesterday';
+              else if (diffDays < 7) postedText = `${diffDays}d ago`;
+              else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+              else if (diffDays < 365) postedText = `${Math.round(diffDays / 30)}mo ago`;
+              else postedText = `${Math.round(diffDays / 365)}y ago`;
+            }
           }
 
           return {
@@ -128,8 +121,8 @@ export async function POST(req: Request) {
             isStartup: j.company?.display_name ? !j.company.display_name.toLowerCase().includes('tcs') && !j.company.display_name.toLowerCase().includes('infosys') : true,
             postedAt: pubTime,
             postedText,
-            applicantCount,
-            applicantText,
+            applicantCount: undefined,
+            applicantText: undefined,
           };
         });
         allJobs = [...allJobs, ...formatted];
@@ -157,43 +150,79 @@ export async function POST(req: Request) {
       if (res.ok) {
         const html = await res.text();
         const $ = cheerio.load(html);
-        const linkedInJobs: any[] = [];
+        const cardElements = $('li').toArray().slice(0, 20);
 
-        $('li').each((_i, el) => {
-          const title = $(el).find('.base-search-card__title').text().trim();
-          const company = $(el).find('.base-search-card__subtitle').text().trim();
-          const loc = $(el).find('.job-search-card__location').text().trim();
-          const link = $(el).find('a.base-card__full-link').attr('href');
-          const timeEl = $(el).find('time');
-          const timeText = timeEl.text().trim(); // e.g. "3 months ago", "4 weeks ago"
-          const timeDatetime = timeEl.attr('datetime'); // e.g. "2026-06-09"
+        const linkedInJobs = await Promise.all(
+          cardElements.map(async (el) => {
+            const title = $(el).find('.base-search-card__title').text().trim();
+            const company = $(el).find('.base-search-card__subtitle').text().trim();
+            const loc = $(el).find('.job-search-card__location').text().trim();
+            const link = $(el).find('a.base-card__full-link').attr('href');
+            const timeEl = $(el).find('time');
+            const timeText = timeEl.text().trim();
+            const timeDatetime = timeEl.attr('datetime');
+            const entityUrn = $(el).find('[data-entity-urn]').attr('data-entity-urn') || $(el).attr('data-entity-urn');
 
-          if (title && company) {
-            const pubTime = timeDatetime ? new Date(timeDatetime).getTime() : now - 30 * 86400000;
+            if (!title || !company) return null;
 
-            // Extract real time text from LinkedIn or format realistically
-            const postedText = timeText || 'Recent';
-
-            // Realistic applicant count reflecting real LinkedIn status
-            let applicantText = 'Over 100 applicants';
-            let applicantCount = 120;
-
-            if (timeText.includes('hour') || timeText.includes('1 day') || timeText.includes('2 days') || timeText.includes('Just now')) {
-              applicantText = 'Under 25 applicants';
-              applicantCount = 18;
-            } else if (timeText.includes('3 days') || timeText.includes('4 days') || timeText.includes('5 days') || timeText.includes('1 week')) {
-              applicantText = '45 applicants';
-              applicantCount = 45;
-            } else if (timeText.includes('2 weeks') || timeText.includes('3 weeks')) {
-              applicantText = '85 applicants';
-              applicantCount = 85;
-            } else {
-              applicantText = 'Over 100 applicants';
-              applicantCount = 150;
+            let jobId: string | null = null;
+            if (entityUrn && entityUrn.includes('jobPosting:')) {
+              jobId = entityUrn.split('jobPosting:')[1];
+            } else if (link) {
+              const m = link.match(/([0-9]{8,})/);
+              if (m) jobId = m[1];
             }
 
-            linkedInJobs.push({
-              id: `li_${Math.random().toString(36).slice(2, 11)}`,
+            let realPostedText = timeText || 'Recent';
+            let realApplicantText: string | undefined = undefined;
+            let realApplicantCount: number | undefined = undefined;
+
+            if (jobId) {
+              try {
+                const detailRes = await fetchWithTimeout(
+                  `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`,
+                  {
+                    headers: {
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                      'Accept-Language': 'en-US,en;q=0.5',
+                    },
+                  },
+                  2500
+                );
+                if (detailRes.ok) {
+                  const detailHtml = await detailRes.text();
+                  const $$ = cheerio.load(detailHtml);
+                  const applicantsRaw = $$('.num-applicants__caption').text().trim() || $$('.applicant-count').text().trim();
+                  const postedRaw = $$('.posted-time-ago__text').text().trim();
+
+                  if (postedRaw) realPostedText = postedRaw;
+                  if (applicantsRaw) {
+                    realApplicantText = applicantsRaw;
+                    const cleanText = applicantsRaw.toLowerCase();
+                    if (cleanText.includes('over 200') || cleanText.includes('200+')) {
+                      realApplicantCount = 201;
+                    } else if (cleanText.includes('over 100') || cleanText.includes('100+')) {
+                      realApplicantCount = 101;
+                    } else if (cleanText.includes('first 25') || cleanText.includes('under 25') || cleanText.includes('under 10')) {
+                      realApplicantCount = 10;
+                    } else {
+                      const numMatch = applicantsRaw.match(/(\d+)/);
+                      if (numMatch) {
+                        realApplicantCount = parseInt(numMatch[1], 10);
+                      }
+                    }
+                  }
+                }
+              } catch {
+                // Silently fallback to search card data if detail fetch times out
+              }
+            }
+
+            const pubTime = timeDatetime ? new Date(timeDatetime).getTime() : now - 7 * 86400000;
+
+            return {
+              id: `li_${jobId || Math.random().toString(36).slice(2, 11)}`,
               title,
               company,
               location: loc || location || 'India',
@@ -204,14 +233,14 @@ export async function POST(req: Request) {
               source: 'LinkedIn',
               isStartup: true,
               postedAt: pubTime,
-              postedText,
-              applicantCount,
-              applicantText,
-            });
-          }
-        });
+              postedText: realPostedText,
+              applicantCount: realApplicantCount,
+              applicantText: realApplicantText,
+            };
+          })
+        );
 
-        allJobs = [...allJobs, ...linkedInJobs];
+        allJobs = [...allJobs, ...linkedInJobs.filter(Boolean)];
       }
     } catch (e) {
       console.error('LinkedIn fetch error:', e);
@@ -225,9 +254,16 @@ export async function POST(req: Request) {
         const data = await res.json();
         const results = data.jobs || [];
         const formatted = results.map((j: any) => {
-          const pubTime = j.pubDate ? new Date(j.pubDate).getTime() : now - Math.floor(Math.random() * 86400000 * 3);
-          const hoursAgo = Math.max(1, Math.round((now - pubTime) / (1000 * 60 * 60)));
-          const applicants = Math.min(180, Math.floor(hoursAgo * 1.8) + Math.floor(Math.random() * 8) + 4);
+          const pubTime = j.pubDate ? new Date(j.pubDate).getTime() : undefined;
+          let postedText = 'Recent';
+          if (pubTime) {
+            const diffDays = Math.max(0, Math.floor((now - pubTime) / (1000 * 60 * 60 * 24)));
+            if (diffDays === 0) postedText = 'Today';
+            else if (diffDays === 1) postedText = 'Yesterday';
+            else if (diffDays < 7) postedText = `${diffDays}d ago`;
+            else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+            else postedText = `${Math.round(diffDays / 30)}mo ago`;
+          }
 
           let salary = undefined;
           if (j.minSalary && j.maxSalary) {
@@ -247,7 +283,9 @@ export async function POST(req: Request) {
             source: 'Himalayas (Startups)',
             isStartup: true,
             postedAt: pubTime,
-            applicantCount: applicants,
+            postedText,
+            applicantCount: undefined,
+            applicantText: undefined,
           };
         });
         allJobs = [...allJobs, ...formatted];
@@ -263,8 +301,16 @@ export async function POST(req: Request) {
       if (res.ok) {
         const data = await res.json();
         let formatted = (data.jobs || []).map((j: any) => {
-          const pubTime = j.publication_date ? new Date(j.publication_date).getTime() : now - Math.floor(Math.random() * 86400000 * 3);
-          const applicants = Math.floor(Math.random() * 60) + 15;
+          const pubTime = j.publication_date ? new Date(j.publication_date).getTime() : undefined;
+          let postedText = 'Recent';
+          if (pubTime) {
+            const diffDays = Math.max(0, Math.floor((now - pubTime) / (1000 * 60 * 60 * 24)));
+            if (diffDays === 0) postedText = 'Today';
+            else if (diffDays === 1) postedText = 'Yesterday';
+            else if (diffDays < 7) postedText = `${diffDays}d ago`;
+            else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+            else postedText = `${Math.round(diffDays / 30)}mo ago`;
+          }
 
           return {
             id: `remo_${j.id}`,
@@ -279,7 +325,9 @@ export async function POST(req: Request) {
             source: 'Remotive',
             isStartup: true,
             postedAt: pubTime,
-            applicantCount: applicants,
+            postedText,
+            applicantCount: undefined,
+            applicantText: undefined,
           };
         });
         allJobs = [...allJobs, ...formatted];
@@ -295,8 +343,16 @@ export async function POST(req: Request) {
         const data = await res.json();
         let formatted = (data.data || []).map((j: any) => {
           const loc = j.location || (j.remote ? 'Remote' : 'On-site');
-          const pubTime = j.created_at ? j.created_at * 1000 : now - Math.floor(Math.random() * 86400000 * 4);
-          const applicants = Math.floor(Math.random() * 35) + 8;
+          const pubTime = j.created_at ? j.created_at * 1000 : undefined;
+          let postedText = 'Recent';
+          if (pubTime) {
+            const diffDays = Math.max(0, Math.floor((now - pubTime) / (1000 * 60 * 60 * 24)));
+            if (diffDays === 0) postedText = 'Today';
+            else if (diffDays === 1) postedText = 'Yesterday';
+            else if (diffDays < 7) postedText = `${diffDays}d ago`;
+            else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+            else postedText = `${Math.round(diffDays / 30)}mo ago`;
+          }
 
           return {
             id: `arb_${j.slug}`,
@@ -310,7 +366,9 @@ export async function POST(req: Request) {
             source: 'Arbeitnow',
             isStartup: true,
             postedAt: pubTime,
-            applicantCount: applicants,
+            postedText,
+            applicantCount: undefined,
+            applicantText: undefined,
           };
         });
 
@@ -332,8 +390,16 @@ export async function POST(req: Request) {
         let formatted = (data || [])
           .filter((j: any) => j.id && j.position)
           .map((j: any) => {
-            const pubTime = j.date ? new Date(j.date).getTime() : now - Math.floor(Math.random() * 86400000 * 2);
-            const applicants = Math.floor(Math.random() * 80) + 20;
+            const pubTime = j.date ? new Date(j.date).getTime() : undefined;
+            let postedText = 'Recent';
+            if (pubTime) {
+              const diffDays = Math.max(0, Math.floor((now - pubTime) / (1000 * 60 * 60 * 24)));
+              if (diffDays === 0) postedText = 'Today';
+              else if (diffDays === 1) postedText = 'Yesterday';
+              else if (diffDays < 7) postedText = `${diffDays}d ago`;
+              else if (diffDays < 30) postedText = `${Math.round(diffDays / 7)}w ago`;
+              else postedText = `${Math.round(diffDays / 30)}mo ago`;
+            }
 
             return {
               id: `rok_${j.id}`,
@@ -347,7 +413,9 @@ export async function POST(req: Request) {
               source: 'RemoteOK',
               isStartup: true,
               postedAt: pubTime,
-              applicantCount: applicants,
+              postedText,
+              applicantCount: undefined,
+              applicantText: undefined,
             };
           });
 
@@ -391,11 +459,30 @@ export async function POST(req: Request) {
       if (sourceFiltered.length > 0) filtered = sourceFiltered;
     }
 
+    if (postedTime && postedTime !== 'Any Time') {
+      const timeFiltered = filtered.filter((j) => {
+        if (!j.postedAt && !j.postedText) return false;
+        const diffMs = j.postedAt ? now - j.postedAt : Infinity;
+        const text = (j.postedText || '').toLowerCase();
+        if (postedTime === 'Past 24 Hours') {
+          return diffMs <= 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('just now');
+        }
+        if (postedTime === 'Past 3 Days') {
+          return diffMs <= 3 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('just now') || text.includes('yesterday') || text.includes('1d') || text.includes('2d') || text.includes('3d') || text.includes('1 day') || text.includes('2 days') || text.includes('3 days');
+        }
+        if (postedTime === 'Past Week') {
+          return diffMs <= 7 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('yesterday') || text.includes('d ago') || text.includes('1 week') || text.includes('1w');
+        }
+        return true;
+      });
+      if (timeFiltered.length > 0) filtered = timeFiltered;
+    }
+
     if (maxApplicants && maxApplicants !== 'Any') {
       let limit = 100;
       if (maxApplicants.includes('25')) limit = 25;
       else if (maxApplicants.includes('50')) limit = 50;
-      const appFiltered = filtered.filter((j) => j.applicantCount <= limit);
+      const appFiltered = filtered.filter((j) => j.applicantCount !== undefined && j.applicantCount <= limit);
       if (appFiltered.length > 0) filtered = appFiltered;
     }
 

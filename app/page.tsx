@@ -397,6 +397,34 @@ export default function JobDashboard() {
     if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     if (selectedType !== 'All Types' && job.type !== selectedType) return false;
     if (selectedSource !== 'All Sources' && job.source !== selectedSource) return false;
+
+    // Filter by postedTime client-side
+    if (postedTime && postedTime !== 'Any Time') {
+      const now = Date.now();
+      const diffMs = job.postedAt ? now - job.postedAt : Infinity;
+      const text = (job.postedText || '').toLowerCase();
+      if (postedTime === 'Past 24 Hours') {
+        const matches24h = diffMs <= 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('just now');
+        if (!matches24h) return false;
+      } else if (postedTime === 'Past 3 Days') {
+        const matches3d = diffMs <= 3 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('just now') || text.includes('yesterday') || text.includes('1d') || text.includes('2d') || text.includes('3d') || text.includes('1 day') || text.includes('2 days') || text.includes('3 days');
+        if (!matches3d) return false;
+      } else if (postedTime === 'Past Week') {
+        const matches1w = diffMs <= 7 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('yesterday') || text.includes('d ago') || text.includes('1 week') || text.includes('1w');
+        if (!matches1w) return false;
+      }
+    }
+
+    // Filter by maxApplicants client-side
+    if (maxApplicants && maxApplicants !== 'Any') {
+      let limit = 100;
+      if (maxApplicants.includes('25')) limit = 25;
+      else if (maxApplicants.includes('50')) limit = 50;
+      if (job.applicantCount === undefined || job.applicantCount > limit) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -812,7 +840,7 @@ export default function JobDashboard() {
                           </span>
                         )}
 
-                        {(job.applicantCount !== undefined && job.applicantCount <= 25 && (!job.applicantText || !job.applicantText.includes('100'))) && (
+                        {(job.applicantCount !== undefined && job.applicantCount <= 25 && (!job.applicantText || (!job.applicantText.toLowerCase().includes('over') && !job.applicantText.includes('100')))) && (
                           <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                             ⚡ Early Applicant (&lt;25)
                           </span>
