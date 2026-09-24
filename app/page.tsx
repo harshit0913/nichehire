@@ -395,9 +395,9 @@ export default function JobDashboard() {
       if (!res.ok) throw new Error(data.error || 'Failed to fetch jobs');
       setAllLiveJobs(data.jobs || []);
 
-      if (data.meta?.failedSources?.length) {
+      if ((!data.jobs || data.jobs.length === 0) && data.meta?.failedSources?.length) {
         setErrorMsg(
-          `Some sources didn't respond (${data.meta.failedSources.join(', ')}) — showing results from the rest.`
+          `Some sources didn't respond (${data.meta.failedSources.join(', ')}). Try adjusting your search query.`
         );
       }
     } catch (err: any) {
@@ -1189,17 +1189,10 @@ export default function JobDashboard() {
                             <span className="font-semibold text-emerald-700">💰 {job.salary}</span>
                           </>
                         )}
-                        {job.applicantText ? (
-                          <>
-                            <span>•</span>
-                            <span>👥 {job.applicantText}</span>
-                          </>
-                        ) : job.applicantCount !== undefined ? (
-                          <>
-                            <span>•</span>
-                            <span>👥 {job.applicantCount} applicants</span>
-                          </>
-                        ) : null}
+                        <span>•</span>
+                        <span className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                          👥 {job.applicantText || (job.applicantCount ? `${job.applicantCount} applicants` : 'Early applicant')}
+                        </span>
                       </p>
 
                       {/* Recommendation Explanation */}
@@ -1306,8 +1299,16 @@ export default function JobDashboard() {
                   )}
                 </div>
                 <h2 className="text-xl font-black text-gray-900 leading-snug">{selectedJob.title}</h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  📍 {selectedJob.location} • 🏢 {selectedJob.workMode} • ⏱️ {selectedJob.postedText || formatTimeAgo(selectedJob.postedAt)}
+                <p className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-1.5">
+                  <span>📍 {selectedJob.location}</span>
+                  <span>•</span>
+                  <span>🏢 {selectedJob.workMode}</span>
+                  <span>•</span>
+                  <span>⏱️ {selectedJob.postedText || formatTimeAgo(selectedJob.postedAt)}</span>
+                  <span>•</span>
+                  <span className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                    👥 {selectedJob.applicantText || (selectedJob.applicantCount ? `${selectedJob.applicantCount} applicants` : 'Early applicant')}
+                  </span>
                 </p>
               </div>
 

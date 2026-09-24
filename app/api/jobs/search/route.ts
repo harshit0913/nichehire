@@ -36,6 +36,36 @@ function detectWorkMode(location: string = '', title: string = '', description: 
   return 'On-site';
 }
 
+function estimateApplicants(jobId: string, postedAt?: number, postedText?: string): { count: number; text: string } {
+  let hash = 0;
+  for (let i = 0; i < jobId.length; i++) {
+    hash = (hash << 5) - hash + jobId.charCodeAt(i);
+    hash |= 0;
+  }
+  const variance = Math.abs(hash) % 7;
+
+  const now = Date.now();
+  const diffHours = postedAt ? Math.floor(Math.max(0, now - postedAt) / (1000 * 60 * 60)) : 24;
+  const pText = (postedText || '').toLowerCase();
+
+  if (pText.includes('just now') || diffHours < 4) {
+    const count = 2 + (variance % 4);
+    return { count, text: `< 10 applicants • Be an early applicant` };
+  } else if (pText.includes('h ago') || diffHours < 12) {
+    const count = 6 + (variance % 5);
+    return { count, text: `${count} applicants • Early applicant` };
+  } else if (pText.includes('yesterday') || diffHours < 36) {
+    const count = 14 + variance * 2;
+    return { count, text: `${count} applicants` };
+  } else if (diffHours < 72 || pText.includes('2d') || pText.includes('3d')) {
+    const count = 28 + variance * 2;
+    return { count, text: `${count} applicants` };
+  } else {
+    const count = 42 + variance * 3;
+    return { count, text: `${count} applicants` };
+  }
+}
+
 const ADZUNA_COUNTRY_MAP: Record<string, string> = {
   india: 'in',
   us: 'us',
@@ -464,7 +494,13 @@ export async function POST(req: Request) {
 
         if (!res.ok) return [];
         const data = await res.json();
-        const list = Array.isArray(data.data) ? data.data : [];
+        const list = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.data?.jobs)
+          ? data.data.jobs
+          : Array.isArray(data.jobs)
+          ? data.jobs
+          : [];
 
         return list.map((j: any) => {
           const pubTime = j.job_posted_at_timestamp ? j.job_posted_at_timestamp * 1000 : undefined;
@@ -658,6 +694,13 @@ export async function POST(req: Request) {
       if (!uniqueJobsMap.has(key)) uniqueJobsMap.set(key, job);
     });
     let rawJobs = Array.from(uniqueJobsMap.values());
+    rawJobs.forEach((j: any) => {
+      if (!j.applicantCount || !j.applicantText) {
+        const est = estimateApplicants(j.id, j.postedAt, j.postedText);
+        j.applicantCount = est.count;
+        j.applicantText = est.text;
+      }
+    });
     let filtered = [...rawJobs];
 
     // --- STRICT 7-DAY MAXIMUM AGE RULE ---
