@@ -377,7 +377,30 @@ export async function POST(req: Request) {
 
         if (res.ok) {
           const data = await res.json();
-          let formatted = (data.jobs || []).map((j: any) => {
+          let jobList = Array.isArray(data.jobs) ? data.jobs : [];
+
+          // If city search returned 0 on Jooble, fall back to nationwide search
+          if (jobList.length === 0 && location) {
+            try {
+              const fallbackRes = await fetchWithTimeout(joobleUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  keywords: query || '',
+                  location: 'India',
+                  page: 1,
+                }),
+              });
+              if (fallbackRes.ok) {
+                const fbData = await fallbackRes.json();
+                jobList = Array.isArray(fbData.jobs) ? fbData.jobs : [];
+              }
+            } catch {
+              // Ignore fallback error
+            }
+          }
+
+          let formatted = jobList.map((j: any) => {
             const pubTime = j.updated ? new Date(j.updated).getTime() : undefined;
             let postedText = 'Recent';
             if (pubTime) {
@@ -552,8 +575,9 @@ export async function POST(req: Request) {
     const SCRAPINGDOG_API_KEY = process.env.SCRAPINGDOG_API_KEY || '';
     if (SCRAPINGDOG_API_KEY) {
       try {
-        const queryStr = [query, location].filter(Boolean).join(' ') || 'developer';
-        const sdUrl = `https://api.scrapingdog.com/linkedinjobs/?api_key=${SCRAPINGDOG_API_KEY}&field=${encodeURIComponent(queryStr)}&page=1`;
+        const fieldParam = encodeURIComponent(query || 'developer');
+        const locParam = location ? `&location=${encodeURIComponent(location)}` : '&location=India';
+        const sdUrl = `https://api.scrapingdog.com/linkedinjobs/?api_key=${SCRAPINGDOG_API_KEY}&field=${fieldParam}${locParam}&page=1`;
         const res = await fetchWithTimeout(sdUrl);
         if (res.ok) {
           const list = await res.json();
@@ -609,6 +633,8 @@ export async function POST(req: Request) {
     if (source && source !== 'All Sources') {
       if (source === 'Google for Jobs (LinkedIn/Indeed)') {
         filtered = filtered.filter((j) => j.source.includes('Google') || j.source.includes('LinkedIn') || j.source.includes('Indeed'));
+      } else if (source === 'LinkedIn (Live Scraper)') {
+        filtered = filtered.filter((j) => j.source.includes('ScrapingDog') || j.source.includes('LinkedIn'));
       } else if (source === 'Direct Tech ATS (Greenhouse/Lever)') {
         filtered = filtered.filter((j) => j.source.startsWith('Direct ATS'));
       } else {

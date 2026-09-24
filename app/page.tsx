@@ -470,6 +470,8 @@ export default function JobDashboard() {
     if (selectedSource !== 'All Sources') {
       if (selectedSource === 'Google for Jobs (LinkedIn/Indeed)') {
         if (!job.source.includes('Google') && !job.source.includes('LinkedIn') && !job.source.includes('Indeed')) return false;
+      } else if (selectedSource === 'LinkedIn (Live Scraper)') {
+        if (!job.source.includes('ScrapingDog') && !job.source.includes('LinkedIn')) return false;
       } else if (selectedSource === 'Direct Tech ATS (Greenhouse/Lever)') {
         if (!job.source.startsWith('Direct ATS')) return false;
       } else if (job.source !== selectedSource) {
@@ -815,6 +817,7 @@ export default function JobDashboard() {
             >
               <option>All Sources</option>
               <option>Google for Jobs (LinkedIn/Indeed)</option>
+              <option>LinkedIn (Live Scraper)</option>
               <option>Direct Tech ATS (Greenhouse/Lever)</option>
               <option>Himalayas (Startups)</option>
               <option>Adzuna</option>
