@@ -431,6 +431,128 @@ export async function POST(req: Request) {
       }
     }
 
+    // --- 7. GOOGLE FOR JOBS (JSearch via RapidAPI - indexes LinkedIn, Indeed, Glassdoor) ---
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
+    if (RAPIDAPI_KEY) {
+      try {
+        const searchQueryStr = [query, location].filter(Boolean).join(' in ') || 'software jobs';
+        const jsearchUrl = `https://jsearch.p.rapidapi.com/search-v2?query=${encodeURIComponent(searchQueryStr)}&num_pages=1`;
+        const res = await fetchWithTimeout(jsearchUrl, {
+          headers: {
+            'x-rapidapi-key': RAPIDAPI_KEY,
+            'x-rapidapi-host': 'jsearch.p.rapidapi.com',
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data.data) ? data.data : [];
+          let formatted = list.map((j: any) => {
+            const pubTime = j.job_posted_at_timestamp ? j.job_posted_at_timestamp * 1000 : undefined;
+            const postedText = j.job_posted_at || 'Recent';
+            const loc = j.job_location || [j.job_city, j.job_state, j.job_country].filter(Boolean).join(', ') || location || 'India';
+            const publisher = j.job_publisher ? `${j.job_publisher} (Google Jobs)` : 'Google for Jobs';
+
+            return {
+              id: `jsearch_${j.job_id || Math.random().toString(36).substring(2, 9)}`,
+              title: j.job_title || 'Position',
+              company: j.employer_name || 'Direct Employer',
+              location: loc,
+              type: normalizeType(j.job_employment_type),
+              workMode: j.job_is_remote ? ('Remote' as const) : detectWorkMode(loc, j.job_title, j.job_description || ''),
+              salary: j.job_salary_string || (j.job_min_salary && j.job_max_salary ? `$${j.job_min_salary.toLocaleString()} - $${j.job_max_salary.toLocaleString()}` : undefined),
+              description: cleanDescription(j.job_description),
+              url: j.job_apply_link || j.job_google_link || '#',
+              source: publisher,
+              isStartup: false,
+              postedAt: pubTime,
+              postedText,
+              applicantCount: undefined,
+              applicantText: undefined,
+            };
+          });
+          allJobs = [...allJobs, ...formatted];
+        } else {
+          failedSources.push('Google for Jobs (JSearch)');
+        }
+      } catch (e) {
+        console.error('JSearch fetch error:', e);
+        failedSources.push('Google for Jobs (JSearch)');
+      }
+    }
+
+    // --- 8. DIRECT TECH & STARTUP ATS (Greenhouse & Lever - 100% Free, Official) ---
+    const GREENHOUSE_COMPANIES = [
+      { name: 'InMobi', slug: 'inmobi' },
+      { name: 'Groww', slug: 'groww' },
+      { name: 'Stripe', slug: 'stripe' },
+      { name: 'Figma', slug: 'figma' },
+      { name: 'GitLab', slug: 'gitlab' },
+      { name: 'Vercel', slug: 'vercel' },
+      { name: 'Cloudflare', slug: 'cloudflare' },
+      { name: 'Datadog', slug: 'datadog' },
+      { name: 'MongoDB', slug: 'mongodb' },
+      { name: 'Twilio', slug: 'twilio' },
+      { name: 'Elastic', slug: 'elastic' },
+      { name: 'Pinterest', slug: 'pinterest' },
+    ];
+
+    try {
+      const qLower = query.toLowerCase();
+      const locLower = locQuery.toLowerCase();
+
+      const ghPromises = GREENHOUSE_COMPANIES.map(async (comp) => {
+        try {
+          const res = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${comp.slug}/jobs`);
+          if (!res.ok) return [];
+          const data = await res.json();
+          const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+          
+          return jobs
+            .filter((j: any) => {
+              const t = (j.title || '').toLowerCase();
+              const l = (j.location?.name || '').toLowerCase();
+              const matchQ = !qLower || t.includes(qLower);
+              const matchLoc = !locLower || l.includes(locLower) || l.includes('remote') || l.includes('anywhere');
+              return matchQ && matchLoc;
+            })
+            .slice(0, 15)
+            .map((j: any) => {
+              const loc = j.location?.name || 'Remote / Multiple Locations';
+              const pubTime = j.updated_at ? new Date(j.updated_at).getTime() : undefined;
+              return {
+                id: `gh_${comp.slug}_${j.id}`,
+                title: j.title,
+                company: comp.name,
+                location: loc,
+                type: 'Full-Time' as const,
+                workMode: detectWorkMode(loc, j.title, ''),
+                description: `Official direct opening at ${comp.name}. Apply directly through their Greenhouse corporate portal.`,
+                url: j.absolute_url,
+                source: `Direct ATS (${comp.name})`,
+                isStartup: true,
+                postedAt: pubTime,
+                postedText: 'Recent',
+                applicantCount: undefined,
+                applicantText: undefined,
+              };
+            });
+        } catch {
+          return [];
+        }
+      });
+
+      const ghResults = await Promise.allSettled(ghPromises);
+      ghResults.forEach((r) => {
+        if (r.status === 'fulfilled' && r.value.length > 0) {
+          allJobs = [...allJobs, ...r.value];
+        }
+      });
+    } catch (e) {
+      console.error('Direct ATS fetch error:', e);
+      failedSources.push('Direct Tech ATS');
+    }
+
     // De-duplicate
     const uniqueJobsMap = new Map();
     allJobs.forEach((job) => {
@@ -454,7 +576,13 @@ export async function POST(req: Request) {
     }
 
     if (source && source !== 'All Sources') {
-      filtered = filtered.filter((j) => j.source === source);
+      if (source === 'Google for Jobs (LinkedIn/Indeed)') {
+        filtered = filtered.filter((j) => j.source.includes('Google') || j.source.includes('LinkedIn') || j.source.includes('Indeed'));
+      } else if (source === 'Direct Tech ATS (Greenhouse/Lever)') {
+        filtered = filtered.filter((j) => j.source.startsWith('Direct ATS'));
+      } else {
+        filtered = filtered.filter((j) => j.source === source);
+      }
     }
 
     if (postedTime && postedTime !== 'Any Time') {

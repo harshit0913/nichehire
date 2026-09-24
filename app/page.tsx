@@ -467,7 +467,15 @@ export default function JobDashboard() {
     if (isStartupOnly && !job.isStartup) return false;
     if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     if (selectedType !== 'All Types' && job.type !== selectedType) return false;
-    if (selectedSource !== 'All Sources' && job.source !== selectedSource) return false;
+    if (selectedSource !== 'All Sources') {
+      if (selectedSource === 'Google for Jobs (LinkedIn/Indeed)') {
+        if (!job.source.includes('Google') && !job.source.includes('LinkedIn') && !job.source.includes('Indeed')) return false;
+      } else if (selectedSource === 'Direct Tech ATS (Greenhouse/Lever)') {
+        if (!job.source.startsWith('Direct ATS')) return false;
+      } else if (job.source !== selectedSource) {
+        return false;
+      }
+    }
 
     // Filter by postedTime client-side
     if (postedTime && postedTime !== 'Any Time') {
@@ -806,6 +814,8 @@ export default function JobDashboard() {
               className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none"
             >
               <option>All Sources</option>
+              <option>Google for Jobs (LinkedIn/Indeed)</option>
+              <option>Direct Tech ATS (Greenhouse/Lever)</option>
               <option>Himalayas (Startups)</option>
               <option>Adzuna</option>
               <option>Jooble</option>
