@@ -364,12 +364,7 @@ export async function POST(req: Request) {
     const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY || '';
     if (JOOBLE_API_KEY) {
       try {
-        let countryPrefix = 'in';
-        if (locQuery) {
-          const matched = Object.entries(ADZUNA_COUNTRY_MAP).find(([k]) => locQuery.includes(k));
-          if (matched) countryPrefix = matched[1];
-        }
-        const joobleUrl = `https://${countryPrefix}.jooble.org/api/${JOOBLE_API_KEY}`;
+        const joobleUrl = `https://jooble.org/api/${JOOBLE_API_KEY}`;
         const res = await fetchWithTimeout(joobleUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
