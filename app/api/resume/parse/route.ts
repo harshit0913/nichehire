@@ -18,7 +18,6 @@ function fallbackExtract(text: string) {
   const name = lines[0] || 'Applicant';
   const role = lines[1] || 'Professional';
 
-  // Common skill keywords
   const commonSkills = [
     'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'SQL',
     'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Git', 'Audit', 'Tax', 'GST',
@@ -29,11 +28,43 @@ function fallbackExtract(text: string) {
   const lower = text.toLowerCase();
   const foundSkills = commonSkills.filter(s => lower.includes(s.toLowerCase()));
 
+  // Common education keywords
+  let education = 'Bachelor\'s Degree';
+  if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('bachelor of technology') || lower.includes('computer science')) {
+    education = 'B.Tech in Computer Science / Engineering';
+  } else if (lower.includes('mba') || lower.includes('master of business')) {
+    education = 'MBA';
+  } else if (lower.includes('b.com') || lower.includes('bcom') || lower.includes('chartered accountant') || lower.includes('ca')) {
+    education = 'B.Com / Accounting & Finance';
+  } else if (lower.includes('master') || lower.includes('m.tech') || lower.includes('ms')) {
+    education = 'Master\'s Degree';
+  }
+
+  // Experience estimate
+  let yearsOfExperience = 2;
+  const expMatch = lower.match(/(\d+)\+?\s*years?/);
+  if (expMatch) {
+    yearsOfExperience = parseInt(expMatch[1], 10) || 2;
+  } else if (lower.includes('senior')) {
+    yearsOfExperience = 5;
+  } else if (lower.includes('lead')) {
+    yearsOfExperience = 7;
+  }
+
+  const extracurricular: string[] = [];
+  if (lower.includes('hackathon')) extracurricular.push('Hackathon Competitor');
+  if (lower.includes('open source') || lower.includes('github')) extracurricular.push('Open Source Contributor');
+  if (lower.includes('lead') || lower.includes('captain') || lower.includes('president') || lower.includes('founder')) extracurricular.push('Leadership & Community');
+  if (lower.includes('certif')) extracurricular.push('Certified Professional');
+
   return {
     name,
     role,
-    skills: foundSkills.length > 0 ? foundSkills.slice(0, 8) : ['Communication', 'Problem Solving', 'Management'],
+    skills: foundSkills.length > 0 ? foundSkills.slice(0, 10) : ['Communication', 'Problem Solving', 'Management'],
     experienceLevel: lower.includes('senior') ? 'Senior' : lower.includes('lead') ? 'Lead' : 'Mid',
+    yearsOfExperience,
+    education,
+    extracurricular: extracurricular.length > 0 ? extracurricular : ['Personal Portfolio & Projects'],
     location: lower.includes('india') ? 'India' : lower.includes('remote') ? 'Remote' : '',
     summary: `${name} is an experienced ${role} with expertise in ${foundSkills.slice(0, 3).join(', ') || 'their field'}.`,
     rawText: text
@@ -101,8 +132,11 @@ ${extractedText.slice(0, 10000)}`
       {
         "name": "Candidate Full Name (e.g. Sanskriti Sharma)",
         "role": "Most relevant / target Job Title (e.g. Senior Frontend Engineer, Chartered Accountant, Financial Analyst)",
-        "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6", "Skill 7", "Skill 8"],
+        "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6", "Skill 7", "Skill 8", "Skill 9", "Skill 10"],
         "experienceLevel": "Entry | Mid | Senior | Lead | Executive",
+        "yearsOfExperience": 3,
+        "education": "Degree and Major (e.g. B.Tech Computer Science, MBA Finance, B.Com)",
+        "extracurricular": ["Project / Leadership / Certification 1", "Project / Certification 2"],
         "location": "City, Country (e.g. Bangalore, India or New York, US) or 'Remote'",
         "summary": "Compelling 2-sentence executive summary of the candidate's background.",
         "rawText": "Complete plain text of the resume"
