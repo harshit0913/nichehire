@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import AuthModal from './components/AuthModal';
 import EmailDraftModal from './components/EmailDraftModal';
@@ -8,6 +9,9 @@ import InterviewPrepModal from './components/InterviewPrepModal';
 import HelpModal from './components/HelpModal';
 import FeedbackModal from './components/FeedbackModal';
 import PostWalkInModal from './components/PostWalkInModal';
+import PostJobModal from './components/PostJobModal';
+import JobCardItem, { Job, FitRecommendation, TailorState } from './components/JobCardItem';
+import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
 import type { WalkInJob } from './api/walkins/route';
 
@@ -26,46 +30,6 @@ type ParsedProfile = {
   rawText?: string;
 };
 
-type TailorState = {
-  loading: boolean;
-  text?: string;
-  error?: string;
-  open: boolean;
-};
-
-type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: string;
-  workMode: 'On-site' | 'Hybrid' | 'Remote';
-  salary?: string;
-  description: string;
-  url: string;
-  source: string;
-  isStartup?: boolean;
-  isVerified?: boolean;
-  directPortal?: boolean;
-  postedAt?: number;
-  postedText?: string;
-  applicantCount?: number;
-  applicantText?: string;
-  geoTier?: number;
-};
-
-type FitRecommendation = {
-  tier: 'high' | 'medium' | 'low' | 'neutral';
-  label: string;
-  badgeBg: string;
-  score: number;
-  matchedSkills: string[];
-  missingSkills: string[];
-  educationMatch: string | null;
-  experienceMatch: string | null;
-  reason: string;
-};
-
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function JobDashboard() {
@@ -79,6 +43,7 @@ export default function JobDashboard() {
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [postWalkInOpen, setPostWalkInOpen] = useState(false);
+  const [postJobOpen, setPostJobOpen] = useState(false);
 
   // Detailed Job View Drawer (LinkedIn Style)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -715,23 +680,44 @@ export default function JobDashboard() {
               <span>🚶</span> Walk-Ins ({walkins.length})
             </button>
 
+            <Link
+              href="/about"
+              className="px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:inline"
+            >
+              🛡️ About & Trust
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden md:inline"
+            >
+              🏷️ Pricing
+            </Link>
+
+            <button
+              onClick={() => setPostJobOpen(true)}
+              className="px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all hidden sm:flex items-center gap-1"
+            >
+              <span>💼</span> Post a Job
+            </button>
+
             <button
               onClick={() => setPostWalkInOpen(true)}
               className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all shadow-xs flex items-center gap-1"
             >
-              <span>+</span> Post Walk-In
+              <span>+</span> Walk-In
             </button>
 
             <button
               onClick={() => setHelpModalOpen(true)}
-              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:inline"
+              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden xl:inline"
             >
               💡 Help
             </button>
 
             <button
               onClick={() => setFeedbackModalOpen(true)}
-              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:inline"
+              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden xl:inline"
             >
               💬 Feedback
             </button>
@@ -761,7 +747,7 @@ export default function JobDashboard() {
       {/* ── Initial Discovery State ("What are you looking for?") ── */}
       {!hasSearched && (
         <section className="min-h-[80vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-16 bg-gradient-to-b from-blue-50/40 via-white to-[#fafbfc]">
-          <div className="max-w-3xl w-full text-center space-y-6">
+          <div className="max-w-4xl w-full text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-100/70 text-blue-700 text-xs font-semibold">
               <span>✦</span> 30+ Direct Unicorn Career Portals & Official Job Feeds
             </div>
@@ -916,6 +902,81 @@ export default function JobDashboard() {
                 <div className="text-base mb-1">🎯</div>
                 <div className="text-xs font-bold text-gray-900">Apply Chances</div>
                 <div className="text-[11px] text-gray-500">Match score & gap breakdown</div>
+              </div>
+            </div>
+
+            {/* ── Featured Live Verified Jobs Section (Rendered Server-Side for Instant Browse & SEO) ── */}
+            <div className="pt-12 text-left w-full space-y-4">
+              {/* Schema.org JobPosting Structured Data */}
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify({
+                    '@context': 'https://schema.org',
+                    '@graph': INITIAL_VERIFIED_JOBS.map((j) => ({
+                      '@type': 'JobPosting',
+                      title: j.title,
+                      description: j.description,
+                      datePosted: new Date(j.postedAt || Date.now() - 86400000).toISOString(),
+                      validThrough: new Date(Date.now() + 7 * 86400000).toISOString(),
+                      employmentType: 'FULL_TIME',
+                      hiringOrganization: {
+                        '@type': 'Organization',
+                        name: j.company,
+                        sameAs: j.url,
+                      },
+                      jobLocation: {
+                        '@type': 'Place',
+                        address: {
+                          '@type': 'PostalAddress',
+                          addressLocality: j.location,
+                          addressCountry: 'IN',
+                        },
+                      },
+                      applicantLocationRequirements: {
+                        '@type': 'Country',
+                        name: 'India',
+                      },
+                      jobLocationType: j.workMode === 'Remote' ? 'TELECOMMUTE' : undefined,
+                    })),
+                  }),
+                }}
+              />
+
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-gray-200">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-1">
+                    <span>🔥</span> Today&apos;s Live Verified Postings
+                  </div>
+                  <h2 className="text-xl font-black text-gray-900">
+                    Direct from Official Company Portals (&le; 7 Days Old)
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    Verified authentic openings from Yash Technologies, Bellurbis, Stripe, Vercel, InMobi & 30+ enterprise feeds.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                    {INITIAL_VERIFIED_JOBS.length} Verified Roles
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3.5">
+                {INITIAL_VERIFIED_JOBS.map((job) => (
+                  <JobCardItem
+                    key={job.id}
+                    job={job}
+                    rec={calculateRecommendation(job)}
+                    isSaved={savedJobIds.includes(job.id)}
+                    tailor={tailorMap[job.id]}
+                    locationQuery={locationQuery}
+                    onOpenDetails={openJobDetails}
+                    onToggleSave={toggleSaveJob}
+                    onTailorResume={handleTailorResume}
+                    formatTimeAgo={formatTimeAgo}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -1117,14 +1178,22 @@ export default function JobDashboard() {
           )}
 
           {/* Results Header */}
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-base font-bold text-gray-900">
-              {activeTab === 'saved'
-                ? `Saved Opportunities (${filteredJobs.length})`
-                : activeTab === 'walkins'
-                ? `Walk-Ins & Offline Opportunities (${filteredWalkins.length})`
-                : `Live Verified Jobs (${filteredJobs.length})`}
-            </h2>
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <h2 className="text-base font-bold text-gray-900">
+                {activeTab === 'saved'
+                  ? `Saved Opportunities (${filteredJobs.length})`
+                  : activeTab === 'walkins'
+                  ? `Walk-Ins & Offline Opportunities (${filteredWalkins.length})`
+                  : `Live Verified Jobs (${filteredJobs.length})`}
+              </h2>
+              <button
+                onClick={() => setHasSearched(false)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+              >
+                ← Back to Featured
+              </button>
+            </div>
             <span className="text-xs text-gray-500 font-medium">
               Strictly &le; 7 days old • Deduplicated across 30+ portals & aggregators
             </span>
@@ -1171,165 +1240,20 @@ export default function JobDashboard() {
           {/* Job Feed */}
           {!isLoading && (
             <div className="space-y-3.5">
-              {filteredJobs.map((job, idx) => {
-                const rec = calculateRecommendation(job);
-                const isSaved = savedJobIds.includes(job.id);
-                const tailor = tailorMap[job.id];
-
-                return (
-                  <div
-                    key={job.id || idx}
-                    className="border border-gray-200/90 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all bg-white overflow-hidden p-5 flex flex-col md:flex-row justify-between gap-4"
-                  >
-                    <div className="flex-1 min-w-0">
-                      {/* Top Badges Row */}
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3
-                          onClick={() => openJobDetails(job)}
-                          className="text-base font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
-                        >
-                          {job.title}
-                        </h3>
-
-                        {/* Apply Recommendation Badge */}
-                        <span
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full border shadow-2xs flex items-center gap-1 ${rec.badgeBg}`}
-                          title={rec.reason}
-                        >
-                          {rec.tier === 'high' ? '🟢' : rec.tier === 'medium' ? '🟡' : rec.tier === 'low' ? '🔴' : '📄'}
-                          {rec.label}
-                        </span>
-
-                        {/* Verified Genuine Badge */}
-                        {job.isVerified && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-0.5">
-                            🛡️ Verified
-                          </span>
-                        )}
-
-                        {/* Direct Career Portal Badge */}
-                        {job.directPortal && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-violet-50 text-violet-700 border border-violet-200">
-                            🏢 Direct Career Portal
-                          </span>
-                        )}
-
-                        {/* Local Proximity Badge */}
-                        {job.geoTier === 1 && locationQuery && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                            📍 Local to {locationQuery}
-                          </span>
-                        )}
-
-                        {/* Work Mode Badge */}
-                        <span
-                          className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
-                            job.workMode === 'On-site'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : job.workMode === 'Hybrid'
-                              ? 'bg-purple-50 text-purple-700 border-purple-200'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          }`}
-                        >
-                          {job.workMode === 'On-site' ? '🏢 Office' : job.workMode === 'Hybrid' ? '🔄 Hybrid' : '🌐 Remote'}
-                        </span>
-                      </div>
-
-                      {/* Subtitle / Company metadata */}
-                      <p className="text-xs text-gray-500 mb-2.5 flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-gray-800">{job.company}</span>
-                        <span>•</span>
-                        <span>📍 {job.location}</span>
-                        <span>•</span>
-                        <span>⏱️ {job.postedText || formatTimeAgo(job.postedAt)}</span>
-                        {job.salary && (
-                          <>
-                            <span>•</span>
-                            <span className="font-semibold text-emerald-700">💰 {job.salary}</span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-                          👥 {job.applicantText || (job.applicantCount ? `${job.applicantCount} applicants` : 'Early applicant')}
-                        </span>
-                      </p>
-
-                      {/* Recommendation Explanation */}
-                      {rec.tier !== 'neutral' && (
-                        <div className="mb-3 p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-xs">
-                          <p className="text-gray-700 font-medium">
-                            <strong className="text-gray-900">Why apply? </strong>
-                            {rec.reason}
-                          </p>
-                          {rec.matchedSkills.length > 0 && (
-                            <div className="mt-1.5 flex flex-wrap gap-1 items-center">
-                              <span className="text-[10px] uppercase font-bold text-gray-400">Skills Matched:</span>
-                              {rec.matchedSkills.map((s) => (
-                                <span key={s} className="px-1.5 py-0.2 bg-emerald-100/70 text-emerald-900 rounded text-[10px] font-semibold">
-                                  ✓ {s}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Description Preview */}
-                      <p className="text-xs text-gray-600 line-clamp-2 mb-3">
-                        {job.description}
-                      </p>
-
-                      {/* Source tag */}
-                      <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                        <span>Source: <strong className="text-gray-600">{job.source}</strong></span>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-row md:flex-col justify-end items-end gap-2 shrink-0">
-                      <div className="flex gap-2 flex-wrap items-center">
-                        {/* Save */}
-                        <button
-                          onClick={() => toggleSaveJob(job.id)}
-                          className={`p-2 rounded-xl border text-xs transition-colors ${
-                            isSaved ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
-                          }`}
-                          title={isSaved ? 'Remove from saved' : 'Save opportunity'}
-                        >
-                          {isSaved ? '★' : '☆'}
-                        </button>
-
-                        {/* View in Detail (LinkedIn style) */}
-                        <button
-                          onClick={() => openJobDetails(job)}
-                          className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors whitespace-nowrap"
-                        >
-                          View Details 👁
-                        </button>
-
-                        {/* Tailor Resume */}
-                        <button
-                          onClick={() => handleTailorResume(job)}
-                          disabled={tailor?.loading}
-                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-2xs whitespace-nowrap"
-                        >
-                          {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor'}
-                        </button>
-
-                        {/* Apply Direct */}
-                        <a
-                          href={job.url || '#'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3.5 py-1.5 text-xs font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
-                        >
-                          Apply ↗
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {filteredJobs.map((job, idx) => (
+                <JobCardItem
+                  key={job.id || idx}
+                  job={job}
+                  rec={calculateRecommendation(job)}
+                  isSaved={savedJobIds.includes(job.id)}
+                  tailor={tailorMap[job.id]}
+                  locationQuery={locationQuery}
+                  onOpenDetails={openJobDetails}
+                  onToggleSave={toggleSaveJob}
+                  onTailorResume={handleTailorResume}
+                  formatTimeAgo={formatTimeAgo}
+                />
+              ))}
             </div>
           )}
         </main>
@@ -1512,6 +1436,67 @@ export default function JobDashboard() {
         </div>
       )}
 
+      {/* ── Comprehensive Platform Footer ── */}
+      <footer className="mt-16 bg-white border-t border-gray-200 py-12 text-xs text-gray-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm">
+                  NH
+                </div>
+                <span className="font-extrabold text-lg text-gray-900 tracking-tight">NicheHire</span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                The verified career platform engineered to eliminate ghost jobs. Sourced directly from official enterprise career portals and tier-1 ATS feeds under 7 days old.
+              </p>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-100">
+                <span>🛡️</span> 100% Genuine Direct Portal Guarantee
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">For Job Seekers</h4>
+              <ul className="space-y-1.5 text-gray-500">
+                <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-blue-600">Browse Verified Jobs</button></li>
+                <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-blue-600">Offline & Walk-In Openings</button></li>
+                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-blue-600">AI Resume Matcher</button></li>
+                <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-blue-600">How to Apply Direct</button></li>
+              </ul>
+            </div>
+
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Trust & Verification</h4>
+              <ul className="space-y-1.5 text-gray-500">
+                <li><Link href="/about" className="hover:text-blue-600">4-Pillar Verification Engine</Link></li>
+                <li><Link href="/about" className="hover:text-blue-600">Strict &le; 7-Day Cutoff Policy</Link></li>
+                <li><Link href="/about" className="hover:text-blue-600">Anti-Scam & Zero Fees Pledge</Link></li>
+                <li><Link href="/about" className="hover:text-blue-600">About NicheHire</Link></li>
+              </ul>
+            </div>
+
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">For Employers</h4>
+              <ul className="space-y-1.5 text-gray-500">
+                <li><button onClick={() => setPostJobOpen(true)} className="hover:text-blue-600 font-semibold text-blue-600">Post a Verified Job ➔</button></li>
+                <li><Link href="/pricing" className="hover:text-blue-600">Employer Pricing & Plans</Link></li>
+                <li><Link href="/pricing" className="hover:text-blue-600">Greenhouse & Lever ATS Sync</Link></li>
+                <li><button onClick={() => setFeedbackModalOpen(true)} className="hover:text-blue-600">Recruiter Support</button></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-gray-400">
+            <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
+            <div className="flex items-center gap-4">
+              <Link href="/about" className="hover:text-gray-600">About</Link>
+              <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
+              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-gray-600">Contact</button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* ── Active Modals ── */}
       <AuthModal
         isOpen={authModalOpen}
@@ -1547,6 +1532,14 @@ export default function JobDashboard() {
         isOpen={postWalkInOpen}
         onClose={() => setPostWalkInOpen(false)}
         onSuccess={() => fetchWalkins()}
+      />
+
+      <PostJobModal
+        isOpen={postJobOpen}
+        onClose={() => setPostJobOpen(false)}
+        onSuccess={(newListing) => {
+          setAllLiveJobs((prev) => [newListing, ...prev]);
+        }}
       />
     </div>
   );
