@@ -51,6 +51,7 @@ type Job = {
   postedText?: string;
   applicantCount?: number;
   applicantText?: string;
+  geoTier?: number;
 };
 
 type FitRecommendation = {
@@ -435,6 +436,49 @@ export default function JobDashboard() {
     }
   };
 
+  const openJobDetails = async (job: any) => {
+    setSelectedJob(job);
+    if (!job) return;
+
+    if (!job.description || job.description.length < 250 || job.source === 'LinkedIn' || job.url?.includes('yash.com')) {
+      try {
+        const res = await fetch('/api/jobs/details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: job.url, id: job.id, company: job.company }),
+        });
+        if (res.ok) {
+          const detail = await res.json();
+          if (detail.description) {
+            setSelectedJob((prev: any) => {
+              if (prev && prev.id === job.id) {
+                return {
+                  ...prev,
+                  description: detail.description,
+                  applicantText: detail.applicantText || prev.applicantText,
+                };
+              }
+              return prev;
+            });
+            setAllLiveJobs((prevList: any[]) =>
+              prevList.map((item) =>
+                item.id === job.id
+                  ? {
+                      ...item,
+                      description: detail.description,
+                      applicantText: detail.applicantText || item.applicantText,
+                    }
+                  : item
+              )
+            );
+          }
+        }
+      } catch {
+        // Continue with current description
+      }
+    }
+  };
+
   // ─── Tailor Resume ─────────────────────────────────────────────────────────
 
   const handleTailorResume = async (job: Job) => {
@@ -554,13 +598,14 @@ export default function JobDashboard() {
     if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     if (selectedType !== 'All Types' && job.type !== selectedType) return false;
 
-    // Distance Filter
+    // Distance Filter (Hierarchical proximity)
     if (distance && distance !== 'Any Distance' && locationQuery) {
       if (job.workMode !== 'Remote') {
-        const jLoc = (job.location || '').toLowerCase();
-        const lq = locationQuery.toLowerCase();
-        if (distance === 'Within 10 km' && !jLoc.includes(lq)) return false;
-        if (distance === 'Within 25 km' && !jLoc.includes(lq) && !lq.split(' ').some((w) => w.length > 3 && jLoc.includes(w))) return false;
+        const tier = job.geoTier ?? 1;
+        if (distance === 'Within 10 km' && tier > 1) return false;
+        if (distance === 'Within 25 km' && tier > 2) return false;
+        if (distance === 'Within 50 km' && tier > 3) return false;
+        if (distance === 'Within 100 km' && tier > 4) return false;
       }
     }
 
@@ -1140,7 +1185,7 @@ export default function JobDashboard() {
                       {/* Top Badges Row */}
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <h3
-                          onClick={() => setSelectedJob(job)}
+                          onClick={() => openJobDetails(job)}
                           className="text-base font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                         >
                           {job.title}
@@ -1159,6 +1204,20 @@ export default function JobDashboard() {
                         {job.isVerified && (
                           <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-0.5">
                             🛡️ Verified
+                          </span>
+                        )}
+
+                        {/* Direct Career Portal Badge */}
+                        {job.directPortal && (
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                            🏢 Direct Career Portal
+                          </span>
+                        )}
+
+                        {/* Local Proximity Badge */}
+                        {job.geoTier === 1 && locationQuery && (
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                            📍 Local to {locationQuery}
                           </span>
                         )}
 
@@ -1242,7 +1301,7 @@ export default function JobDashboard() {
 
                         {/* View in Detail (LinkedIn style) */}
                         <button
-                          onClick={() => setSelectedJob(job)}
+                          onClick={() => openJobDetails(job)}
                           className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors whitespace-nowrap"
                         >
                           View Details 👁
@@ -1413,10 +1472,22 @@ export default function JobDashboard() {
 
               {/* Full Description */}
               <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">
-                  Full Job Description
-                </h3>
-                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-xs bg-gray-50/50 p-5 rounded-2xl border border-gray-100 whitespace-pre-line">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                    Full Job Description
+                  </h3>
+                  {selectedJob.url && selectedJob.url !== '#' && (
+                    <a
+                      href={selectedJob.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+                    >
+                      View on official portal ↗
+                    </a>
+                  )}
+                </div>
+                <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed text-xs bg-gray-50/70 p-5 rounded-2xl border border-gray-200/80 whitespace-pre-line font-sans">
                   {selectedJob.description}
                 </div>
               </div>
