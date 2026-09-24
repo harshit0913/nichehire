@@ -553,6 +553,42 @@ export async function POST(req: Request) {
       failedSources.push('Direct Tech ATS');
     }
 
+    // --- 9. DEDICATED LINKEDIN SCRAPER PROXY (ScrapingDog / Proxycurl) ---
+    const SCRAPINGDOG_API_KEY = process.env.SCRAPINGDOG_API_KEY || '';
+    if (SCRAPINGDOG_API_KEY) {
+      try {
+        const queryStr = [query, location].filter(Boolean).join(' ') || 'developer';
+        const sdUrl = `https://api.scrapingdog.com/linkedinjobs/?api_key=${SCRAPINGDOG_API_KEY}&field=${encodeURIComponent(queryStr)}&page=1`;
+        const res = await fetchWithTimeout(sdUrl);
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) {
+            const formatted = list.map((j: any) => ({
+              id: `sd_${j.job_id || Math.random().toString(36).substring(2, 9)}`,
+              title: j.job_position || j.title || 'Position',
+              company: j.company_name || 'Employer',
+              location: j.job_location || location || 'India',
+              type: 'Full-Time' as const,
+              workMode: detectWorkMode(j.job_location, j.job_position, ''),
+              description: cleanDescription(j.job_description || j.job_position),
+              url: j.job_link || '#',
+              source: 'LinkedIn (ScrapingDog)',
+              isStartup: false,
+              postedText: j.job_posting_date || 'Recent',
+              applicantCount: undefined,
+              applicantText: undefined,
+            }));
+            allJobs = [...allJobs, ...formatted];
+          }
+        } else {
+          failedSources.push('LinkedIn (ScrapingDog)');
+        }
+      } catch (e) {
+        console.error('ScrapingDog fetch error:', e);
+        failedSources.push('LinkedIn (ScrapingDog)');
+      }
+    }
+
     // De-duplicate
     const uniqueJobsMap = new Map();
     allJobs.forEach((job) => {
