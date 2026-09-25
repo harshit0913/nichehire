@@ -132,8 +132,8 @@ export default function JobDashboard() {
     if (!parsedProfile || !parsedProfile.skills?.length) {
       return {
         tier: 'neutral',
-        label: 'Upload CV for Fit Score',
-        badgeBg: 'bg-gray-100 text-gray-700 border-gray-200',
+        label: 'Upload CV for fit',
+        badgeBg: 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC]',
         score: 0,
         matchedSkills: [],
         missingSkills: [],
@@ -204,8 +204,8 @@ export default function JobDashboard() {
     if (compositeScore >= 65) {
       return {
         tier: 'high',
-        label: 'High Chances • Recommended',
-        badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold',
+        label: 'High match',
+        badgeBg: 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]',
         score: compositeScore,
         matchedSkills,
         missingSkills,
@@ -216,8 +216,8 @@ export default function JobDashboard() {
     } else if (compositeScore >= 40) {
       return {
         tier: 'medium',
-        label: 'Decent Chances • Good Fit',
-        badgeBg: 'bg-amber-50 text-amber-800 border-amber-300 font-semibold',
+        label: 'Good fit',
+        badgeBg: 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]',
         score: compositeScore,
         matchedSkills,
         missingSkills,
@@ -228,8 +228,8 @@ export default function JobDashboard() {
     } else {
       return {
         tier: 'low',
-        label: 'Low Chances • High Gap',
-        badgeBg: 'bg-rose-50 text-rose-800 border-rose-300 font-semibold',
+        label: 'Low match',
+        badgeBg: 'bg-[#FEF2F2] text-[#D9534F] border-[#FECACA]',
         score: compositeScore,
         matchedSkills,
         missingSkills,
@@ -632,35 +632,37 @@ export default function JobDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] text-gray-900 font-sans">
+    <div className="min-h-screen bg-[#F7F8FA] text-[#12172B] font-sans">
       {/* ── Top Navigation Bar ── */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-2xs">
+      <header className="sticky top-0 z-40 bg-white border-b border-[#E4E7EC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setHasSearched(false)}>
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-xs">
+            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setHasSearched(false)}>
+              <div className="w-8 h-8 rounded bg-[#12172B] flex items-center justify-center text-white font-bold text-xs">
                 NH
               </div>
-              <span className="text-lg font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800 bg-clip-text text-transparent">
+              <span className="text-base font-bold text-[#12172B] tracking-tight">
                 NicheHire
               </span>
-              <span className="ml-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                100% Verified
+              <span className="ml-1 px-2 py-0.5 text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] rounded">
+                Verified Direct
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => {
                 setActiveTab('all');
                 setHasSearched(false);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                activeTab === 'all' && !hasSearched ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-600 hover:bg-gray-100'
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                activeTab === 'all' && !hasSearched
+                  ? 'bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC]'
+                  : 'text-[#5B6478] hover:text-[#12172B]'
               }`}
             >
-              💼 All Jobs
+              All Jobs
             </button>
 
             <button
@@ -668,13 +670,15 @@ export default function JobDashboard() {
                 setActiveTab('saved');
                 setHasSearched(true);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
-                activeTab === 'saved' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-gray-600 hover:bg-gray-100'
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
+                activeTab === 'saved'
+                  ? 'bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A]'
+                  : 'text-[#5B6478] hover:text-[#12172B]'
               }`}
             >
               <span>★</span> Saved
               {savedJobIds.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full border border-amber-200">
+                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#FFFBEB] text-[#D97B0A] rounded border border-[#FDE68A]">
                   {savedJobIds.length}
                 </span>
               )}
@@ -685,15 +689,15 @@ export default function JobDashboard() {
                 setActiveTab('walkins');
                 setHasSearched(true);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
                 activeTab === 'walkins'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs'
-                  : 'text-amber-800 bg-amber-50/80 hover:bg-amber-100 border border-amber-200'
+                  ? 'bg-[#12172B] text-white'
+                  : 'text-[#5B6478] hover:text-[#12172B]'
               }`}
             >
               <span>🚶</span> Walk-Ins
               {walkins.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-bold bg-amber-200 text-amber-900 rounded-full">
+                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#F7F8FA] text-[#12172B] rounded border border-[#E4E7EC]">
                   {walkins.length}
                 </span>
               )}
@@ -704,21 +708,21 @@ export default function JobDashboard() {
               onClick={() => {
                 if (hasSearched) setHasSearched(false);
               }}
-              className="px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:inline"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden lg:inline"
             >
-              ℹ️ How It Works
+              How It Works
             </a>
 
             <Link
               href="/pricing"
-              className="px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden md:inline"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden md:inline"
             >
-              🏷️ Pricing
+              Pricing
             </Link>
 
             <button
               onClick={() => setPostJobOpen(true)}
-              className="px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all hidden sm:flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
             >
               <span>💼</span> Post a Job
             </button>
@@ -731,31 +735,31 @@ export default function JobDashboard() {
                   setPostWalkInOpen(true);
                 }
               }}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all shadow-xs flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
             >
               <span>+</span> Walk-In
             </button>
 
             <button
               onClick={() => setHelpModalOpen(true)}
-              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden xl:inline"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden xl:inline"
             >
-              💡 Help
+              Help
             </button>
 
             <button
               onClick={() => setFeedbackModalOpen(true)}
-              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden xl:inline"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden xl:inline"
             >
-              💬 Feedback
+              Feedback
             </button>
 
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-600 hidden md:inline">{user.email}</span>
+                <span className="text-xs text-[#5B6478] hidden md:inline">{user.email}</span>
                 <button
                   onClick={handleSignOut}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-[#F7F8FA] hover:bg-[#E4E7EC] border border-[#E4E7EC] rounded transition-colors"
                 >
                   Sign Out
                 </button>
@@ -763,7 +767,7 @@ export default function JobDashboard() {
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
+                className="px-3.5 py-1.5 text-xs font-medium text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
               >
                 Sign In
               </button>
@@ -774,99 +778,97 @@ export default function JobDashboard() {
 
       {/* ── Initial Discovery State ("What are you looking for?") ── */}
       {!hasSearched && (
-        <section className="min-h-[80vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 bg-gradient-to-b from-blue-50/40 via-white to-[#fafbfc]">
+        <section className="min-h-[75vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-10 sm:py-16 bg-[#F7F8FA]">
           <div className="max-w-4xl w-full text-center space-y-6">
             {/* Top Verified Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 text-xs font-semibold">
-              <span>🛡️</span> Direct from 35+ Top Tech Companies &amp; Verified Startup Career Portals
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E4E7EC] text-xs text-[#5B6478]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
+              <span>Direct from 35+ verified tech company portals</span>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-6xl font-black text-gray-900 tracking-tight leading-tight">
-              Verified Tech Jobs. <br />
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                Direct From Company Portals.
-              </span>
+            {/* Main Editorial Headline (Inter + Newsreader serif) */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-normal text-[#12172B] tracking-tight leading-tight">
+              Verified tech opportunities. <br />
+              <span className="font-serif italic text-[#12172B]">Direct from company career portals.</span>
             </h1>
 
-            {/* Subhead with consistent, authoritative voice */}
-            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Sourced straight from official corporate career sites (Yash Technologies, Bellurbis, Stripe, Vercel). Strictly <strong className="text-gray-900 font-bold">under 7 days old</strong> with automated AI skill-fit scoring. Never third-party aggregator spam.
+            {/* Sentence-case subhead */}
+            <p className="text-sm sm:text-base text-[#5B6478] max-w-2xl mx-auto leading-relaxed">
+              Sourced straight from official corporate career sites (Yash Technologies, Bellurbis, Stripe, Vercel). Strictly <strong className="text-[#12172B] font-semibold">under 7 days old</strong> with automated AI fit scoring. Never recruiter spam or ghost listings.
             </p>
 
             {/* Social Proof & Live Metrics Bar */}
-            <div className="pt-1 pb-1 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-gray-900 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>1,240+ Active Verified Roles</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-semibold text-gray-700 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
-                <span>⚡</span> 48 Added Today
-              </div>
-              <div className="flex items-center gap-1.5 font-semibold text-gray-700 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
-                <span>🕒</span> &le; 7 Days Max Age
-              </div>
-              <div className="flex items-center gap-1.5 font-semibold text-gray-700 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
-                <span>🔒</span> 100% Direct Corporate Links
+            <div className="pt-1 pb-1 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-[#5B6478]">
+              <div className="inline-flex items-center gap-2 sm:gap-3 px-3.5 py-1.5 rounded-full bg-white border border-[#E4E7EC]">
+                <span className="flex items-center gap-1.5 font-medium text-[#12172B]">
+                  <span className="w-2 h-2 rounded-full bg-[#0E9F6E]"></span>
+                  1,240 verified roles this week
+                </span>
+                <span className="text-[#E4E7EC]">•</span>
+                <span>48 added today</span>
+                <span className="text-[#E4E7EC] hidden sm:inline">•</span>
+                <span className="hidden sm:inline">≤ 7 days max age</span>
+                <span className="text-[#E4E7EC] hidden md:inline">•</span>
+                <span className="hidden md:inline">100% direct portals</span>
               </div>
             </div>
 
-            {/* Company Portals Sourced (Social Proof Marquee) */}
+            {/* Company Portals Sourced (Marquee) */}
             <div className="pt-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-2">
-                Official Corporate Portals Sourced Daily:
+              <span className="text-xs text-[#5B6478] block mb-2 font-normal">
+                Official corporate portals sourced daily:
               </span>
-              <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-gray-700">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-[#12172B]">
                 {['Yash Technologies', 'Stripe', 'Vercel', 'Bellurbis', 'InfoBeans', 'Groww', 'InMobi', 'Postman', 'CRED', 'Kimirica'].map((co) => (
                   <span
                     key={co}
-                    className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-gray-800 shadow-2xs flex items-center gap-1.5 text-[11px] hover:border-blue-300 transition-colors"
+                    className="px-2.5 py-1 bg-white border border-[#E4E7EC] rounded text-[#12172B] text-xs font-medium hover:border-[#12172B]/30 transition-colors"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
                     {co}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Candidate Testimonial Social Proof */}
-            <div className="inline-flex items-center gap-2 p-2.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl text-xs text-blue-900 max-w-xl mx-auto shadow-2xs text-left">
-              <span className="text-base shrink-0">💬</span>
-              <p className="text-[11px] font-medium leading-snug">
-                &ldquo;Skipped 3 weeks of aggregator ghosting. Applied direct to Yash Tech via NicheHire and got an interview within 48 hours.&rdquo; <span className="font-bold text-blue-950">— Senior Engineer, Indore</span>
+            {/* Candidate Testimonial */}
+            <div className="inline-flex items-center gap-2.5 p-3 bg-white border border-[#E4E7EC] rounded-md text-xs text-[#5B6478] max-w-xl mx-auto text-left">
+              <span className="text-sm text-[#0E9F6E] shrink-0">✓</span>
+              <p className="text-xs leading-relaxed">
+                “Skipped weeks of aggregator ghosting. Applied direct to Yash Tech via NicheHire and interviewed within 48 hours.” <span className="font-semibold text-[#12172B]">— Senior Engineer, Indore</span>
               </p>
             </div>
 
-            {/* Mode Switcher & Interaction Card */}
-            <div className="bg-white p-3 sm:p-5 rounded-3xl shadow-xl border border-gray-200 text-left space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-wrap gap-2">
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
+            {/* Mode Switcher & Interaction Card (Spend Boldness Once) */}
+            <div className="bg-white p-4 sm:p-6 rounded-md border border-[#E4E7EC] text-left space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E4E7EC] pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-1 bg-[#F7F8FA] p-1 rounded border border-[#E4E7EC] text-xs font-medium">
                   <button
                     type="button"
                     onClick={() => setDiscoveryTab('search')}
-                    className={`px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    className={`px-3.5 py-1.5 rounded transition-colors ${
                       discoveryTab === 'search'
-                        ? 'bg-white text-gray-900 shadow-xs'
-                        : 'text-gray-500 hover:text-gray-800'
+                        ? 'bg-white text-[#12172B] font-semibold border border-[#E4E7EC]'
+                        : 'text-[#5B6478] hover:text-[#12172B]'
                     }`}
                   >
-                    <span>🔍</span> Search Verified Jobs
+                    Search verified jobs
                   </button>
                   <button
                     type="button"
                     onClick={() => setDiscoveryTab('resume')}
-                    className={`px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    className={`px-3.5 py-1.5 rounded transition-colors ${
                       discoveryTab === 'resume'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
-                        : 'text-gray-500 hover:text-gray-800'
+                        ? 'bg-[#12172B] text-white font-semibold'
+                        : 'text-[#5B6478] hover:text-[#12172B]'
                     }`}
                   >
-                    <span>✨</span> Instant AI Resume Match
+                    Instant AI resume match
                   </button>
                 </div>
 
-                <div className="text-[11px] text-gray-400 flex items-center gap-1">
-                  <span>⚡</span> Live crawlers active across 35+ career sites
+                <div className="text-xs text-[#5B6478] flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
+                  <span>Live crawlers active across 35+ career sites</span>
                 </div>
               </div>
 
@@ -875,76 +877,76 @@ export default function JobDashboard() {
                 <div className="space-y-3.5">
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 relative">
-                      <span className="absolute left-3.5 top-3 text-gray-400 text-sm">🔍</span>
+                      <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
                       <input
                         type="text"
                         placeholder="Job title, technical skill, or role (e.g. React, Java, DevOps)..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-                        className="w-full pl-9 pr-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
                       />
                     </div>
 
                     <div className="flex-1 relative">
-                      <span className="absolute left-3.5 top-3 text-gray-400 text-sm">📍</span>
+                      <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">📍</span>
                       <input
                         type="text"
                         placeholder="Location (e.g. Indore, Bangalore, or Remote)..."
                         value={locationQuery}
                         onChange={(e) => setLocationQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-                        className="w-full pl-9 pr-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
                       />
                     </div>
 
                     <button
                       onClick={() => fetchJobs()}
                       disabled={isLoading}
-                      className="px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
+                      className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-sm rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1.5"
                     >
-                      {isLoading ? 'Searching...' : 'Search Verified Jobs 🔍'}
+                      {isLoading ? 'Searching...' : 'Search Verified Jobs'}
                     </button>
                   </div>
 
                   {/* Surface Core Filters on Landing View */}
-                  <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mr-1">
-                      Quick Filters:
+                  <div className="pt-2 border-t border-[#E4E7EC] flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-[#5B6478] text-[11px] font-medium mr-1">
+                      Quick filters:
                     </span>
 
                     {/* Work Mode Filter */}
-                    <div className="flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-1 bg-[#F7F8FA] p-0.5 rounded border border-[#E4E7EC]">
                       {['Any Mode', 'Remote', 'Hybrid', 'On-site'].map((m) => (
                         <button
                           key={m}
                           type="button"
                           onClick={() => setWorkMode(m)}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                          className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
                             workMode === m
-                              ? 'bg-blue-600 text-white shadow-2xs'
-                              : 'text-gray-600 hover:text-gray-900'
+                              ? 'bg-[#12172B] text-white'
+                              : 'text-[#5B6478] hover:text-[#12172B]'
                           }`}
                         >
-                          {m === 'Remote' ? '🌐 Remote' : m === 'Hybrid' ? '🔄 Hybrid' : m === 'On-site' ? '🏢 Office' : 'All Modes'}
+                          {m === 'Remote' ? 'Remote' : m === 'Hybrid' ? 'Hybrid' : m === 'On-site' ? 'On-site' : 'All Modes'}
                         </button>
                       ))}
                     </div>
 
                     {/* Freshness Filter */}
-                    <div className="flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-1 bg-[#F7F8FA] p-0.5 rounded border border-[#E4E7EC]">
                       {['Any Time', 'Past 24 Hours', 'Past 3 Days', 'Past Week'].map((t) => (
                         <button
                           key={t}
                           type="button"
                           onClick={() => setPostedTime(t)}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                          className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
                             postedTime === t
-                              ? 'bg-indigo-600 text-white shadow-2xs'
-                              : 'text-gray-600 hover:text-gray-900'
+                              ? 'bg-[#12172B] text-white'
+                              : 'text-[#5B6478] hover:text-[#12172B]'
                           }`}
                         >
-                          {t === 'Past 24 Hours' ? '⚡ < 24h' : t === 'Past 3 Days' ? '🕒 < 3d' : t === 'Past Week' ? '📅 < 7d' : 'Any Freshness'}
+                          {t === 'Past 24 Hours' ? '< 24h' : t === 'Past 3 Days' ? '< 3d' : t === 'Past Week' ? '< 7d' : 'Any Age'}
                         </button>
                       ))}
                     </div>
@@ -953,10 +955,10 @@ export default function JobDashboard() {
                     <button
                       type="button"
                       onClick={() => setVerifiedOnly(!verifiedOnly)}
-                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                      className={`px-2.5 py-1 rounded border text-[11px] font-medium flex items-center gap-1 transition-colors ${
                         verifiedOnly
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                          ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]'
+                          : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                       }`}
                     >
                       <span>🛡️</span> Direct Portals Only
@@ -965,7 +967,7 @@ export default function JobDashboard() {
 
                   {/* Trending Role Chips */}
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-gray-400 text-[11px] font-semibold uppercase mr-1">Trending:</span>
+                    <span className="text-[#5B6478] text-[11px] font-medium mr-1">Trending roles:</span>
                     {TRENDING_ROLES.map((r) => (
                       <button
                         key={r}
@@ -973,7 +975,7 @@ export default function JobDashboard() {
                           setSearchQuery(r);
                           fetchJobs(r);
                         }}
-                        className="px-2.5 py-1 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 rounded-lg text-gray-700 transition-colors border border-transparent text-[11px] font-medium"
+                        className="px-2.5 py-1 bg-[#F7F8FA] hover:bg-white text-[#5B6478] hover:text-[#12172B] border border-[#E4E7EC] rounded text-[11px] font-medium transition-colors"
                       >
                         {r}
                       </button>
@@ -982,7 +984,7 @@ export default function JobDashboard() {
 
                   {/* Popular Locations */}
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-gray-400 text-[11px] font-semibold uppercase mr-1">Tech Hubs:</span>
+                    <span className="text-[#5B6478] text-[11px] font-medium mr-1">Locations:</span>
                     {POPULAR_LOCATIONS.map((loc) => (
                       <button
                         key={loc}
@@ -990,7 +992,7 @@ export default function JobDashboard() {
                           setLocationQuery(loc);
                           fetchJobs(undefined, loc);
                         }}
-                        className="px-2.5 py-1 bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 rounded-lg text-gray-700 transition-colors border border-transparent text-[11px] font-medium"
+                        className="px-2.5 py-1 bg-[#F7F8FA] hover:bg-white text-[#5B6478] hover:text-[#12172B] border border-[#E4E7EC] rounded text-[11px] font-medium transition-colors"
                       >
                         {loc}
                       </button>
@@ -1013,8 +1015,8 @@ export default function JobDashboard() {
                       setIsDragging(false);
                       if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
                     }}
-                    className={`p-6 sm:p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center ${
-                      isDragging ? 'border-blue-500 bg-blue-50/60' : 'border-blue-300 bg-blue-50/30 hover:border-blue-400 hover:bg-blue-50/50'
+                    className={`p-6 sm:p-8 rounded border border-dashed transition-colors cursor-pointer text-center ${
+                      isDragging ? 'border-[#2B4EE6] bg-[#2B4EE6]/5' : 'border-[#E4E7EC] bg-[#F7F8FA] hover:border-[#2B4EE6] hover:bg-white'
                     }`}
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -1028,64 +1030,70 @@ export default function JobDashboard() {
                       className="hidden"
                     />
 
-                    <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl mx-auto mb-3">
+                    <div className="w-12 h-12 rounded bg-white border border-[#E4E7EC] text-[#2B4EE6] flex items-center justify-center text-xl mx-auto mb-3">
                       📄
                     </div>
 
-                    <h3 className="text-base font-extrabold text-gray-900">
-                      {isParsing ? 'Analyzing your technical skills with AI…' : 'Drop your Resume (PDF or DOCX)'}
+                    <h3 className="text-base font-semibold text-[#12172B]">
+                      {isParsing ? 'Analyzing your technical skills with AI…' : 'Drop your resume (PDF or DOCX)'}
                     </h3>
-                    <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
-                      Our AI extracts your skills, seniority, and education to compute instant <strong>High / Medium / Low Apply Chances</strong> against active verified openings.
+                    <p className="text-xs text-[#5B6478] max-w-md mx-auto mt-1 leading-relaxed">
+                      Our system extracts your skills and experience to calculate instant <strong className="text-[#12172B]">High / Medium / Low Apply Chances</strong> against active verified openings.
                     </p>
 
                     <div className="pt-4 flex flex-wrap justify-center gap-2">
                       <button
                         type="button"
-                        className="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                        className="px-4 py-2 text-xs font-medium text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
                       >
-                        {isParsing ? 'Analyzing…' : 'Select Resume File'}
+                        {isParsing ? 'Analyzing…' : 'Select resume file'}
                       </button>
                     </div>
                   </div>
 
                   {/* Active Profile Pill if parsed */}
                   {parsedProfile && (
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="p-3.5 bg-white border border-[#0E9F6E]/40 rounded flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div>
-                        <div className="font-bold text-emerald-950 flex items-center gap-1.5">
-                          <span>✓</span> Profile Analyzed: {parsedProfile.role || 'Software Engineer'} ({parsedProfile.experienceLevel || 'Mid-Level'})
+                        <div className="font-semibold text-[#12172B] flex items-center gap-1.5">
+                          <span className="text-[#0E9F6E]">✓</span> Profile analyzed: {parsedProfile.role || 'Software Engineer'} ({parsedProfile.experienceLevel || 'Mid-Level'})
                         </div>
-                        <div className="text-[11px] text-emerald-800 mt-0.5">
+                        <div className="text-[11px] text-[#5B6478] mt-0.5">
                           {parsedProfile.skills?.slice(0, 6).join(', ')}
                         </div>
                       </div>
                       <button
                         onClick={() => fetchJobs(parsedProfile.role, parsedProfile.location)}
-                        className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs shrink-0"
+                        className="px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors shrink-0"
                       >
-                        View Matched Openings ➔
+                        View matched openings ➔
                       </button>
                     </div>
                   )}
 
                   {/* Privacy Guarantee Trust Note */}
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-2.5 text-[11px] text-gray-600">
-                    <span className="text-sm">🔒</span>
+                  <div className="p-3 bg-[#F7F8FA] border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
+                    <span className="text-sm text-[#0E9F6E]">🔒</span>
                     <div>
-                      <strong className="text-gray-900">100% In-Memory Privacy Guarantee:</strong> Your resume text is parsed temporarily to calculate match scores and search parameters. We never store, sell, or broadcast your personal data to external recruiters.
+                      <strong className="text-[#12172B]">100% In-memory privacy guarantee:</strong> Your resume text is parsed temporarily to calculate match scores and search parameters. We never store, sell, or broadcast your personal data to external recruiters.
                     </div>
                   </div>
 
                   {/* Apply Chances Methodology Explainer */}
-                  <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl flex items-start gap-2.5 text-[11px] text-blue-900">
-                    <span className="text-sm">ℹ️</span>
+                  <div className="p-3 bg-white border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
+                    <span className="text-sm text-[#2B4EE6]">ℹ️</span>
                     <div>
-                      <strong className="text-blue-950">How Apply Chances Scoring Works:</strong> We score technical skill overlap (50%), experience level alignment (25%), education requirements (20%), and portfolio relevance (5%) to calculate your chance tier:
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        <span className="font-semibold text-emerald-800">🟢 High (65%+ fit)</span>
-                        <span className="font-semibold text-amber-800">🟡 Good Fit (40-64%)</span>
-                        <span className="font-semibold text-rose-800">🔴 High Gap (&lt; 40%)</span>
+                      <strong className="text-[#12172B]">How Apply Chances scoring works:</strong> We evaluate technical skill overlap (50%), experience alignment (25%), education (20%), and portfolio relevance (5%):
+                      <div className="flex flex-wrap gap-2 mt-1.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span> High Match (65%+)
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97B0A]"></span> Good Fit (40-64%)
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#FEF2F2] text-[#D9534F] border border-[#FECACA]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D9534F]"></span> Low Match (&lt; 40%)
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1096,40 +1104,40 @@ export default function JobDashboard() {
             {/* ── How It Works / Why NicheHire Section ── */}
             <div id="how-it-works" className="pt-8 pb-2 text-left w-full space-y-4">
               <div className="text-center max-w-xl mx-auto space-y-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Why NicheHire</span>
-                <h2 className="text-2xl font-black text-gray-900">Engineered to Eliminate Ghost Jobs</h2>
-                <p className="text-xs text-gray-500">
+                <span className="text-xs font-medium text-[#5B6478]">Why NicheHire</span>
+                <h2 className="text-2xl font-semibold text-[#12172B]">Engineered to eliminate ghost jobs</h2>
+                <p className="text-xs text-[#5B6478]">
                   Over 40% of listings on traditional aggregators are expired or fake. Here is how NicheHire guarantees 100% genuine opportunities.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-2xs space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-black text-sm">
+                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
+                  <div className="w-7 h-7 rounded bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] flex items-center justify-center font-bold text-xs">
                     1
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900">Direct Career Portal Scraping</h3>
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-[#12172B]">Direct career portal scraping</h3>
+                  <p className="text-xs text-[#5B6478] leading-relaxed">
                     We crawl official company career pages and verified enterprise ATS systems (Greenhouse, Lever, SAP, Workday). Every apply link routes straight to the employer&apos;s verified domain.
                   </p>
                 </div>
 
-                <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-2xs space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-sm">
+                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
+                  <div className="w-7 h-7 rounded bg-[#ECFDF5] border border-[#A7F3D0] text-[#0E9F6E] flex items-center justify-center font-bold text-xs">
                     2
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900">Strict &le; 7-Day Purge Policy</h3>
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-[#12172B]">Strict &le; 7-day purge policy</h3>
+                  <p className="text-xs text-[#5B6478] leading-relaxed">
                     Positions older than 7 calendar days are automatically pruned from our index. You will never waste time applying to positions that were closed or filled weeks ago.
                   </p>
                 </div>
 
-                <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-2xs space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-black text-sm">
+                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
+                  <div className="w-7 h-7 rounded bg-[#F7F8FA] border border-[#E4E7EC] text-[#2B4EE6] flex items-center justify-center font-bold text-xs">
                     3
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900">AI Fit Scoring &amp; Direct Outreach</h3>
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-[#12172B]">AI fit scoring &amp; direct outreach</h3>
+                  <p className="text-xs text-[#5B6478] leading-relaxed">
                     Know your competitive edge with objective High / Medium / Low Apply Chances, uncover skill gaps, and access pre-filled corporate HR emails for direct outreach.
                   </p>
                 </div>
@@ -1174,26 +1182,26 @@ export default function JobDashboard() {
                 }}
               />
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#E4E7EC]">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-1">
-                    <span>🔥</span> Today&apos;s Live Verified Postings
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0] mb-1">
+                    <span>✓</span> Today&apos;s live verified openings
                   </div>
-                  <h2 className="text-xl font-black text-gray-900">
-                    Direct from Official Company Portals (&le; 7 Days Old)
+                  <h2 className="text-lg font-semibold text-[#12172B]">
+                    Direct from official company portals (≤ 7 days old)
                   </h2>
-                  <p className="text-xs text-gray-500">
-                    Verified authentic openings from Yash Technologies, Bellurbis, Stripe, Vercel, InMobi & 30+ enterprise feeds.
+                  <p className="text-xs text-[#5B6478]">
+                    Verified authentic roles from Yash Technologies, Bellurbis, Stripe, Vercel, InMobi &amp; 30+ enterprise feeds.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                  <span className="text-xs font-medium text-[#12172B] bg-[#F7F8FA] px-2.5 py-1 rounded border border-[#E4E7EC]">
                     {INITIAL_VERIFIED_JOBS.length} Verified Roles
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {INITIAL_VERIFIED_JOBS.map((job) => (
                   <JobCardItem
                     key={job.id}
@@ -1218,36 +1226,36 @@ export default function JobDashboard() {
       {hasSearched && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Top Search Bar */}
-          <div className="bg-white p-4 rounded-2xl shadow-xs border border-gray-200 mb-6 space-y-3">
+          <div className="bg-white p-4 rounded-md border border-[#E4E7EC] mb-6 space-y-3">
             <div className="flex flex-col md:flex-row gap-2.5">
               <div className="flex-1 relative">
-                <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
+                <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
                 <input
                   type="text"
                   placeholder="Job title, keywords, or role..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-4 py-2 border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
                 />
               </div>
 
               <div className="flex-1 relative">
-                <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">📍</span>
+                <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">📍</span>
                 <input
                   type="text"
                   placeholder="City, state, or Remote..."
                   value={locationQuery}
                   onChange={(e) => setLocationQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-4 py-2 border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
                 />
               </div>
 
               <button
                 onClick={() => fetchJobs()}
                 disabled={isLoading}
-                className="px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors shadow-2xs whitespace-nowrap"
+                className="px-5 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-sm font-medium rounded disabled:opacity-50 transition-colors whitespace-nowrap"
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
@@ -1255,16 +1263,16 @@ export default function JobDashboard() {
 
             {/* Candidate Resume Pill if Active */}
             {parsedProfile && (
-              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between text-xs flex-wrap gap-2">
+              <div className="p-3 bg-white border border-[#0E9F6E]/40 rounded flex items-center justify-between text-xs flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="font-bold text-emerald-950">Matching candidate:</span>
-                  <span className="text-emerald-800">{parsedProfile.name} • {parsedProfile.role}</span>
-                  {parsedProfile.education && <span className="text-gray-500 hidden sm:inline">({parsedProfile.education})</span>}
+                  <span className="w-2 h-2 rounded-full bg-[#0E9F6E]"></span>
+                  <span className="font-semibold text-[#12172B]">Matching candidate:</span>
+                  <span className="text-[#5B6478]">{parsedProfile.name} • {parsedProfile.role}</span>
+                  {parsedProfile.education && <span className="text-[#5B6478] hidden sm:inline">({parsedProfile.education})</span>}
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                   {(parsedProfile.skills || []).slice(0, 5).map((s) => (
-                    <span key={s} className="px-2 py-0.5 bg-white text-emerald-800 border border-emerald-200 rounded text-[10px] font-semibold">
+                    <span key={s} className="px-2 py-0.5 bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC] rounded text-[10px] font-medium">
                       {s}
                     </span>
                   ))}
@@ -1273,10 +1281,10 @@ export default function JobDashboard() {
             )}
 
             {/* Filter Bar (Zero Aggregator Dropdown!) */}
-            <div className="flex flex-wrap gap-2.5 items-center pt-2.5 border-t border-gray-100 text-xs">
+            <div className="flex flex-wrap gap-2.5 items-center pt-2.5 border-t border-[#E4E7EC] text-xs">
               {/* Work Mode */}
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-medium">Work Mode:</span>
+                <span className="text-[#5B6478] font-medium">Work mode:</span>
                 <select
                   value={workMode}
                   onChange={(e) => {
@@ -1284,7 +1292,7 @@ export default function JobDashboard() {
                     setWorkMode(val);
                     fetchJobs(undefined, undefined, { workMode: val });
                   }}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none font-medium"
+                  className="px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-[#12172B] focus:outline-none font-medium"
                 >
                   <option>Any Mode</option>
                   <option>On-site</option>
@@ -1295,7 +1303,7 @@ export default function JobDashboard() {
 
               {/* Posted Time */}
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-medium">Posted:</span>
+                <span className="text-[#5B6478] font-medium">Posted:</span>
                 <select
                   value={postedTime}
                   onChange={(e) => {
@@ -1303,7 +1311,7 @@ export default function JobDashboard() {
                     setPostedTime(val);
                     fetchJobs(undefined, undefined, { postedTime: val });
                   }}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none font-medium"
+                  className="px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-[#12172B] focus:outline-none font-medium"
                 >
                   <option>Any Time</option>
                   <option>Past 6 Hours</option>
@@ -1316,7 +1324,7 @@ export default function JobDashboard() {
 
               {/* Distance Proximity */}
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-medium">Distance:</span>
+                <span className="text-[#5B6478] font-medium">Distance:</span>
                 <select
                   value={distance}
                   onChange={(e) => {
@@ -1324,7 +1332,7 @@ export default function JobDashboard() {
                     setDistance(val);
                     fetchJobs(undefined, undefined, { distance: val });
                   }}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none font-medium"
+                  className="px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-[#12172B] focus:outline-none font-medium"
                 >
                   <option>Any Distance</option>
                   <option>Within 10 km</option>
@@ -1336,7 +1344,7 @@ export default function JobDashboard() {
 
               {/* Applicants Filter */}
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-medium">Applicants:</span>
+                <span className="text-[#5B6478] font-medium">Applicants:</span>
                 <select
                   value={applicants}
                   onChange={(e) => {
@@ -1344,7 +1352,7 @@ export default function JobDashboard() {
                     setApplicants(val);
                     fetchJobs(undefined, undefined, { applicants: val });
                   }}
-                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none font-medium"
+                  className="px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-[#12172B] focus:outline-none font-medium"
                 >
                   <option>Any Applicants</option>
                   <option>Early Bird (&lt; 10)</option>
@@ -1360,8 +1368,8 @@ export default function JobDashboard() {
                   setVerifiedOnly(next);
                   fetchJobs(undefined, undefined, { verifiedOnly: next });
                 }}
-                className={`px-3 py-1.5 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
-                  verifiedOnly ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                className={`px-2.5 py-1.5 rounded border text-xs font-medium flex items-center gap-1 transition-colors ${
+                  verifiedOnly ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]' : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
                 <span>🛡️</span> Verified Portals Only
@@ -1374,8 +1382,8 @@ export default function JobDashboard() {
                   setIsStartupOnly(next);
                   fetchJobs(undefined, undefined, { isStartupOnly: next });
                 }}
-                className={`px-3 py-1.5 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
-                  isStartupOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                className={`px-2.5 py-1.5 rounded border text-xs font-medium flex items-center gap-1 transition-colors ${
+                  isStartupOnly ? 'bg-[#12172B] text-white' : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
                 <span>🚀</span> Startups
@@ -1393,7 +1401,7 @@ export default function JobDashboard() {
                     setIsStartupOnly(false);
                     fetchJobs();
                   }}
-                  className="ml-auto text-xs text-blue-600 hover:underline font-semibold"
+                  className="ml-auto text-xs text-[#2B4EE6] hover:underline font-medium"
                 >
                   Reset filters
                 </button>
@@ -1403,7 +1411,7 @@ export default function JobDashboard() {
 
           {/* Error Banner */}
           {errorMsg && (
-            <div className="p-3 mb-6 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="p-3 mb-6 text-xs text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] rounded">
               {errorMsg}
             </div>
           )}
@@ -1411,7 +1419,7 @@ export default function JobDashboard() {
           {/* Results Header */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-3">
-              <h2 className="text-base font-bold text-gray-900">
+              <h2 className="text-base font-semibold text-[#12172B]">
                 {activeTab === 'saved'
                   ? `Saved Opportunities (${filteredJobs.length})`
                   : activeTab === 'walkins'
@@ -1420,13 +1428,13 @@ export default function JobDashboard() {
               </h2>
               <button
                 onClick={() => setHasSearched(false)}
-                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+                className="text-xs text-[#2B4EE6] hover:underline font-medium flex items-center gap-1"
               >
                 ← Back to Featured
               </button>
             </div>
-            <span className="text-xs text-gray-500 font-medium">
-              Strictly &le; 7 days old • Deduplicated across 30+ portals & aggregators
+            <span className="text-xs text-[#5B6478]">
+              Strictly ≤ 7 days old • Direct corporate portals only
             </span>
           </div>
 
@@ -1445,32 +1453,71 @@ export default function JobDashboard() {
 
           {/* Empty State */}
           {!isLoading && filteredJobs.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-2xl bg-white border-gray-200">
-              <div className="text-3xl mb-2">🔍</div>
-              <h3 className="text-base font-bold text-gray-900">No jobs match your current filters</h3>
-              <p className="mt-1 text-xs text-gray-500 max-w-sm">
-                Try widening your filters (e.g. choose Any Time or Any Distance).
-              </p>
-              <button
-                onClick={() => {
-                  setWorkMode('Any Mode');
-                  setPostedTime('Any Time');
-                  setDistance('Any Distance');
-                  setApplicants('Any Applicants');
-                  setVerifiedOnly(false);
-                  setIsStartupOnly(false);
-                  fetchJobs();
-                }}
-                className="mt-4 px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100"
-              >
-                Reset All Filters
-              </button>
+            <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-md bg-white border-[#E4E7EC]">
+              {activeTab === 'saved' ? (
+                <>
+                  <div className="w-10 h-10 rounded bg-[#FFFBEB] text-[#D97B0A] flex items-center justify-center text-base mb-2 border border-[#FDE68A]">
+                    ★
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#12172B]">No saved jobs yet</h3>
+                  <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
+                    Save jobs to compare them here → Click the star icon (☆) on any verified role to add it to your shortlist.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setActiveTab('all');
+                      setHasSearched(false);
+                    }}
+                    className="mt-3 px-3.5 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 rounded hover:bg-[#2B4EE6]/10 transition-colors"
+                  >
+                    Browse verified jobs
+                  </button>
+                </>
+              ) : activeTab === 'walkins' ? (
+                <>
+                  <div className="w-10 h-10 rounded bg-[#F7F8FA] text-[#12172B] flex items-center justify-center text-base mb-2 border border-[#E4E7EC]">
+                    🚶
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#12172B]">No walk-in drives found</h3>
+                  <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
+                    There are no offline walk-in hiring drives matching your current location or role search.
+                  </p>
+                  <button
+                    onClick={() => setPostWalkInOpen(true)}
+                    className="mt-3 px-3.5 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 rounded hover:bg-[#2B4EE6]/10 transition-colors"
+                  >
+                    + Post a walk-in drive
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl mb-2 text-[#5B6478]">🔍</div>
+                  <h3 className="text-sm font-semibold text-[#12172B]">No jobs match your current filters</h3>
+                  <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
+                    Try widening your filters (e.g. choose Any Age or All Modes).
+                  </p>
+                  <button
+                    onClick={() => {
+                      setWorkMode('Any Mode');
+                      setPostedTime('Any Time');
+                      setDistance('Any Distance');
+                      setApplicants('Any Applicants');
+                      setVerifiedOnly(false);
+                      setIsStartupOnly(false);
+                      fetchJobs();
+                    }}
+                    className="mt-3 px-3.5 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 rounded hover:bg-[#2B4EE6]/10 transition-colors"
+                  >
+                    Reset all filters
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           {/* Job Feed */}
           {!isLoading && (
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {filteredJobs.map((job, idx) => (
                 <JobCardItem
                   key={job.id || idx}
@@ -1500,70 +1547,75 @@ export default function JobDashboard() {
           ></div>
 
           {/* Slide-over panel */}
-          <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl z-10 flex flex-col overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl z-10 flex flex-col overflow-y-auto border-l border-[#E4E7EC]">
             {/* Header */}
-            <div className="p-6 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-sm z-20 flex justify-between items-start">
+            <div className="p-5 border-b border-[#E4E7EC] sticky top-0 bg-white z-20 flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="font-bold text-gray-500 text-xs uppercase tracking-wider">{selectedJob.company}</span>
+                  <span className="font-semibold text-[#12172B] text-xs">{selectedJob.company}</span>
                   {selectedJob.isVerified && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      🛡️ Verified Genuine
+                    <span className="px-1.5 py-0.5 text-[11px] font-medium rounded text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] inline-flex items-center gap-1">
+                      <svg className="w-3 h-3 text-[#0E9F6E]" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                      </svg>
+                      Verified Direct
                     </span>
                   )}
                 </div>
-                <h2 className="text-xl font-black text-gray-900 leading-snug">{selectedJob.title}</h2>
-                <p className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-1.5">
+                <h2 className="text-lg font-semibold text-[#12172B] leading-snug">{selectedJob.title}</h2>
+                <p className="text-xs text-[#5B6478] mt-1 flex flex-wrap items-center gap-1.5">
                   <span>📍 {selectedJob.location}</span>
-                  <span>•</span>
-                  <span>🏢 {selectedJob.workMode}</span>
-                  <span>•</span>
-                  <span>⏱️ {selectedJob.postedText || formatTimeAgo(selectedJob.postedAt)}</span>
-                  <span>•</span>
-                  <span className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-                    👥 {selectedJob.applicantText || (selectedJob.applicantCount ? `${selectedJob.applicantCount} applicants` : 'Early applicant')}
-                  </span>
+                  <span className="text-[#E4E7EC]">•</span>
+                  <span>{selectedJob.workMode}</span>
+                  <span className="text-[#E4E7EC]">•</span>
+                  <span>{selectedJob.postedText || formatTimeAgo(selectedJob.postedAt)}</span>
+                  <span className="text-[#E4E7EC]">•</span>
+                  <span>{selectedJob.applicantText || (selectedJob.applicantCount ? `${selectedJob.applicantCount} applicants` : 'Early applicant')}</span>
                 </p>
               </div>
 
               <button
                 onClick={() => setSelectedJob(null)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors"
+                className="w-8 h-8 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] flex items-center justify-center text-[#5B6478] hover:text-[#12172B] transition-colors"
               >
                 ✕
               </button>
             </div>
 
             {/* Content Body */}
-            <div className="p-6 space-y-6 flex-1">
+            <div className="p-5 space-y-5 flex-1">
               {/* Primary Actions Bar */}
-              <div className="flex gap-2.5 flex-wrap items-center">
+              <div className="flex gap-2 flex-wrap items-center">
                 <a
                   href={selectedJob.url || '#'}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl text-center shadow-md transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded text-center transition-colors flex items-center justify-center gap-1.5"
                 >
-                  Apply on Company Portal ↗
+                  Apply on company portal ↗
                 </a>
 
                 <button
                   onClick={() => toggleSaveJob(selectedJob.id)}
-                  className="px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-sm font-semibold transition-colors"
+                  className={`px-3 py-2 rounded border text-xs font-medium transition-colors ${
+                    savedJobIds.includes(selectedJob.id)
+                      ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
+                      : 'border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B]'
+                  }`}
                 >
                   {savedJobIds.includes(selectedJob.id) ? '★ Saved' : '☆ Save'}
                 </button>
 
                 <button
                   onClick={() => setActiveOutreachJob(selectedJob)}
-                  className="px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-sm font-semibold transition-colors"
+                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors"
                 >
                   ✉️ Email HR
                 </button>
 
                 <button
                   onClick={() => setActivePrepJob(selectedJob)}
-                  className="px-4 py-3 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 text-sm font-semibold transition-colors"
+                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors"
                 >
                   🎙️ Prep
                 </button>
@@ -1573,35 +1625,47 @@ export default function JobDashboard() {
               {(() => {
                 const rec = calculateRecommendation(selectedJob);
                 return (
-                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/90 space-y-3">
+                  <div className="p-4 bg-white rounded border border-[#E4E7EC] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">
-                        AI Candidate Fit Rating
+                      <span className="text-xs font-semibold text-[#12172B]">
+                        AI candidate fit analysis
                       </span>
-                      <span className={`px-2.5 py-0.5 text-xs rounded-full border ${rec.badgeBg}`}>
-                        {rec.label}
-                      </span>
+                      {rec.tier === 'high' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span> High match ({rec.score}%)
+                        </span>
+                      )}
+                      {rec.tier === 'medium' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97B0A]"></span> Good fit ({rec.score}%)
+                        </span>
+                      )}
+                      {rec.tier === 'low' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#FEF2F2] text-[#D9534F] border border-[#FECACA]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D9534F]"></span> Low match ({rec.score}%)
+                        </span>
+                      )}
                     </div>
 
-                    <p className="text-xs text-gray-700">{rec.reason}</p>
+                    <p className="text-xs text-[#5B6478]">{rec.reason}</p>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#E4E7EC]">
                       <div>
-                        <strong className="text-gray-900">🎓 Education: </strong>
-                        <span className="text-gray-600">{rec.educationMatch || 'Not specified'}</span>
+                        <strong className="text-[#12172B]">Education: </strong>
+                        <span className="text-[#5B6478]">{rec.educationMatch || 'Not specified'}</span>
                       </div>
                       <div>
-                        <strong className="text-gray-900">💼 Seniority: </strong>
-                        <span className="text-gray-600">{rec.experienceMatch || 'Aligned'}</span>
+                        <strong className="text-[#12172B]">Seniority: </strong>
+                        <span className="text-[#5B6478]">{rec.experienceMatch || 'Aligned'}</span>
                       </div>
                     </div>
 
                     {rec.matchedSkills.length > 0 && (
                       <div className="pt-2">
-                        <span className="text-[11px] font-bold text-gray-700 block mb-1">Your Matched Skills:</span>
+                        <span className="text-[11px] font-medium text-[#12172B] block mb-1">Your matched skills:</span>
                         <div className="flex flex-wrap gap-1">
                           {rec.matchedSkills.map((s) => (
-                            <span key={s} className="px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded text-[11px] font-medium">
+                            <span key={s} className="px-2 py-0.5 bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] rounded text-[11px] font-medium">
                               ✓ {s}
                             </span>
                           ))}
@@ -1611,10 +1675,10 @@ export default function JobDashboard() {
 
                     {rec.missingSkills.length > 0 && (
                       <div className="pt-1">
-                        <span className="text-[11px] font-bold text-amber-800 block mb-1">Skills to Highlight in CV:</span>
+                        <span className="text-[11px] font-medium text-[#D97B0A] block mb-1">Skills to highlight in resume:</span>
                         <div className="flex flex-wrap gap-1">
                           {rec.missingSkills.map((s) => (
-                            <span key={s} className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[11px] font-medium">
+                            <span key={s} className="px-2 py-0.5 bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A] rounded text-[11px] font-medium">
                               + {s}
                             </span>
                           ))}
@@ -1627,39 +1691,39 @@ export default function JobDashboard() {
 
               {/* Full Description */}
               <div>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                    Full Job Description
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-semibold text-[#12172B]">
+                    Full job description
                   </h3>
                   {selectedJob.url && selectedJob.url !== '#' && (
                     <a
                       href={selectedJob.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+                      className="text-xs text-[#2B4EE6] hover:underline font-medium flex items-center gap-1"
                     >
                       View on official portal ↗
                     </a>
                   )}
                 </div>
-                <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed text-xs bg-gray-50/70 p-5 rounded-2xl border border-gray-200/80 whitespace-pre-line font-sans">
+                <div className="prose max-w-none text-[#12172B] leading-relaxed text-xs bg-[#F7F8FA] p-4 rounded border border-[#E4E7EC] whitespace-pre-line font-sans">
                   {selectedJob.description}
                 </div>
               </div>
 
               {/* Key metadata */}
-              <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-2 text-xs">
+              <div className="p-4 bg-white border border-[#E4E7EC] rounded space-y-1.5 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Employment Type:</span>
-                  <span className="font-semibold text-gray-800">{selectedJob.type}</span>
+                  <span className="text-[#5B6478]">Employment type:</span>
+                  <span className="font-medium text-[#12172B]">{selectedJob.type}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Source:</span>
-                  <span className="font-semibold text-gray-800">{selectedJob.source}</span>
+                  <span className="text-[#5B6478]">Source:</span>
+                  <span className="font-medium text-[#12172B]">{selectedJob.source}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Link Type:</span>
-                  <span className="font-semibold text-emerald-700">Official Company Direct Posting</span>
+                  <span className="text-[#5B6478]">Link type:</span>
+                  <span className="font-medium text-[#0E9F6E]">Official Company Direct Posting</span>
                 </div>
               </div>
             </div>
@@ -1668,61 +1732,61 @@ export default function JobDashboard() {
       )}
 
       {/* ── Comprehensive Platform Footer ── */}
-      <footer className="mt-16 bg-white border-t border-gray-200 py-12 text-xs text-gray-600">
+      <footer className="mt-16 bg-white border-t border-[#E4E7EC] py-12 text-xs text-[#5B6478]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm">
+                <div className="w-7 h-7 rounded bg-[#12172B] flex items-center justify-center text-white font-bold text-xs">
                   NH
                 </div>
-                <span className="font-extrabold text-lg text-gray-900 tracking-tight">NicheHire</span>
+                <span className="font-bold text-base text-[#12172B] tracking-tight">NicheHire</span>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 The verified career platform engineered to eliminate ghost jobs. Sourced directly from official enterprise career portals and tier-1 ATS feeds under 7 days old.
               </p>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-100">
-                <span>🛡️</span> 100% Genuine Direct Portal Guarantee
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ECFDF5] text-[#0E9F6E] text-[11px] font-medium border border-[#A7F3D0]">
+                <span>✓</span> 100% Genuine Direct Portal Guarantee
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">For Job Seekers</h4>
-              <ul className="space-y-1.5 text-gray-500">
-                <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-blue-600">Browse Verified Jobs</button></li>
-                <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-blue-600">Offline & Walk-In Openings</button></li>
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-blue-600">AI Resume Matcher</button></li>
-                <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-blue-600">How to Apply Direct</button></li>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-[#12172B] text-xs">For job seekers</h4>
+              <ul className="space-y-1.5 text-[#5B6478]">
+                <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-[#2B4EE6]">Browse verified jobs</button></li>
+                <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-[#2B4EE6]">Offline &amp; walk-in openings</button></li>
+                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#2B4EE6]">AI resume matcher</button></li>
+                <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-[#2B4EE6]">How to apply direct</button></li>
               </ul>
             </div>
 
-            <div className="space-y-2.5">
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">Trust & Verification</h4>
-              <ul className="space-y-1.5 text-gray-500">
-                <li><Link href="/about" className="hover:text-blue-600">4-Pillar Verification Engine</Link></li>
-                <li><Link href="/about" className="hover:text-blue-600">Strict &le; 7-Day Cutoff Policy</Link></li>
-                <li><Link href="/about" className="hover:text-blue-600">Anti-Scam & Zero Fees Pledge</Link></li>
-                <li><Link href="/about" className="hover:text-blue-600">About NicheHire</Link></li>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-[#12172B] text-xs">Trust &amp; verification</h4>
+              <ul className="space-y-1.5 text-[#5B6478]">
+                <li><Link href="/about" className="hover:text-[#2B4EE6]">4-Pillar verification engine</Link></li>
+                <li><Link href="/about" className="hover:text-[#2B4EE6]">Strict ≤ 7-day cutoff policy</Link></li>
+                <li><Link href="/about" className="hover:text-[#2B4EE6]">Anti-scam &amp; zero fees pledge</Link></li>
+                <li><Link href="/about" className="hover:text-[#2B4EE6]">About NicheHire</Link></li>
               </ul>
             </div>
 
-            <div className="space-y-2.5">
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px]">For Employers</h4>
-              <ul className="space-y-1.5 text-gray-500">
-                <li><button onClick={() => setPostJobOpen(true)} className="hover:text-blue-600 font-semibold text-blue-600">Post a Verified Job ➔</button></li>
-                <li><Link href="/pricing" className="hover:text-blue-600">Employer Pricing & Plans</Link></li>
-                <li><Link href="/pricing" className="hover:text-blue-600">Greenhouse & Lever ATS Sync</Link></li>
-                <li><button onClick={() => setFeedbackModalOpen(true)} className="hover:text-blue-600">Recruiter Support</button></li>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-[#12172B] text-xs">For employers</h4>
+              <ul className="space-y-1.5 text-[#5B6478]">
+                <li><button onClick={() => setPostJobOpen(true)} className="hover:underline font-medium text-[#2B4EE6]">Post a verified role ➔</button></li>
+                <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Employer pricing &amp; plans</Link></li>
+                <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Greenhouse &amp; Lever sync</Link></li>
+                <li><button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#2B4EE6]">Recruiter support</button></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-gray-400">
+          <div className="pt-6 border-t border-[#E4E7EC] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#5B6478]">
             <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
             <div className="flex items-center gap-4">
-              <Link href="/about" className="hover:text-gray-600">About</Link>
-              <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
-              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-gray-600">Contact</button>
+              <Link href="/about" className="hover:text-[#12172B]">About</Link>
+              <Link href="/pricing" className="hover:text-[#12172B]">Pricing</Link>
+              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#12172B]">Contact</button>
             </div>
           </div>
         </div>

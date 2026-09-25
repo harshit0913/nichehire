@@ -65,94 +65,135 @@ export default function JobCardItem({
   onTailorResume,
   formatTimeAgo,
 }: JobCardItemProps) {
+  // Compute initial initials for company monogram
+  const initials = job.company
+    ? job.company
+        .split(' ')
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase()
+    : 'CO';
+
   return (
-    <div className="border border-gray-200/90 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all bg-white overflow-hidden p-5 flex flex-col md:flex-row justify-between gap-4">
+    <article className="group bg-white border border-[#E4E7EC] rounded-md transition-colors hover:border-[#2B4EE6]/40 p-4 sm:p-5 flex flex-col md:flex-row justify-between gap-4">
       <div className="flex-1 min-w-0">
-        {/* Top Badges Row */}
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <h3
-            onClick={() => onOpenDetails(job)}
-            className="text-base font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
-          >
-            {job.title}
-          </h3>
+        {/* Header row: Monogram + Company + Verified + Title */}
+        <div className="flex items-start gap-3">
+          {/* Subtle Company Monogram */}
+          <div className="w-9 h-9 shrink-0 rounded bg-[#F7F8FA] border border-[#E4E7EC] flex items-center justify-center text-xs font-semibold text-[#12172B]">
+            {initials}
+          </div>
 
-          {/* Apply Recommendation Badge */}
-          <span
-            className={`px-2.5 py-0.5 text-[11px] rounded-full border shadow-2xs flex items-center gap-1 ${rec.badgeBg}`}
-            title={rec.reason}
-          >
-            {rec.tier === 'high' ? '🟢' : rec.tier === 'medium' ? '🟡' : rec.tier === 'low' ? '🔴' : '📄'}
-            {rec.label}
-          </span>
+          <div className="flex-1 min-w-0">
+            {/* Company & Verification Row */}
+            <div className="flex items-center gap-2 flex-wrap text-xs text-[#5B6478]">
+              <span className="font-semibold text-[#12172B]">{job.company}</span>
 
-          {/* Verified Genuine Badge */}
-          {job.isVerified && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-0.5">
-              🛡️ Verified
-            </span>
+              {/* Verified Badge: Reserved strictly emerald */}
+              {job.isVerified && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] px-1.5 py-0.5 rounded"
+                  title="Verified genuine direct corporate opening under 7 days old"
+                >
+                  <svg className="w-3 h-3 text-[#0E9F6E]" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Verified
+                </span>
+              )}
+
+              {/* Direct Portal Tag */}
+              {job.directPortal && (
+                <span className="text-[11px] text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                  Direct Portal
+                </span>
+              )}
+
+              {/* Work Mode */}
+              <span className="text-[11px] text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                {job.workMode}
+              </span>
+
+              {/* Local Proximity Indicator */}
+              {job.geoTier === 1 && locationQuery && (
+                <span className="text-[11px] text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 px-1.5 py-0.5 rounded">
+                  Local to {locationQuery}
+                </span>
+              )}
+            </div>
+
+            {/* Job Title */}
+            <h3
+              onClick={() => onOpenDetails(job)}
+              className="mt-1 text-[15px] font-semibold text-[#12172B] hover:text-[#2B4EE6] cursor-pointer transition-colors leading-snug"
+            >
+              {job.title}
+            </h3>
+          </div>
+        </div>
+
+        {/* Metadata Line: Dense, Left-aligned */}
+        <div className="mt-2.5 flex items-center gap-2 flex-wrap text-xs text-[#5B6478]">
+          <span>{job.location}</span>
+          <span className="text-[#E4E7EC]">•</span>
+          <span>{job.postedText || formatTimeAgo(job.postedAt)}</span>
+
+          {job.salary && (
+            <>
+              <span className="text-[#E4E7EC]">•</span>
+              <span className="font-medium text-[#12172B]">{job.salary}</span>
+            </>
           )}
 
-          {/* Direct Career Portal Badge */}
-          {job.directPortal && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-violet-50 text-violet-700 border border-violet-200">
-              🏢 Direct Career Portal
-            </span>
-          )}
-
-          {/* Local Proximity Badge */}
-          {job.geoTier === 1 && locationQuery && (
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-              📍 Local to {locationQuery}
-            </span>
-          )}
-
-          {/* Work Mode Badge */}
-          <span
-            className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
-              job.workMode === 'On-site'
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : job.workMode === 'Hybrid'
-                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            }`}
-          >
-            {job.workMode === 'On-site' ? '🏢 Office' : job.workMode === 'Hybrid' ? '🔄 Hybrid' : '🌐 Remote'}
+          <span className="text-[#E4E7EC]">•</span>
+          <span className="text-[#5B6478]">
+            {job.applicantText || (job.applicantCount ? `${job.applicantCount} applicants` : 'Early applicant')}
           </span>
         </div>
 
-        {/* Subtitle / Company metadata */}
-        <p className="text-xs text-gray-500 mb-2.5 flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-gray-800">{job.company}</span>
-          <span>•</span>
-          <span>📍 {job.location}</span>
-          <span>•</span>
-          <span>⏱️ {job.postedText || formatTimeAgo(job.postedAt)}</span>
-          {job.salary && (
-            <>
-              <span>•</span>
-              <span className="font-semibold text-emerald-700">💰 {job.salary}</span>
-            </>
-          )}
-          <span>•</span>
-          <span className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-            👥 {job.applicantText || (job.applicantCount ? `${job.applicantCount} applicants` : 'Early applicant')}
-          </span>
-        </p>
-
-        {/* Recommendation Explanation */}
+        {/* Match Scoring Pill (Functional Traffic-Light Triad: Emerald / Amber / Coral) */}
         {rec.tier !== 'neutral' && (
-          <div className="mb-3 p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-xs">
-            <p className="text-gray-700 font-medium">
-              <strong className="text-gray-900">Why apply? </strong>
-              {rec.reason}
-            </p>
+          <div className="mt-3 pt-2.5 border-t border-[#E4E7EC]/70 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              {rec.tier === 'high' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
+                  High match ({rec.score}%)
+                </span>
+              )}
+
+              {rec.tier === 'medium' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97B0A]"></span>
+                  Medium match ({rec.score}%)
+                </span>
+              )}
+
+              {rec.tier === 'low' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#FEF2F2] text-[#D9534F] border border-[#FECACA]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D9534F]"></span>
+                  Low match ({rec.score}%)
+                </span>
+              )}
+
+              <span className="text-[#5B6478] text-[12px]">{rec.reason}</span>
+            </div>
+
+            {/* Matched Skills list if high or medium */}
             {rec.matchedSkills.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1 items-center">
-                <span className="text-[10px] uppercase font-bold text-gray-400">Skills Matched:</span>
-                {rec.matchedSkills.map((s) => (
-                  <span key={s} className="px-1.5 py-0.2 bg-emerald-100/70 text-emerald-900 rounded text-[10px] font-semibold">
-                    ✓ {s}
+                <span className="text-[11px] text-[#5B6478]">Matched:</span>
+                {rec.matchedSkills.slice(0, 4).map((s) => (
+                  <span
+                    key={s}
+                    className="px-1.5 py-0.5 bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] rounded text-[10px] font-medium"
+                  >
+                    {s}
                   </span>
                 ))}
               </div>
@@ -160,59 +201,57 @@ export default function JobCardItem({
           </div>
         )}
 
-        {/* Description Preview */}
-        <p className="text-xs text-gray-600 line-clamp-2 mb-3">
+        {/* Short Excerpt */}
+        <p className="mt-2 text-xs text-[#5B6478] line-clamp-2 leading-relaxed">
           {job.description}
         </p>
-
-        {/* Source tag */}
-        <div className="flex items-center gap-2 text-[11px] text-gray-400">
-          <span>Source: <strong className="text-gray-600">{job.source}</strong></span>
-        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-row md:flex-col justify-end items-end gap-2 shrink-0">
-        <div className="flex gap-2 flex-wrap items-center">
-          {/* Save */}
+      {/* Action Strip: Clean, Functional, High Signal */}
+      <div className="flex flex-row md:flex-col justify-end items-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#E4E7EC]">
+        <div className="flex items-center gap-2">
+          {/* Bookmark / Save */}
           <button
             onClick={() => onToggleSave(job.id)}
-            className={`p-2 rounded-xl border text-xs transition-colors ${
-              isSaved ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
+            className={`p-2 rounded border text-xs transition-colors ${
+              isSaved
+                ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
+                : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B] hover:border-[#5B6478]/40'
             }`}
-            title={isSaved ? 'Remove from saved' : 'Save opportunity'}
+            title={isSaved ? 'Saved opportunity' : 'Save opportunity'}
+            aria-label="Save job"
           >
             {isSaved ? '★' : '☆'}
           </button>
 
-          {/* View in Detail (LinkedIn style drawer) */}
+          {/* View Details Drawer */}
           <button
             onClick={() => onOpenDetails(job)}
-            className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] hover:border-[#12172B]/30 rounded transition-colors whitespace-nowrap"
           >
-            View Details 👁
+            Details
           </button>
 
           {/* Tailor Resume */}
           <button
             onClick={() => onTailorResume(job)}
             disabled={tailor?.loading}
-            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-2xs whitespace-nowrap"
+            className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/30 hover:bg-[#2B4EE6]/10 rounded transition-colors whitespace-nowrap"
           >
-            {tailor?.loading ? '✦ Tailoring...' : '✦ Tailor'}
+            {tailor?.loading ? 'Tailoring…' : 'Tailor CV'}
           </button>
 
-          {/* Apply Direct */}
+          {/* Direct Apply CTA */}
           <a
             href={job.url || '#'}
             target="_blank"
             rel="noreferrer"
-            className="px-3.5 py-1.5 text-xs font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap"
           >
             Apply ↗
           </a>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

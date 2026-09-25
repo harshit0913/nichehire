@@ -113,93 +113,93 @@ export default function PostJobModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-8 relative border border-gray-100 my-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-white rounded-md max-w-xl w-full p-6 sm:p-8 relative border border-[#E4E7EC] my-8 max-h-[90vh] overflow-y-auto shadow-xl">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+          className="absolute top-5 right-5 text-[#5B6478] hover:text-[#12172B] text-sm w-7 h-7 flex items-center justify-center rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] transition-colors"
         >
           ✕
         </button>
 
         <div className="mb-5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-2">
-            <span>🛡️</span> For Employers & Recruiters
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0] mb-2">
+            <span>✓</span> For verified corporate employers
           </div>
-          <h2 className="text-xl font-black text-gray-900">Post a Verified Job Opening</h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Prove the &ldquo;verified / fast&rdquo; hook. Every post connects directly to your career portal and is indexed on Google for Jobs under 7-day freshness.
+          <h2 className="text-xl font-semibold text-[#12172B]">Post a verified job opening</h2>
+          <p className="text-xs text-[#5B6478] mt-1">
+            Every post connects directly to your career portal and is indexed on Google for Jobs under our 7-day freshness policy.
           </p>
         </div>
 
         {/* Selected Tier Selector */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="grid grid-cols-3 gap-2.5 mb-5">
           {/* Free Launch Tier */}
           <button
             type="button"
             onClick={() => setPlan('free')}
-            className={`p-3 rounded-xl border text-left transition-all ${
+            className={`p-3 rounded border text-left transition-colors ${
               plan === 'free'
-                ? 'border-emerald-600 bg-emerald-50/50 shadow-2xs ring-1 ring-emerald-500'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-[#0E9F6E] bg-[#ECFDF5]'
+                : 'border-[#E4E7EC] hover:border-[#12172B]/30'
             }`}
           >
-            <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Launch Pilot</div>
-            <div className="text-sm font-extrabold text-emerald-950 mt-0.5">₹0 FREE</div>
-            <div className="text-[10px] text-gray-500">1st Post Free</div>
+            <div className="text-[10px] font-semibold text-[#0E9F6E]">Launch pilot</div>
+            <div className="text-sm font-bold text-[#12172B] mt-0.5">₹0 Free</div>
+            <div className="text-[10px] text-[#5B6478]">1st post free</div>
           </button>
 
           {/* Single Verified Post - MAIN OFFER */}
           <button
             type="button"
             onClick={() => setPlan('single')}
-            className={`p-3 rounded-xl border text-left transition-all relative ${
+            className={`p-3 rounded border-2 text-left transition-colors relative ${
               plan === 'single'
-                ? 'border-blue-600 bg-blue-50/60 shadow-md ring-2 ring-blue-500'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-[#2B4EE6] bg-white'
+                : 'border-[#E4E7EC] hover:border-[#12172B]/30'
             }`}
           >
-            <span className="absolute -top-2.5 right-2 px-1.5 py-0.2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold rounded-full">
-              MAIN OFFER
+            <span className="absolute -top-2.5 right-2 px-1.5 py-0.2 bg-[#2B4EE6] text-white text-[9px] font-semibold rounded">
+              Main offer
             </span>
-            <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Verified Post</div>
-            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹4,999</div>
-            <div className="text-[10px] text-gray-600 font-medium">Featured 30 Days</div>
+            <div className="text-[10px] font-semibold text-[#2B4EE6]">Single post</div>
+            <div className="text-sm font-bold text-[#12172B] mt-0.5">₹4,999</div>
+            <div className="text-[10px] text-[#5B6478]">Featured 30 days</div>
           </button>
 
           {/* Growth 3-Pack */}
           <button
             type="button"
             onClick={() => setPlan('growth')}
-            className={`p-3 rounded-xl border text-left transition-all ${
+            className={`p-3 rounded border text-left transition-colors ${
               plan === 'growth'
-                ? 'border-purple-600 bg-purple-50/50 shadow-2xs ring-1 ring-purple-500'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-[#12172B] bg-[#F7F8FA]'
+                : 'border-[#E4E7EC] hover:border-[#12172B]/30'
             }`}
           >
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Growth Pack</div>
-            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹11,999</div>
-            <div className="text-[10px] text-gray-500">3 Posts Bundle</div>
+            <div className="text-[10px] font-semibold text-[#5B6478]">Growth pack</div>
+            <div className="text-sm font-bold text-[#12172B] mt-0.5">₹11,999</div>
+            <div className="text-[10px] text-[#5B6478]">3 posts bundle</div>
           </button>
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+          <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#FECACA] text-[#D9534F] text-xs rounded flex items-center gap-2">
             <span>⚠️</span> {errorMsg}
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium leading-relaxed">
+          <div className="mb-4 p-3.5 bg-[#ECFDF5] border border-[#A7F3D0] text-[#0E9F6E] text-xs rounded font-medium leading-relaxed">
             {successMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Job Title <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">
+                Job title <span className="text-[#D9534F]">*</span>
               </label>
               <input
                 type="text"
@@ -207,13 +207,13 @@ export default function PostJobModal({
                 placeholder="e.g. Senior Frontend Engineer"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Company Name <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">
+                Company name <span className="text-[#D9534F]">*</span>
               </label>
               <input
                 type="text"
@@ -221,15 +221,15 @@ export default function PostJobModal({
                 placeholder="e.g. Yash Technologies, Stripe"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Corporate Work Email <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">
+                Corporate work email <span className="text-[#D9534F]">*</span>
               </label>
               <input
                 type="email"
@@ -237,14 +237,14 @@ export default function PostJobModal({
                 placeholder="recruiter@yourcompany.com"
                 value={workEmail}
                 onChange={(e) => setWorkEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
-              <p className="text-[10px] text-gray-400 mt-0.5">Corporate domain verified for anti-scam protection</p>
+              <p className="text-[10px] text-[#5B6478] mt-0.5">Corporate domain verified for anti-scam protection</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Official Career Portal / ATS URL <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">
+                Official career portal URL <span className="text-[#D9534F]">*</span>
               </label>
               <input
                 type="url"
@@ -252,19 +252,19 @@ export default function PostJobModal({
                 placeholder="https://careers.company.com/job/123"
                 value={portalUrl}
                 onChange={(e) => setPortalUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
-              <p className="text-[10px] text-gray-400 mt-0.5">Where candidates submit their direct application</p>
+              <p className="text-[10px] text-[#5B6478] mt-0.5">Where candidates submit their direct application</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Work Mode</label>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">Work mode</label>
               <select
                 value={workMode}
                 onChange={(e: any) => setWorkMode(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none"
               >
                 <option value="Remote">Remote</option>
                 <option value="Hybrid">Hybrid</option>
@@ -273,22 +273,22 @@ export default function PostJobModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Location</label>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">Location</label>
               <input
                 type="text"
                 placeholder="e.g. Indore, Bangalore, Global"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Role Type</label>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">Role type</label>
               <select
                 value={jobType}
                 onChange={(e) => setJobType(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none"
               >
                 <option value="Full-Time">Full-Time</option>
                 <option value="Internship">Internship</option>
@@ -300,22 +300,22 @@ export default function PostJobModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Salary / Compensation</label>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">Salary / compensation</label>
               <input
                 type="text"
                 placeholder="e.g. ₹12 - ₹18 LPA or $80k - $110k"
                 value={salary}
                 onChange={(e) => setSalary(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Experience Required</label>
+              <label className="block text-xs font-semibold text-[#12172B] mb-1">Experience required</label>
               <select
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none"
               >
                 <option value="Fresher / 0-1 Year">Fresher / 0-1 Year</option>
                 <option value="1-3 Years">1-3 Years</option>
@@ -326,8 +326,8 @@ export default function PostJobModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Role Description & Key Requirements <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-[#12172B] mb-1">
+              Role description &amp; requirements <span className="text-[#D9534F]">*</span>
             </label>
             <textarea
               required
@@ -335,21 +335,21 @@ export default function PostJobModal({
               placeholder="Paste responsibilities, required technical skills (e.g. React, Next.js, Node.js), and what you offer..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none resize-none"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded text-xs text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6] resize-none"
             />
           </div>
 
           {/* Verification Pledge */}
-          <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl">
+          <div className="p-3 bg-[#F7F8FA] border border-[#E4E7EC] rounded">
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={pledgeChecked}
                 onChange={(e) => setPledgeChecked(e.target.checked)}
-                className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                className="mt-0.5 rounded text-[#2B4EE6] focus:ring-[#2B4EE6] h-4 w-4"
               />
-              <span className="text-[11px] text-blue-900 leading-snug">
-                <strong>Anti-Scam & Freshness Guarantee:</strong> I certify that this is a legitimate active opening on our corporate domain, free from candidate application fees, and adheres to NicheHire&apos;s strict 7-day freshness policy.
+              <span className="text-[11px] text-[#5B6478] leading-snug">
+                <strong className="text-[#12172B]">Anti-scam &amp; freshness pledge:</strong> I certify that this is a legitimate active opening on our corporate domain, free from candidate application fees, and adheres to NicheHire&apos;s strict 7-day freshness policy.
               </span>
             </label>
           </div>
@@ -358,23 +358,23 @@ export default function PostJobModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-medium text-[#5B6478] hover:text-[#12172B] bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2 text-xs font-medium text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
-                  <span className="animate-spin text-sm">⏳</span> Verifying & Publishing...
+                  <span className="animate-spin text-xs">⏳</span> Verifying &amp; Publishing...
                 </>
               ) : plan === 'free' ? (
-                'Claim Free Launch Post ➔'
+                'Claim free launch post ➔'
               ) : (
-                'Post Verified Job (₹4,999) ➔'
+                'Post verified job (₹4,999) ➔'
               )}
             </button>
           </div>

@@ -14,267 +14,263 @@ export default function PricingContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[#F7F8FA] text-[#12172B] flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200">
+      <header className="sticky top-0 z-40 bg-white border-b border-[#E4E7EC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-sm">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded bg-[#12172B] flex items-center justify-center text-white font-bold text-xs">
               NH
             </div>
             <div className="flex items-baseline">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent">
+              <span className="font-bold text-base text-[#12172B] tracking-tight">
                 NicheHire
               </span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 rounded-full border border-blue-100">
+              <span className="ml-2 px-1.5 py-0.5 text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] rounded border border-[#E4E7EC]">
                 For Employers
               </span>
             </div>
           </Link>
 
-          <nav className="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
-            <Link href="/" className="text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors">
-              💼 Candidate Search
+          <nav className="flex items-center gap-3 sm:gap-4 text-xs font-medium">
+            <Link href="/" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors">
+              Candidate search
             </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors">
-              🛡️ Verification Engine
+            <Link href="/about" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors">
+              Verification engine
             </Link>
             <button
               onClick={() => openModalWithTier('single')}
-              className="px-4 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-xs"
+              className="px-3.5 py-1.5 text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
             >
-              Post a Job ➔
+              Post a verified role ➔
             </button>
           </nav>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16">
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-14">
         {/* Hero Section */}
-        <section className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-            <span>🎁</span> Early Adopter Launch Special: Claim Your 1st Post Free
+        <section className="text-center space-y-3.5 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E4E7EC] text-xs text-[#5B6478]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
+            <span>Early adopter special: Claim your 1st post free</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tight leading-tight">
-            Hire Faster with Verified Placement. <br />
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              No Recurring Retainers. Pay Per Role.
-            </span>
+          <h1 className="text-3xl sm:text-5xl font-normal text-[#12172B] tracking-tight leading-tight">
+            Hire faster with verified placement. <br />
+            <span className="font-serif italic text-[#12172B]">No recurring retainers. Pay per role.</span>
           </h1>
-          <p className="max-w-2xl mx-auto text-base text-gray-600 leading-relaxed">
-            Don&apos;t get locked into expensive monthly subscriptions before seeing results. Start with our <strong>₹4,999 single-post tier</strong> or test our <strong>free launch pilot</strong> to prove that our verified direct-portal model produces higher-intent tech hires.
+          <p className="text-sm sm:text-base text-[#5B6478] leading-relaxed">
+            Avoid expensive monthly subscriptions before seeing verified results. Start with our <strong className="text-[#12172B] font-semibold">₹4,999 single-post tier</strong> or test our <strong className="text-[#12172B] font-semibold">free launch pilot</strong> to prove that our direct-portal model yields higher-intent engineering and product hires.
           </p>
         </section>
 
         {/* Pricing Cards Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          {/* Card 1: Free Launch Pilot (Inventory Builder) */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider border border-emerald-100">
-                Launch Pilot
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          {/* Card 1: Free Launch Pilot */}
+          <div className="bg-white rounded-md p-6 sm:p-7 border border-[#E4E7EC] flex flex-col justify-between hover:border-[#12172B]/30 transition-colors">
+            <div className="space-y-3.5">
+              <div className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
+                Launch pilot
               </div>
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black text-gray-900">₹0</span>
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  <span className="text-3xl font-bold text-[#12172B]">₹0</span>
+                  <span className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">
                     100% Free
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 font-medium">1st post for corporate employers</span>
+                <span className="text-xs text-[#5B6478]">1st post for corporate employers</span>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 Test applicant quality and hiring speed with zero financial commitment.
               </p>
 
-              <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span><strong>1 Verified Job Post</strong> (Active 14 days)</span>
+              <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>1 Verified Job Post (Active 14 days)</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span>Direct apply link to your <strong>Official Career Portal</strong></span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Direct apply link to your official career portal</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span>Google for Jobs <strong>Schema.org SEO Indexing</strong></span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Google for Jobs Schema.org SEO indexing</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span>Automated <strong>Domain Authenticity Check</strong></span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Automated corporate domain validation</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-600 font-bold text-sm">✓</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
                   <span>Standard candidate applicant feed</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8">
+            <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('free')}
-                className="w-full py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors border border-emerald-200"
+                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded border border-[#E4E7EC] transition-colors"
               >
-                Claim Free Launch Post ➔
+                Claim free launch post ➔
               </button>
             </div>
           </div>
 
-          {/* Card 2: Single Verified Post (THE MAIN OFFER - Elevated & Highlighted) */}
-          <div className="bg-white rounded-3xl p-8 border-2 border-blue-600 shadow-xl flex flex-col justify-between relative transform md:-translate-y-2">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-extrabold uppercase tracking-wider rounded-full shadow-sm">
-              Main Offer • Most Popular
+          {/* Card 2: Single Verified Post (THE MAIN OFFER) */}
+          <div className="bg-white rounded-md p-6 sm:p-7 border-2 border-[#2B4EE6] flex flex-col justify-between relative">
+            <div className="absolute -top-3 left-6 px-2.5 py-0.5 bg-[#2B4EE6] text-white text-[11px] font-medium rounded">
+              Main offer • Recommended
             </div>
 
-            <div className="space-y-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                Single Verified Post
+            <div className="space-y-3.5">
+              <div className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-[#2B4EE6]/10 text-[#2B4EE6] border border-[#2B4EE6]/20">
+                Single verified post
               </div>
               <div>
-                <span className="text-4xl font-black text-gray-900">₹4,999</span>
-                <span className="text-xs text-gray-500 font-medium ml-1.5">/ single post (30 days)</span>
+                <span className="text-3xl font-bold text-[#12172B]">₹4,999</span>
+                <span className="text-xs text-[#5B6478] ml-1.5">/ single post (30 days)</span>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 Pay-per-hire with zero recurring commitments. Ideal to fill your key opening fast.
               </p>
 
-              <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span><strong>1 Featured Verified Post</strong> (Active 30 days)</span>
+              <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <span>1 Featured Verified Post (Active 30 days)</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span><strong>#1 Top Placement</strong> on search results &amp; category feeds</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <span>Priority top placement on search results</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span><strong>Direct Recruiter Outreach Email</strong> enabled</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <span>Direct recruiter outreach email enabled</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span>Automated <strong>AI Candidate Fit Scoring</strong> &amp; skill gap tags</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <span>Automated AI Candidate Fit Scoring &amp; skill tags</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span>Priority Google for Jobs <strong>Schema.org Re-indexing</strong></span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <span>Schema.org real-time re-indexing</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-blue-600 font-bold text-sm">✓</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#2B4EE6] font-bold">✓</span>
                   <span>Verified Corporate Employer Seal</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8">
+            <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('single')}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+                className="w-full py-2.5 px-4 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
               >
-                Post Verified Role for ₹4,999 ➔
+                Post verified role for ₹4,999 ➔
               </button>
             </div>
           </div>
 
           {/* Card 3: Growth 3-Pack */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider">
-                Growth 3-Pack
+          <div className="bg-white rounded-md p-6 sm:p-7 border border-[#E4E7EC] flex flex-col justify-between hover:border-[#12172B]/30 transition-colors">
+            <div className="space-y-3.5">
+              <div className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC]">
+                Growth 3-pack
               </div>
               <div>
-                <span className="text-4xl font-black text-gray-900">₹11,999</span>
-                <span className="text-xs text-gray-500 font-medium ml-1.5">/ 3 posts bundle</span>
-                <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">Save ₹3,000 (₹3,999 / post)</div>
+                <span className="text-3xl font-bold text-[#12172B]">₹11,999</span>
+                <span className="text-xs text-[#5B6478] ml-1.5">/ 3 posts bundle</span>
+                <div className="text-[11px] text-[#0E9F6E] font-medium mt-0.5">Save ₹3,000 (₹3,999 / post)</div>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                For scaling startups or teams hiring for multiple engineering or product positions.
+              <p className="text-xs text-[#5B6478] leading-relaxed">
+                For scaling teams hiring for multiple engineering or product openings.
               </p>
 
-              <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span><strong>3 Featured Verified Posts</strong> (Active 30 days each)</span>
+              <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>3 Featured Verified Posts (Active 30 days each)</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span><strong>Priority Placement</strong> on all 3 listings</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Priority placement across all 3 roles</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span><strong>Direct Recruiter Email Outreach</strong> on all roles</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Direct recruiter outreach enabled</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Instant candidate match alerts &amp; screening</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Candidate match alerts &amp; screening</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Dedicated WhatsApp &amp; email recruiter support</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <span>Dedicated WhatsApp &amp; email support</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8">
+            <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('growth')}
-                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-xs rounded-xl transition-colors"
+                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC] font-medium text-xs rounded transition-colors"
               >
-                Get 3-Post Pack for ₹11,999 ➔
+                Get 3-post pack for ₹11,999 ➔
               </button>
             </div>
           </div>
         </section>
 
         {/* Enterprise Callout Banner */}
-        <section className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
+        <section className="bg-[#12172B] rounded-md p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 border border-[#12172B]">
           <div className="space-y-1.5 text-center md:text-left">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-300">Need High-Volume or ATS Sync?</span>
-            <h3 className="text-xl sm:text-2xl font-bold">Enterprise ATS Webhook Sync (Greenhouse, Lever, Workday)</h3>
+            <span className="text-xs font-medium text-[#5B6478]">Need high-volume or ATS sync?</span>
+            <h3 className="text-xl font-semibold">Enterprise ATS Webhook Sync (Greenhouse, Lever, Workday)</h3>
             <p className="text-xs text-gray-300 max-w-xl">
               Sync all open roles automatically from your ATS with dedicated employer branding, priority local placement, and SLA guarantees.
             </p>
           </div>
           <button
             onClick={() => openModalWithTier('growth')}
-            className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold text-xs rounded-xl whitespace-nowrap transition-colors shadow-md"
+            className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded whitespace-nowrap transition-colors"
           >
             Inquire Enterprise ➔
           </button>
         </section>
 
         {/* Why Post on NicheHire? */}
-        <section className="bg-white rounded-3xl p-8 sm:p-12 border border-gray-200/80 space-y-8">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-2xl font-extrabold text-gray-900">Why Modern Employers Choose NicheHire</h2>
-            <p className="text-xs text-gray-500 mt-1">
+        <section className="bg-white rounded-md p-6 sm:p-8 border border-[#E4E7EC] space-y-6">
+          <div className="text-center max-w-xl mx-auto space-y-1">
+            <h2 className="text-xl font-semibold text-[#12172B]">Why modern employers choose NicheHire</h2>
+            <p className="text-xs text-[#5B6478]">
               Move beyond the clutter of legacy job boards where your postings get lost in thousands of outdated listings.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-2">
-              <div className="text-2xl">⚡</div>
-              <h3 className="text-sm font-bold text-gray-900">Direct Portal Traffic</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+            <div className="p-4 rounded border border-[#E4E7EC] bg-[#F7F8FA] space-y-1.5">
+              <h3 className="text-xs font-semibold text-[#12172B]">Direct portal traffic</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 Candidates don&apos;t apply to an opaque middleman database. They apply straight into your existing ATS or career portal pipeline.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
-              <div className="text-2xl">🎯</div>
-              <h3 className="text-sm font-bold text-gray-900">Higher Candidate Quality</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+            <div className="p-4 rounded border border-[#E4E7EC] bg-[#F7F8FA] space-y-1.5">
+              <h3 className="text-xs font-semibold text-[#12172B]">Higher candidate quality</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 Our resume AI pre-screens skills and suggests applying only when candidates meet your technical requirements, reducing spam applications.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-2">
-              <div className="text-2xl">🔍</div>
-              <h3 className="text-sm font-bold text-gray-900">Google for Jobs Optimization</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+            <div className="p-4 rounded border border-[#E4E7EC] bg-[#F7F8FA] space-y-1.5">
+              <h3 className="text-xs font-semibold text-[#12172B]">Google for Jobs optimization</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
                 Every verified listing is automatically tagged with validated Schema.org JobPosting microdata to maximize organic search discovery.
               </p>
             </div>
@@ -283,32 +279,32 @@ export default function PricingContent() {
 
         {/* Employer FAQ */}
         <section className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-2xl font-extrabold text-gray-900 text-center">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">Why single-post instead of expensive monthly retainers?</h3>
-              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
+          <h2 className="text-xl font-semibold text-[#12172B] text-center">Frequently asked questions</h2>
+          <div className="space-y-3">
+            <div className="p-4 bg-white rounded border border-[#E4E7EC]">
+              <h3 className="text-xs font-semibold text-[#12172B]">Why single-post instead of expensive monthly retainers?</h3>
+              <p className="text-xs text-[#5B6478] mt-1 leading-relaxed">
                 Most teams don&apos;t hire 50 engineers every month. Traditional job boards force recruiters into recurring commitments that go unused. Our ₹4,999 single-post model gives you complete flexibility: pay only when you have an active role to fill.
               </p>
             </div>
 
-            <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">How do I claim the Free Launch Pilot post?</h3>
-              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
-                Select &ldquo;Launch Pilot&rdquo; on the posting form and provide your official corporate work email (e.g. name@company.com). Once our automated crawler validates your corporate domain, your post goes live for 14 days at ₹0 cost.
+            <div className="p-4 bg-white rounded border border-[#E4E7EC]">
+              <h3 className="text-xs font-semibold text-[#12172B]">How do I claim the Free Launch Pilot post?</h3>
+              <p className="text-xs text-[#5B6478] mt-1 leading-relaxed">
+                Select &ldquo;Launch Pilot&rdquo; on the posting form and provide your official corporate work email (e.g. name@company.com). Once our automated system validates your corporate domain, your post goes live for 14 days at ₹0 cost.
               </p>
             </div>
 
-            <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">How long do job postings stay active?</h3>
-              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
+            <div className="p-4 bg-white rounded border border-[#E4E7EC]">
+              <h3 className="text-xs font-semibold text-[#12172B]">How long do job postings stay active?</h3>
+              <p className="text-xs text-[#5B6478] mt-1 leading-relaxed">
                 Single verified posts stay active for 30 days and are flagged with freshness badges (&lt; 24h, &lt; 3d, &lt; 7d). You can edit or close the post anytime.
               </p>
             </div>
 
-            <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">How does candidate application routing work?</h3>
-              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
+            <div className="p-4 bg-white rounded border border-[#E4E7EC]">
+              <h3 className="text-xs font-semibold text-[#12172B]">How does candidate application routing work?</h3>
+              <p className="text-xs text-[#5B6478] mt-1 leading-relaxed">
                 All candidate clicks route straight to your official career portal URL or ATS application form. In addition, candidates with high match scores can reach out via direct recruiter email if enabled.
               </p>
             </div>
@@ -316,36 +312,36 @@ export default function PricingContent() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 sm:p-12 text-white text-center space-y-4 shadow-xl">
-          <h2 className="text-2xl sm:text-3xl font-extrabold">Ready to Fill Your Critical Tech Role?</h2>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto">
+        <section className="bg-white border border-[#E4E7EC] rounded-md p-8 sm:p-10 text-center space-y-3">
+          <h2 className="text-2xl font-semibold text-[#12172B]">Ready to fill your critical tech role?</h2>
+          <p className="text-xs text-[#5B6478] max-w-lg mx-auto leading-relaxed">
             Launch with our ₹4,999 single verified post or claim your 1st post free. Verified listings go live in under 15 minutes.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <button
               onClick={() => openModalWithTier('single')}
-              className="px-8 py-3.5 bg-white hover:bg-gray-100 text-blue-700 font-extrabold text-xs rounded-xl shadow-lg transition-transform transform hover:scale-105"
+              className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
             >
-              Post Verified Job (₹4,999) ➔
+              Post verified job (₹4,999) ➔
             </button>
             <button
               onClick={() => openModalWithTier('free')}
-              className="px-6 py-3.5 bg-blue-700/80 hover:bg-blue-800 text-white font-bold text-xs rounded-xl border border-blue-400 transition-colors"
+              className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded border border-[#E4E7EC] transition-colors"
             >
-              Claim Free Launch Post (₹0)
+              Claim free launch post (₹0)
             </button>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8 text-center text-xs text-gray-500">
+      <footer className="bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
           <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
-          <div className="flex justify-center gap-4 text-xs font-medium text-gray-600">
-            <Link href="/" className="hover:text-blue-600">Candidate Search</Link>
-            <Link href="/about" className="hover:text-blue-600">About &amp; Trust</Link>
-            <Link href="/pricing" className="hover:text-blue-600">Employer Pricing</Link>
+          <div className="flex justify-center gap-4 text-xs font-medium text-[#12172B]">
+            <Link href="/" className="hover:text-[#2B4EE6]">Candidate search</Link>
+            <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; trust</Link>
+            <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer pricing</Link>
           </div>
         </div>
       </footer>
