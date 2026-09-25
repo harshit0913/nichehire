@@ -6,9 +6,9 @@ import PostJobModal from '../components/PostJobModal';
 
 export default function PricingContent() {
   const [postJobOpen, setPostJobOpen] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<'starter' | 'growth' | 'enterprise'>('growth');
+  const [selectedTier, setSelectedTier] = useState<'free' | 'single' | 'growth'>('single');
 
-  const openModalWithTier = (tier: 'starter' | 'growth' | 'enterprise') => {
+  const openModalWithTier = (tier: 'free' | 'single' | 'growth') => {
     setSelectedTier(tier);
     setPostJobOpen(true);
   };
@@ -40,7 +40,7 @@ export default function PricingContent() {
               🛡️ Verification Engine
             </Link>
             <button
-              onClick={() => setPostJobOpen(true)}
+              onClick={() => openModalWithTier('single')}
               className="px-4 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-xs"
             >
               Post a Job ➔
@@ -49,43 +49,49 @@ export default function PricingContent() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Main Container */}
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16">
+        {/* Hero Section */}
         <section className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-100/70 text-blue-700 text-xs font-semibold">
-            <span>✨</span> Transparent Employer Pricing
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+            <span>🎁</span> Early Adopter Launch Special: Claim Your 1st Post Free
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tight leading-tight">
-            Reach Verified, High-Intent Candidates. <br />
+            Hire Faster with Verified Placement. <br />
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Zero Spam. Zero Ghost Applications.
+              No Recurring Retainers. Pay Per Role.
             </span>
           </h1>
           <p className="max-w-2xl mx-auto text-base text-gray-600 leading-relaxed">
-            Candidates flock to NicheHire because our strict 7-day rule and direct ATS verification guarantee fresh, genuine openings. Post your vacancy directly to qualified software engineers, data analysts, and tech professionals.
+            Don&apos;t get locked into expensive monthly subscriptions before seeing results. Start with our <strong>₹4,999 single-post tier</strong> or test our <strong>free launch pilot</strong> to prove that our verified direct-portal model produces higher-intent tech hires.
           </p>
         </section>
 
         {/* Pricing Cards Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          {/* Starter Plan */}
+          {/* Card 1: Free Launch Pilot (Inventory Builder) */}
           <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
             <div className="space-y-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-bold uppercase tracking-wider">
-                Starter
+              <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider border border-emerald-100">
+                Launch Pilot
               </div>
               <div>
-                <span className="text-4xl font-black text-gray-900">₹4,999</span>
-                <span className="text-xs text-gray-500 font-medium ml-1.5">/ post (30 days)</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-gray-900">₹0</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    100% Free
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 font-medium">1st post for corporate employers</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Ideal for fast-growing startups or teams hiring for a single critical position.
+                Test applicant quality and hiring speed with zero financial commitment.
               </p>
 
               <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
                 <div className="flex items-center gap-2.5">
                   <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span><strong>1 Verified Job Post</strong> (Active 30 days)</span>
+                  <span><strong>1 Verified Job Post</strong> (Active 14 days)</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-emerald-600 font-bold text-sm">✓</span>
@@ -97,51 +103,51 @@ export default function PricingContent() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span>Automated <strong>Candidate Fit Rating</strong> badges</span>
+                  <span>Automated <strong>Domain Authenticity Check</strong></span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-emerald-600 font-bold text-sm">✓</span>
-                  <span>Verified Corporate Employer Badge</span>
+                  <span>Standard candidate applicant feed</span>
                 </div>
               </div>
             </div>
 
             <div className="pt-8">
               <button
-                onClick={() => openModalWithTier('starter')}
-                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-xs rounded-xl transition-colors"
+                onClick={() => openModalWithTier('free')}
+                className="w-full py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors border border-emerald-200"
               >
-                Post 1 Job for ₹4,999 ➔
+                Claim Free Launch Post ➔
               </button>
             </div>
           </div>
 
-          {/* Growth Plan (Featured) */}
+          {/* Card 2: Single Verified Post (THE MAIN OFFER - Elevated & Highlighted) */}
           <div className="bg-white rounded-3xl p-8 border-2 border-blue-600 shadow-xl flex flex-col justify-between relative transform md:-translate-y-2">
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-extrabold uppercase tracking-wider rounded-full shadow-sm">
-              Most Popular
+              Main Offer • Most Popular
             </div>
 
             <div className="space-y-4">
               <div className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                Growth Hiring
+                Single Verified Post
               </div>
               <div>
-                <span className="text-4xl font-black text-gray-900">₹14,999</span>
-                <span className="text-xs text-gray-500 font-medium ml-1.5">/ month</span>
+                <span className="text-4xl font-black text-gray-900">₹4,999</span>
+                <span className="text-xs text-gray-500 font-medium ml-1.5">/ single post (30 days)</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                For scaling companies needing a predictable pipeline of vetted applicants.
+                Pay-per-hire with zero recurring commitments. Ideal to fill your key opening fast.
               </p>
 
               <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span><strong>Up to 5 Active Verified Posts</strong> concurrently</span>
+                  <span><strong>1 Featured Verified Post</strong> (Active 30 days)</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span><strong>Featured Placement</strong> on top of search queries</span>
+                  <span><strong>#1 Top Placement</strong> on search results &amp; category feeds</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
@@ -149,15 +155,64 @@ export default function PricingContent() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span>Instant candidate notifications for matching resumes</span>
+                  <span>Automated <strong>AI Candidate Fit Scoring</strong> &amp; skill gap tags</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span>High-priority Google for Jobs re-indexing</span>
+                  <span>Priority Google for Jobs <strong>Schema.org Re-indexing</strong></span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="text-blue-600 font-bold text-sm">✓</span>
-                  <span>Dedicated email & WhatsApp recruiter support</span>
+                  <span>Verified Corporate Employer Seal</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8">
+              <button
+                onClick={() => openModalWithTier('single')}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+              >
+                Post Verified Role for ₹4,999 ➔
+              </button>
+            </div>
+          </div>
+
+          {/* Card 3: Growth 3-Pack */}
+          <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="space-y-4">
+              <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider">
+                Growth 3-Pack
+              </div>
+              <div>
+                <span className="text-4xl font-black text-gray-900">₹11,999</span>
+                <span className="text-xs text-gray-500 font-medium ml-1.5">/ 3 posts bundle</span>
+                <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">Save ₹3,000 (₹3,999 / post)</div>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                For scaling startups or teams hiring for multiple engineering or product positions.
+              </p>
+
+              <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-purple-600 font-bold text-sm">✓</span>
+                  <span><strong>3 Featured Verified Posts</strong> (Active 30 days each)</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-purple-600 font-bold text-sm">✓</span>
+                  <span><strong>Priority Placement</strong> on all 3 listings</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-purple-600 font-bold text-sm">✓</span>
+                  <span><strong>Direct Recruiter Email Outreach</strong> on all roles</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-purple-600 font-bold text-sm">✓</span>
+                  <span>Instant candidate match alerts &amp; screening</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-purple-600 font-bold text-sm">✓</span>
+                  <span>Dedicated WhatsApp &amp; email recruiter support</span>
                 </div>
               </div>
             </div>
@@ -165,60 +220,29 @@ export default function PricingContent() {
             <div className="pt-8">
               <button
                 onClick={() => openModalWithTier('growth')}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-xs rounded-xl transition-colors"
               >
-                Choose Growth for ₹14,999 ➔
+                Get 3-Post Pack for ₹11,999 ➔
               </button>
             </div>
           </div>
+        </section>
 
-          {/* Enterprise Plan */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider">
-                Enterprise ATS Sync
-              </div>
-              <div>
-                <span className="text-4xl font-black text-gray-900">₹49,999</span>
-                <span className="text-xs text-gray-500 font-medium ml-1.5">/ month</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Seamless bi-directional integration for tech enterprises with multiple hiring teams.
-              </p>
-
-              <div className="pt-4 border-t border-gray-100 space-y-3 text-xs text-gray-700">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span><strong>Unlimited Job Listings</strong> via automated ATS sync</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Greenhouse, Lever, Workday & SAP SuccessFactors</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Dedicated Company Hub & Employer Branding</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Tier-1 Proximity priority across all regional searches</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-purple-600 font-bold text-sm">✓</span>
-                  <span>Dedicated Account Manager & SLA guarantee</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-8">
-              <button
-                onClick={() => openModalWithTier('enterprise')}
-                className="w-full py-3 px-4 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs rounded-xl transition-colors border border-purple-200"
-              >
-                Inquire Enterprise ➔
-              </button>
-            </div>
+        {/* Enterprise Callout Banner */}
+        <section className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
+          <div className="space-y-1.5 text-center md:text-left">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-300">Need High-Volume or ATS Sync?</span>
+            <h3 className="text-xl sm:text-2xl font-bold">Enterprise ATS Webhook Sync (Greenhouse, Lever, Workday)</h3>
+            <p className="text-xs text-gray-300 max-w-xl">
+              Sync all open roles automatically from your ATS with dedicated employer branding, priority local placement, and SLA guarantees.
+            </p>
           </div>
+          <button
+            onClick={() => openModalWithTier('growth')}
+            className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold text-xs rounded-xl whitespace-nowrap transition-colors shadow-md"
+          >
+            Inquire Enterprise ➔
+          </button>
         </section>
 
         {/* Why Post on NicheHire? */}
@@ -262,23 +286,30 @@ export default function PricingContent() {
           <h2 className="text-2xl font-extrabold text-gray-900 text-center">Frequently Asked Questions</h2>
           <div className="space-y-4">
             <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">How does the domain verification work?</h3>
+              <h3 className="text-sm font-bold text-gray-900">Why single-post instead of expensive monthly retainers?</h3>
               <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
-                When you post a job, you must provide your corporate work email (e.g. name@company.com) and an official career portal URL. Our automated crawler verifies domain ownership, SSL validity, and active hiring status before granting the &ldquo;Verified Employer&rdquo; badge.
+                Most teams don&apos;t hire 50 engineers every month. Traditional job boards force recruiters into recurring commitments that go unused. Our ₹4,999 single-post model gives you complete flexibility: pay only when you have an active role to fill.
+              </p>
+            </div>
+
+            <div className="p-5 bg-white rounded-2xl border border-gray-200">
+              <h3 className="text-sm font-bold text-gray-900">How do I claim the Free Launch Pilot post?</h3>
+              <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
+                Select &ldquo;Launch Pilot&rdquo; on the posting form and provide your official corporate work email (e.g. name@company.com). Once our automated crawler validates your corporate domain, your post goes live for 14 days at ₹0 cost.
               </p>
             </div>
 
             <div className="p-5 bg-white rounded-2xl border border-gray-200">
               <h3 className="text-sm font-bold text-gray-900">How long do job postings stay active?</h3>
               <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
-                Postings are active for 30 days on our platform, but highlighted with real-time freshness badges (&lt; 24h, &lt; 3d, &lt; 7d). You can pause, edit, or mark a role as filled at any time.
+                Single verified posts stay active for 30 days and are flagged with freshness badges (&lt; 24h, &lt; 3d, &lt; 7d). You can edit or close the post anytime.
               </p>
             </div>
 
             <div className="p-5 bg-white rounded-2xl border border-gray-200">
-              <h3 className="text-sm font-bold text-gray-900">Can we connect our ATS directly?</h3>
+              <h3 className="text-sm font-bold text-gray-900">How does candidate application routing work?</h3>
               <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
-                Yes! On our Enterprise tier, we provide direct webhook and API synchronization with Greenhouse, Lever, Workday, SmartRecruiters, and SAP SuccessFactors so your jobs are automatically published and closed in sync.
+                All candidate clicks route straight to your official career portal URL or ATS application form. In addition, candidates with high match scores can reach out via direct recruiter email if enabled.
               </p>
             </div>
           </div>
@@ -286,16 +317,24 @@ export default function PricingContent() {
 
         {/* Bottom CTA */}
         <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 sm:p-12 text-white text-center space-y-4 shadow-xl">
-          <h2 className="text-2xl sm:text-3xl font-extrabold">Ready to Hire Better Tech Talent?</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold">Ready to Fill Your Critical Tech Role?</h2>
           <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto">
-            Submit your job opening today. Verified listings go live in under 15 minutes after automated verification.
+            Launch with our ₹4,999 single verified post or claim your 1st post free. Verified listings go live in under 15 minutes.
           </p>
-          <button
-            onClick={() => setPostJobOpen(true)}
-            className="px-8 py-3.5 bg-white hover:bg-gray-100 text-blue-700 font-extrabold text-xs rounded-xl shadow-lg transition-transform transform hover:scale-105"
-          >
-            Post a Verified Job Now ➔
-          </button>
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <button
+              onClick={() => openModalWithTier('single')}
+              className="px-8 py-3.5 bg-white hover:bg-gray-100 text-blue-700 font-extrabold text-xs rounded-xl shadow-lg transition-transform transform hover:scale-105"
+            >
+              Post Verified Job (₹4,999) ➔
+            </button>
+            <button
+              onClick={() => openModalWithTier('free')}
+              className="px-6 py-3.5 bg-blue-700/80 hover:bg-blue-800 text-white font-bold text-xs rounded-xl border border-blue-400 transition-colors"
+            >
+              Claim Free Launch Post (₹0)
+            </button>
+          </div>
         </section>
       </main>
 
@@ -305,7 +344,7 @@ export default function PricingContent() {
           <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
           <div className="flex justify-center gap-4 text-xs font-medium text-gray-600">
             <Link href="/" className="hover:text-blue-600">Candidate Search</Link>
-            <Link href="/about" className="hover:text-blue-600">About & Trust</Link>
+            <Link href="/about" className="hover:text-blue-600">About &amp; Trust</Link>
             <Link href="/pricing" className="hover:text-blue-600">Employer Pricing</Link>
           </div>
         </div>
@@ -315,6 +354,7 @@ export default function PricingContent() {
       <PostJobModal
         isOpen={postJobOpen}
         onClose={() => setPostJobOpen(false)}
+        initialPlan={selectedTier}
       />
     </div>
   );

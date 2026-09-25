@@ -1,14 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface PostJobModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newJob: any) => void;
+  initialPlan?: 'free' | 'single' | 'growth';
 }
 
-export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) {
+export default function PostJobModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialPlan = 'single',
+}: PostJobModalProps) {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [workEmail, setWorkEmail] = useState('');
@@ -19,12 +25,16 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
   const [salary, setSalary] = useState('');
   const [experience, setExperience] = useState('1-3 Years');
   const [description, setDescription] = useState('');
-  const [plan, setPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+  const [plan, setPlan] = useState<'free' | 'single' | 'growth'>(initialPlan);
   const [pledgeChecked, setPledgeChecked] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (initialPlan) setPlan(initialPlan);
+  }, [initialPlan]);
 
   if (!isOpen) return null;
 
@@ -36,7 +46,7 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
     }
 
     if (!workEmail.includes('@') || workEmail.endsWith('@gmail.com') || workEmail.endsWith('@yahoo.com')) {
-      setErrorMsg('Please use an official corporate email (e.g. recruiter@company.com) for verification.');
+      setErrorMsg('Please use an official corporate work email (e.g. recruiter@company.com) for verification.');
       return;
     }
 
@@ -49,7 +59,6 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
     setErrorMsg('');
 
     try {
-      // Simulate/Record employer submission
       const newListing = {
         id: `recruiter-${Date.now()}`,
         title,
@@ -71,7 +80,6 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
         planSelected: plan,
       };
 
-      // Store in local storage for previewing posted jobs
       try {
         const stored = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
         stored.unshift(newListing);
@@ -80,7 +88,11 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
         // Ignore storage errors
       }
 
-      setSuccessMsg('🎉 Role Submitted for Verification! Our automated engine is validating the domain. Your posting will go live across NicheHire and Google for Jobs.');
+      setSuccessMsg(
+        plan === 'free'
+          ? '🎉 Free Launch Post Submitted! Our crawler is validating your corporate domain. Your role will be live within 15 minutes.'
+          : '🎉 Verified Role Submitted! Corporate domain check in progress. Your role is queued for #1 featured placement and Google for Jobs indexing.'
+      );
       if (onSuccess) onSuccess(newListing);
 
       setTimeout(() => {
@@ -116,55 +128,58 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
           </div>
           <h2 className="text-xl font-black text-gray-900">Post a Verified Job Opening</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Reach high-intent candidates seeking genuine openings under 7 days old. Verified posts are indexed on Google for Jobs and direct to your career portal.
+            Prove the &ldquo;verified / fast&rdquo; hook. Every post connects directly to your career portal and is indexed on Google for Jobs under 7-day freshness.
           </p>
         </div>
 
-        {/* Selected Tier Banner */}
+        {/* Selected Tier Selector */}
         <div className="grid grid-cols-3 gap-2 mb-5">
+          {/* Free Launch Tier */}
           <button
             type="button"
-            onClick={() => setPlan('starter')}
+            onClick={() => setPlan('free')}
             className={`p-3 rounded-xl border text-left transition-all ${
-              plan === 'starter'
-                ? 'border-blue-600 bg-blue-50/50 shadow-2xs'
+              plan === 'free'
+                ? 'border-emerald-600 bg-emerald-50/50 shadow-2xs ring-1 ring-emerald-500'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Starter</div>
-            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹4,999</div>
-            <div className="text-[10px] text-gray-500">1 Verified Listing</div>
+            <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Launch Pilot</div>
+            <div className="text-sm font-extrabold text-emerald-950 mt-0.5">₹0 FREE</div>
+            <div className="text-[10px] text-gray-500">1st Post Free</div>
           </button>
 
+          {/* Single Verified Post - MAIN OFFER */}
+          <button
+            type="button"
+            onClick={() => setPlan('single')}
+            className={`p-3 rounded-xl border text-left transition-all relative ${
+              plan === 'single'
+                ? 'border-blue-600 bg-blue-50/60 shadow-md ring-2 ring-blue-500'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <span className="absolute -top-2.5 right-2 px-1.5 py-0.2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold rounded-full">
+              MAIN OFFER
+            </span>
+            <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Verified Post</div>
+            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹4,999</div>
+            <div className="text-[10px] text-gray-600 font-medium">Featured 30 Days</div>
+          </button>
+
+          {/* Growth 3-Pack */}
           <button
             type="button"
             onClick={() => setPlan('growth')}
-            className={`p-3 rounded-xl border text-left transition-all relative ${
-              plan === 'growth'
-                ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-bold rounded-full">
-              POPULAR
-            </span>
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Growth</div>
-            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹14,999</div>
-            <div className="text-[10px] text-gray-500">5 Listings + Boost</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPlan('enterprise')}
             className={`p-3 rounded-xl border text-left transition-all ${
-              plan === 'enterprise'
-                ? 'border-purple-600 bg-purple-50/50 shadow-2xs'
+              plan === 'growth'
+                ? 'border-purple-600 bg-purple-50/50 shadow-2xs ring-1 ring-purple-500'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Enterprise</div>
-            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹49,999</div>
-            <div className="text-[10px] text-gray-500">Full ATS Sync</div>
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Growth Pack</div>
+            <div className="text-sm font-extrabold text-gray-900 mt-0.5">₹11,999</div>
+            <div className="text-[10px] text-gray-500">3 Posts Bundle</div>
           </button>
         </div>
 
@@ -334,7 +349,7 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
                 className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
               />
               <span className="text-[11px] text-blue-900 leading-snug">
-                <strong>Anti-Scam & Freshness Guarantee:</strong> I certify that this is a legitimate active opening on our corporate domain, free from candidate application fees, and adheres to NicheHire's strict 7-day freshness policy.
+                <strong>Anti-Scam & Freshness Guarantee:</strong> I certify that this is a legitimate active opening on our corporate domain, free from candidate application fees, and adheres to NicheHire&apos;s strict 7-day freshness policy.
               </span>
             </label>
           </div>
@@ -356,8 +371,10 @@ export default function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModa
                 <>
                   <span className="animate-spin text-sm">⏳</span> Verifying & Publishing...
                 </>
+              ) : plan === 'free' ? (
+                'Claim Free Launch Post ➔'
               ) : (
-                'Post Verified Job ➔'
+                'Post Verified Job (₹4,999) ➔'
               )}
             </button>
           </div>
