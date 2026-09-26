@@ -27,8 +27,23 @@ interface TeamMemberItem {
   displayLabel: string;
 }
 
+interface PaymentItem {
+  id: string;
+  company_name: string;
+  contact_email: string;
+  contact_phone: string;
+  plan_amount: number;
+  plan_name: string;
+  utr_number: string;
+  screenshot_data: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  verified_at?: string;
+  admin_notes?: string;
+}
+
 export default function FounderAdminPage() {
-  const [activeTab, setActiveTab] = useState<'feedbacks' | 'team'>('feedbacks');
+  const [activeTab, setActiveTab] = useState<'feedbacks' | 'team' | 'payments'>('feedbacks');
   const [loading, setLoading] = useState(true);
   const [isFounderUser, setIsFounderUser] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -50,6 +65,11 @@ export default function FounderAdminPage() {
   const [editAccessLevel, setEditAccessLevel] = useState<'unlimited' | 'premium' | 'basic' | 'revoked'>('unlimited');
   const [editNote, setEditNote] = useState('');
   const [savingMember, setSavingMember] = useState(false);
+
+  // Payments & Verification State
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
 
   // Founder Referral Link
   const [copiedLink, setCopiedLink] = useState(false);
@@ -77,6 +97,7 @@ export default function FounderAdminPage() {
           setIsFounderUser(true);
           await loadFeedbacks(session.access_token);
           await loadTeam(session.access_token);
+          await loadPayments(session.access_token);
         }
       } catch (err) {
         console.error('Failed to authenticate founder status:', err);
@@ -116,6 +137,20 @@ export default function FounderAdminPage() {
     }
   }
 
+  async function loadPayments(token: string) {
+    try {
+      const res = await fetch('/api/admin/payments', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.payments) {
+        setPayments(data.payments);
+      }
+    } catch (err) {
+      console.error('Error fetching payments:', err);
+    }
+  }
+
   async function handleSendReply(feedbackId: string, email: string | null) {
     const text = replyTextMap[feedbackId]?.trim();
     if (!text) return;
@@ -142,7 +177,6 @@ export default function FounderAdminPage() {
       setActionSuccessMsg('✓ Official reply published to user dashboard and recorded.');
       setTimeout(() => setActionSuccessMsg(''), 3000);
 
-      // Refresh feedback list
       await loadFeedbacks(sessionToken);
       setReplyTextMap((prev) => ({ ...prev, [feedbackId]: '' }));
     } catch (err: any) {
@@ -184,13 +218,45 @@ export default function FounderAdminPage() {
     }
   }
 
+  async function handleUpdatePaymentStatus(paymentId: string, newStatus: 'approved' | 'rejected') {
+    setVerifyingPaymentId(paymentId);
+    try {
+      const res = await fetch('/api/admin/payments', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          paymentId,
+          newStatus,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update payment status');
+
+      setActionSuccessMsg(
+        newStatus === 'approved'
+          ? '✓ Payment verified & approved! Featured placement activated for employer.'
+          : 'Payment marked as rejected.'
+      );
+      setTimeout(() => setActionSuccessMsg(''), 4000);
+
+      await loadPayments(sessionToken);
+    } catch (err: any) {
+      alert(err.message || 'Could not update payment.');
+    } finally {
+      setVerifyingPaymentId(null);
+    }
+  }
+
   const copyReferralLink = () => {
     navigator.clipboard.writeText(founderReferralLink);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  // Filtered feedbacks
   const filteredFeedbacks = feedbacks.filter((item) => {
     if (filterType !== 'all' && item.type !== filterType) return false;
     if (filterStatus !== 'all' && item.status !== filterStatus) return false;
@@ -202,6 +268,8 @@ export default function FounderAdminPage() {
     }
     return true;
   });
+
+  const pendingPaymentsCount = payments.filter((p) => p.status === 'pending').length;
 
   if (loading) {
     return (
@@ -327,10 +395,8 @@ export default function FounderAdminPage() {
             </div>
           </div>
           <div className="bg-[#12192B] border border-gray-800/80 rounded-2xl p-4">
-            <span className="text-xs text-blue-400 block mb-1 font-medium">Feature Suggestions</span>
-            <div className="text-2xl font-black text-blue-400">
-              {feedbacks.filter((f) => f.type === 'feature').length}
-            </div>
+            <span className="text-xs text-amber-400 block mb-1 font-medium">Pending Payments</span>
+            <div className="text-2xl font-black text-amber-400">{pendingPaymentsCount}</div>
           </div>
           <div className="bg-[#12192B] border border-gray-800/80 rounded-2xl p-4">
             <span className="text-xs text-purple-400 block mb-1 font-medium">Referred Team Members</span>
@@ -339,7 +405,7 @@ export default function FounderAdminPage() {
         </div>
 
         {/* Tab Controls */}
-        <div className="border-b border-gray-800 flex gap-6">
+        <div className="border-b border-gray-800 flex flex-wrap gap-4 sm:gap-6">
           <button
             onClick={() => setActiveTab('feedbacks')}
             className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
@@ -353,6 +419,7 @@ export default function FounderAdminPage() {
               {feedbacks.length}
             </span>
           </button>
+
           <button
             onClick={() => setActiveTab('team')}
             className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
@@ -366,12 +433,31 @@ export default function FounderAdminPage() {
               {teamMembers.length}
             </span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
+              activeTab === 'payments'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <span>💳</span> Employer Payments & UTRs
+            {pendingPaymentsCount > 0 ? (
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                {pendingPaymentsCount} pending
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-400">
+                {payments.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* TAB 1: FEEDBACKS & BUGS */}
         {activeTab === 'feedbacks' && (
           <div className="space-y-4">
-            {/* Filter Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-[#12192B] p-3 rounded-2xl border border-gray-800">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mr-1">Filter:</span>
@@ -410,7 +496,6 @@ export default function FounderAdminPage() {
               </div>
             </div>
 
-            {/* Feedback Items List */}
             {filteredFeedbacks.length === 0 ? (
               <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-12 text-center text-gray-500 text-xs">
                 No feedback submissions found matching this filter.
@@ -457,18 +542,10 @@ export default function FounderAdminPage() {
                       </div>
                     </div>
 
-                    {/* Message Body */}
                     <p className="text-xs text-gray-200 leading-relaxed whitespace-pre-wrap bg-black/20 p-3.5 rounded-xl border border-gray-800/50">
                       {item.message}
                     </p>
 
-                    {item.url_context && (
-                      <div className="text-[11px] text-gray-500">
-                        Context Page: <span className="font-mono text-gray-400">{item.url_context}</span>
-                      </div>
-                    )}
-
-                    {/* Existing Founder Reply */}
                     {item.admin_reply && (
                       <div className="bg-blue-950/30 border border-blue-500/30 rounded-xl p-3.5 text-xs space-y-1">
                         <div className="flex items-center justify-between text-[11px] font-semibold text-blue-300">
@@ -481,7 +558,6 @@ export default function FounderAdminPage() {
                       </div>
                     )}
 
-                    {/* Reply Composer */}
                     <div className="pt-2 border-t border-gray-800/60 flex flex-col gap-2.5">
                       <label className="text-[11px] font-semibold text-gray-400">
                         {item.admin_reply ? 'Update Official Reply:' : 'Post Official Reply to User Dashboard:'}
@@ -562,7 +638,6 @@ export default function FounderAdminPage() {
                           <tr key={m.userId} className="hover:bg-white/[0.02] transition-colors">
                             <td className="py-4 px-4 font-mono font-medium text-gray-200">
                               {m.displayLabel}
-                              <div className="text-[10px] text-gray-500 font-mono">{m.userId}</div>
                             </td>
 
                             <td className="py-4 px-4">
@@ -575,29 +650,9 @@ export default function FounderAdminPage() {
                                     placeholder="e.g. Co-Founder, Intern..."
                                     className="bg-gray-800 border border-gray-700 px-2.5 py-1 rounded-lg text-xs text-white focus:outline-none w-44"
                                   />
-                                  <div className="flex flex-wrap gap-1">
-                                    {['Co-Founder', 'Intern', 'Core Team', 'Advisor'].map((preset) => (
-                                      <button
-                                        key={preset}
-                                        type="button"
-                                        onClick={() => setEditRole(preset)}
-                                        className="text-[10px] px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300"
-                                      >
-                                        {preset}
-                                      </button>
-                                    ))}
-                                  </div>
                                 </div>
                               ) : (
-                                <span className={`px-2.5 py-1 rounded-lg font-bold text-xs inline-block ${
-                                  m.assignedRole === 'Co-Founder'
-                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                                    : m.assignedRole === 'Intern'
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                    : m.assignedRole === 'Core Team'
-                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                                    : 'bg-gray-800 text-gray-300'
-                                }`}>
+                                <span className="px-2.5 py-1 rounded-lg font-bold text-xs inline-block bg-purple-500/20 text-purple-300 border border-purple-500/40">
                                   {m.assignedRole}
                                 </span>
                               )}
@@ -624,13 +679,8 @@ export default function FounderAdminPage() {
                               )}
                             </td>
 
-                            <td className="py-4 px-4">
-                              <span className="capitalize text-gray-300">{m.tier}</span>
-                            </td>
-
-                            <td className="py-4 px-4 text-gray-400">
-                              {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : 'Recent'}
-                            </td>
+                            <td className="py-4 px-4 capitalize text-gray-300">{m.tier}</td>
+                            <td className="py-4 px-4 text-gray-400">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : 'Recent'}</td>
 
                             <td className="py-4 px-4 text-right">
                               {isEditing ? (
@@ -673,7 +723,156 @@ export default function FounderAdminPage() {
             )}
           </div>
         )}
+
+        {/* TAB 3: EMPLOYER PAYMENTS & MANUAL UTR VERIFICATION */}
+        {activeTab === 'payments' && (
+          <div className="space-y-4">
+            <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-5 space-y-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>💳</span> Employer Payment Proof & Manual Verification Center
+              </h3>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                When an employer pays via your UPI ID (<code className="text-emerald-400">harshit0913@slc</code>), their 12-digit UTR and payment screenshot appear here.
+                Inspect the screenshot against your bank account statement, then click <strong>"Approve"</strong> to activate their featured job placement or <strong>"Reject"</strong> if unverified.
+              </p>
+            </div>
+
+            {payments.length === 0 ? (
+              <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-12 text-center text-gray-500 text-xs">
+                No employer payments have been submitted yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {payments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-[#12192B] border border-gray-800/80 rounded-2xl p-5 space-y-4 hover:border-gray-700 transition-colors"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/80 pb-3">
+                      <div>
+                        <span className="text-sm font-black text-white">{p.company_name}</span>
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {p.contact_email} {p.contact_phone ? `• ${p.contact_phone}` : ''}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-black text-emerald-400">
+                          ₹{p.plan_amount}
+                        </span>
+                        <span
+                          className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                            p.status === 'approved'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : p.status === 'rejected'
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}
+                        >
+                          {p.status === 'approved' ? '✓ Verified & Active' : p.status === 'rejected' ? '✕ Rejected' : '⏳ Pending Review'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <span className="text-gray-500 text-[11px] block">Selected Plan:</span>
+                          <strong className="text-gray-200">{p.plan_name}</strong>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-[11px] block">12-Digit Transaction UTR:</span>
+                          <span className="font-mono text-amber-300 font-bold text-sm bg-black/40 px-2 py-0.5 rounded border border-gray-800">
+                            {p.utr_number}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 text-[11px] block">Submitted Date:</span>
+                          <span className="text-gray-400">{new Date(p.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Screenshot Thumbnail */}
+                      <div>
+                        <span className="text-gray-500 text-[11px] block mb-1.5">Payment Screenshot Proof:</span>
+                        {p.screenshot_data ? (
+                          <div className="flex items-center gap-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={p.screenshot_data}
+                              alt="Payment Proof"
+                              className="w-20 h-20 object-cover rounded-xl border border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setViewingScreenshot(p.screenshot_data)}
+                            />
+                            <button
+                              onClick={() => setViewingScreenshot(p.screenshot_data)}
+                              className="text-xs text-blue-400 hover:underline"
+                            >
+                              🔍 Click to inspect screenshot in full size
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-xs italic">No image attached</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Verification Action Buttons */}
+                    <div className="pt-3 border-t border-gray-800/80 flex items-center justify-between">
+                      <span className="text-[11px] text-gray-500">
+                        {p.verified_at ? `Audited on ${new Date(p.verified_at).toLocaleDateString()}` : 'Awaiting founder audit'}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {p.status !== 'approved' && (
+                          <button
+                            onClick={() => handleUpdatePaymentStatus(p.id, 'approved')}
+                            disabled={verifyingPaymentId === p.id}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+                          >
+                            <span>✓ Approve Payment & Activate</span>
+                          </button>
+                        )}
+                        {p.status !== 'rejected' && (
+                          <button
+                            onClick={() => handleUpdatePaymentStatus(p.id, 'rejected')}
+                            disabled={verifyingPaymentId === p.id}
+                            className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 rounded-xl text-xs font-medium transition-colors"
+                          >
+                            <span>✕ Reject</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* Screenshot Full-Size Modal */}
+      {viewingScreenshot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-[#12192B] rounded-3xl max-w-2xl w-full p-6 relative border border-gray-800 space-y-4">
+            <button
+              onClick={() => setViewingScreenshot(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800"
+            >
+              ✕
+            </button>
+            <h3 className="text-sm font-bold text-white">Payment Screenshot Proof</h3>
+            <div className="bg-black/60 rounded-2xl p-2 border border-gray-800 flex items-center justify-center max-h-[75vh] overflow-auto">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={viewingScreenshot}
+                alt="Payment Proof Full View"
+                className="max-h-[70vh] w-auto rounded-xl object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
