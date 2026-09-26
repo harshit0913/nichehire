@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { calculatePanIndiaGeoTier, resolvePanIndiaLocation } from '../../../lib/panIndiaGeo';
 
 const FETCH_TIMEOUT_MS = 14000;
 
@@ -233,67 +234,7 @@ const REGION_MAP: Record<
 };
 
 function getGeoTier(jobLoc: string = '', queryLoc: string = ''): number {
-  const loc = (jobLoc || '').toLowerCase();
-  const q = (queryLoc || '').toLowerCase().trim();
-  if (!q) return 5;
-
-  // 1. Same place / exact city match
-  if (loc.includes(q)) return 1;
-
-  // Check region mapping for query
-  const regKey = Object.keys(REGION_MAP).find((k) => q.includes(k));
-  const reg = regKey ? REGION_MAP[regKey] : Object.values(REGION_MAP).find((r) => q.includes(r.state));
-
-  if (reg) {
-    // 2. Same district / satellite industrial area
-    if (reg.districts.some((d) => loc.includes(d))) return 2;
-
-    // 3. Nearby city within the same state
-    if (reg.nearbyCities.some((c) => loc.includes(c))) return 3;
-
-    // 4. Whole state
-    if (
-      loc.includes(reg.state) ||
-      reg.stateCodes.some(
-        (sc) =>
-          loc.includes(` ${sc}`) ||
-          loc.includes(`, ${sc}`) ||
-          loc.includes(`${sc},`) ||
-          loc.endsWith(` ${sc}`) ||
-          loc.endsWith(`,${sc}`)
-      )
-    ) {
-      return 4;
-    }
-  }
-
-  // 5. Other states / Pan-India Remote / National Indian Metros
-  const indianKeywords = [
-    'india',
-    'bangalore',
-    'bengaluru',
-    'mumbai',
-    'pune',
-    'delhi',
-    'gurgaon',
-    'gurugram',
-    'noida',
-    'hyderabad',
-    'chennai',
-    'kolkata',
-    'ahmedabad',
-    'jaipur',
-    'karnataka',
-    'maharashtra',
-    'telangana',
-    'tamil nadu',
-    'haryana',
-    'gujarat',
-  ];
-  if (indianKeywords.some((k) => loc.includes(k))) return 5;
-
-  // 6. Other countries / International remote
-  return 6;
+  return calculatePanIndiaGeoTier(jobLoc, queryLoc);
 }
 
 // ─── TOP EMPLOYERS PER MAJOR HUB & NATIONAL FAANG ─────────────────────────────
@@ -1524,12 +1465,14 @@ export async function POST(req: Request) {
       return (b.postedAt || 0) - (a.postedAt || 0);
     });
 
-    const activeLocalCompanies = locQuery
-      ? TOP_LOCAL_COMPANIES_MAP[locQuery] ||
-        Object.entries(TOP_LOCAL_COMPANIES_MAP).find(([k]) => locQuery.includes(k))?.[1] ||
-        TOP_LOCAL_COMPANIES_MAP['national'] ||
-        []
-      : TOP_LOCAL_COMPANIES_MAP['national'] || [];
+    const resolvedGeo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
+    const activeLocalCompanies =
+      resolvedGeo && resolvedGeo.suggestedEmployers.length > 0
+        ? resolvedGeo.suggestedEmployers
+        : TOP_LOCAL_COMPANIES_MAP[locQuery] ||
+          Object.entries(TOP_LOCAL_COMPANIES_MAP).find(([k]) => locQuery.includes(k))?.[1] ||
+          TOP_LOCAL_COMPANIES_MAP['national'] ||
+          [];
 
     return NextResponse.json({
       jobs: filtered,

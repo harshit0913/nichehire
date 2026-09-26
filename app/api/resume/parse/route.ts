@@ -19,23 +19,43 @@ function fallbackExtract(text: string) {
   const role = lines[1] || 'Professional';
 
   const commonSkills = [
-    'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'SQL',
-    'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Git', 'Audit', 'Tax', 'GST',
-    'Tally', 'Financial Modeling', 'Accounting', 'IFRS', 'Excel', 'Corporate Finance',
-    'Marketing', 'SEO', 'Sales', 'Management', 'Project Management'
+    // Tech & IT
+    'Python', 'Java', 'JavaScript', 'TypeScript', 'React', 'Next.js', 'Node.js', 'SQL',
+    'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Git',
+    // Commerce, Finance & CA
+    'Tally Prime', 'GST Filing', 'Income Tax (ITR)', 'TDS', 'Statutory Audit', 'Internal Audit',
+    'Financial Modeling', 'IFRS', 'Accounting', 'Balance Sheet', 'Cost Accounting',
+    // Law & Legal
+    'Legal Research', 'Drafting', 'Constitutional Law', 'Contract Review', 'Civil Procedure (CPC)',
+    'Criminal Law (CrPC/BNSS)', 'Due Diligence', 'Moot Court', 'Arbitration', 'Litigation',
+    // Management & Sales
+    'Business Strategy', 'Digital Marketing', 'SEO', 'Sales Pipeline', 'Operations Management',
+    'HR Generalist', 'Talent Acquisition', 'Supply Chain', 'Vendor Management',
+    // Healthcare & Science
+    'Clinical Diagnosis', 'Patient Care', 'Pharmacology', 'Medical Records', 'Statistical Analysis',
+    // Arts & Writing
+    'Content Writing', 'Copywriting', 'Journalism', 'Editorial Proofreading', 'Public Relations'
   ];
 
   const lower = text.toLowerCase();
   const foundSkills = commonSkills.filter(s => lower.includes(s.toLowerCase()));
 
-  // Common education keywords
+  // Comprehensive multi-disciplinary education keywords
   let education = 'Bachelor\'s Degree';
-  if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('bachelor of technology') || lower.includes('computer science')) {
-    education = 'B.Tech in Computer Science / Engineering';
-  } else if (lower.includes('mba') || lower.includes('master of business')) {
-    education = 'MBA';
-  } else if (lower.includes('b.com') || lower.includes('bcom') || lower.includes('chartered accountant') || lower.includes('ca')) {
-    education = 'B.Com / Accounting & Finance';
+  if (lower.includes('ll.b') || lower.includes('llb') || lower.includes('ba llb') || lower.includes('bba llb') || lower.includes('law')) {
+    education = 'B.A. LL.B / LL.B in Law';
+  } else if (lower.includes('mbbs') || lower.includes('bds') || lower.includes('b.pharm')) {
+    education = 'MBBS / Medical & Healthcare';
+  } else if (lower.includes('b.com') || lower.includes('bcom') || lower.includes('chartered accountant') || lower.includes('ca inter') || lower.includes('ca final') || lower.includes('cma')) {
+    education = 'B.Com / CA / Professional Accounting';
+  } else if (lower.includes('bba') || lower.includes('bms') || lower.includes('mba') || lower.includes('pgdm')) {
+    education = lower.includes('mba') || lower.includes('pgdm') ? 'MBA / PGDM' : 'BBA / BMS in Management';
+  } else if (lower.includes('bca') || lower.includes('mca') || lower.includes('b.sc it') || lower.includes('b.sc cs')) {
+    education = lower.includes('mca') ? 'MCA in Computer Applications' : 'BCA in Computer Applications';
+  } else if (lower.includes('b.a.') || lower.includes('ba ') || lower.includes('journalism') || lower.includes('mass comm')) {
+    education = 'B.A. in Arts / Humanities / Media';
+  } else if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('bachelor of technology') || lower.includes('engineering')) {
+    education = 'B.Tech / B.E. in Engineering';
   } else if (lower.includes('master') || lower.includes('m.tech') || lower.includes('ms')) {
     education = 'Master\'s Degree';
   }
@@ -133,19 +153,19 @@ ${extractedText.slice(0, 10000)}`
     }
 
     const prompt = `
-      Analyze the candidate resume and extract the key profile details.
+      Analyze the candidate resume and extract the key profile details across any Indian academic or professional discipline (Commerce, CA, Law, Medicine/MBBS, Management/MBA/BBA, Arts/BA, Computer Applications/BCA/MCA, Engineering, Sciences).
       Return ONLY a valid raw JSON object — no markdown fences, no backticks, no preamble.
       Use EXACTLY this schema:
 
       {
         "name": "Candidate Full Name (e.g. Sanskriti Sharma)",
-        "role": "Most relevant / target Job Title (e.g. Senior Frontend Engineer, Chartered Accountant, Financial Analyst)",
+        "role": "Most relevant / target Job Title across any discipline (e.g. Legal Intern, Chartered Accountant, Medical Officer, B.Com Accounts Executive, Senior Frontend Engineer, Content Writer, Operations Manager)",
         "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6", "Skill 7", "Skill 8", "Skill 9", "Skill 10"],
         "experienceLevel": "Entry | Mid | Senior | Lead | Executive",
         "yearsOfExperience": 3,
-        "education": "Degree and Major (e.g. B.Tech Computer Science, MBA Finance, B.Com)",
-        "extracurricular": ["Project / Leadership / Certification 1", "Project / Certification 2"],
-        "location": "City, Country (e.g. Bangalore, India or New York, US) or 'Remote'",
+        "education": "Degree and Major (e.g. B.A. LL.B, B.Com Accounting, CA Final, MBBS, BBA Marketing, BCA, B.Tech CSE, MBA Finance, BA English)",
+        "extracurricular": ["Project / Leadership / Moot Court / Certification 1", "Project / Certification 2"],
+        "location": "City, Country (e.g. Nainital, India or Bangalore, India) or 'Remote'",
         "summary": "Compelling 2-sentence executive summary of the candidate's background.",
         "rawText": "Complete plain text of the resume"
       }

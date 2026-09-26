@@ -224,44 +224,17 @@ export function matchCoordinatesToRegion(lat: number, lon: number): LocationMatc
   };
 }
 
-// All Indian States for manual dropdown selection
+import { PAN_INDIA_REGIONS } from './panIndiaGeo';
+
+// All 28 States & 8 Union Territories dynamically sourced from Pan-India Geographic Engine
 export const ALL_INDIAN_STATES = [
   'All India',
-  'Madhya Pradesh',
-  'Uttar Pradesh',
-  'Maharashtra',
-  'Karnataka',
-  'Delhi',
-  'Bihar',
-  'Rajasthan',
-  'Tamil Nadu',
-  'Telangana',
-  'Andhra Pradesh',
-  'West Bengal',
-  'Gujarat',
-  'Haryana',
-  'Punjab',
-  'Kerala',
-  'Odisha',
-  'Jharkhand',
-  'Chhattisgarh',
-  'Uttarakhand',
-  'Assam',
-  'Chandigarh',
+  ...Object.keys(PAN_INDIA_REGIONS),
 ] as const;
 
-export const POPULAR_DISTRICTS_BY_STATE: Record<string, string[]> = {
-  'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain', 'Rewa', 'Sagar', 'All Districts'],
-  'Uttar Pradesh': ['Lucknow', 'Noida / Gautam Buddha Nagar', 'Prayagraj (Allahabad)', 'Kanpur', 'Varanasi', 'Agra', 'All Districts'],
-  'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Thane', 'Aurangabad', 'All Districts'],
-  'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'All Districts'],
-  'Delhi': ['New Delhi', 'North Delhi', 'South Delhi', 'East Delhi', 'West Delhi', 'All Districts'],
-  'Bihar': ['Patna', 'Muzaffarpur', 'Gaya', 'Bhagalpur', 'Darbhanga', 'All Districts'],
-  'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Udaipur', 'Bikaner', 'Ajmer', 'All Districts'],
-  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'All Districts'],
-  'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'All Districts'],
-  'West Bengal': ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol', 'All Districts'],
-  'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'All Districts'],
-  'Uttarakhand': ['Nainital', 'Dehradun', 'Haridwar', 'Udham Singh Nagar (Haldwani / Rudrapur)', 'Almora', 'Pauri Garhwal', 'Tehri Garhwal', 'Chamoli', 'Rishikesh', 'All Districts'],
-  'Kerala': ['Kannur', 'Kochi / Ernakulam', 'Kozhikode', 'Thiruvananthapuram', 'Thrissur', 'Kollam', 'Palakkad', 'Malappuram', 'Kottayam', 'Alappuzha', 'All Districts'],
-};
+export const POPULAR_DISTRICTS_BY_STATE: Record<string, string[]> = Object.fromEntries(
+  Object.entries(PAN_INDIA_REGIONS).map(([state, info]) => [
+    state,
+    [...info.districts, 'All Districts'],
+  ])
+);

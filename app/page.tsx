@@ -20,6 +20,8 @@ import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
 import type { WalkInJob } from './api/walkins/route';
 import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
+import { resolvePanIndiaLocation } from './lib/panIndiaGeo';
+import { suggestRelevantMissingSkills, evaluateDegreeAlignment } from './lib/skillsTaxonomy';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -169,58 +171,10 @@ export default function JobDashboard() {
     if (!l) {
       return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
     }
-    if (l.includes('bangalore') || l.includes('bengaluru') || l.includes('karnataka')) {
-      return ['Google', 'Microsoft', 'Amazon', 'Flipkart', 'Swiggy', 'Razorpay', 'CRED', 'Infosys', 'Wipro'];
-    }
-    if (l.includes('delhi') || l.includes('noida') || l.includes('gurgaon') || l.includes('gurugram') || l.includes('haryana')) {
-      return ['Google', 'Microsoft', 'Amazon', 'Adobe', 'Zomato', 'Paytm', 'MakeMyTrip', 'Airtel', 'TCS'];
-    }
-    if (l.includes('mumbai') || l.includes('maharashtra')) {
-      return ['Tata Sons', 'Reliance Industries', 'Amazon', 'Netflix', 'Morgan Stanley', 'J.P. Morgan', 'HDFC Bank', 'L&T'];
-    }
-    if (l.includes('hyderabad') || l.includes('telangana')) {
-      return ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'ServiceNow', 'Salesforce', 'Deloitte', 'Qualcomm'];
-    }
-    if (l.includes('pune')) {
-      return ['Google', 'Nvidia', 'Barclays', 'Persistent Systems', 'Veritas', 'Bajaj Finserv', 'Tech Mahindra', 'Infosys'];
-    }
-    if (l.includes('chennai') || l.includes('tamil nadu')) {
-      return ['Amazon', 'PayPal', 'Zoho', 'Freshworks', 'Ford', 'Caterpillar', 'TCS', 'Cognizant'];
-    }
-    if (l.includes('kolkata') || l.includes('west bengal')) {
-      return ['Google', 'ITC Limited', 'PwC', 'Tata Consultancy Services', 'Wipro', 'Bandhan Bank'];
-    }
-    if (l.includes('patna') || l.includes('bihar')) {
-      return ['Tata Steel', 'Reliance Retail', 'State Bank of India', 'Punjab National Bank', 'BSPHCL', 'BPSC', 'Amul', 'ITC'];
-    }
-    if (l.includes('ahmedabad') || l.includes('gujarat')) {
-      return ['Adani Group', 'Tata Motors', 'Torrent Pharma', 'Cadila Healthcare', 'TCS', 'Infosys'];
-    }
-    if (l.includes('jaipur') || l.includes('rajasthan')) {
-      return ['Genpact', 'Infosys', 'Wipro', 'AU Small Finance Bank', 'Metacube', 'Bosch'];
-    }
-    if (l.includes('indore') || l.includes('madhya pradesh') || l.includes('bhopal')) {
-      return ['TCS', 'Infosys', 'Impetus', 'Persistent Systems', 'Cognizant', 'Eicher Motors'];
-    }
-    if (l.includes('kannur') || l.includes('kunnur') || l.includes('cannanore')) {
-      return ['Kerala Gramin Bank', 'South Indian Bank', 'Federal Bank', 'Malabar Gold & Diamonds', 'SBI', 'HDFC Bank', 'Kerala PSC', 'Canara Bank'];
-    }
-    if (l.includes('kochi') || l.includes('cochin') || l.includes('ernakulam')) {
-      return ['Infosys', 'TCS', 'UST', 'Federal Bank', 'LuLu Group', 'Wipro', 'Deloitte', 'Ernst & Young', 'Cochin Shipyard'];
-    }
-    if (l.includes('kozhikode') || l.includes('calicut') || l.includes('malappuram')) {
-      return ['Federal Bank', 'South Indian Bank', 'Malabar Gold & Diamonds', 'Kerala Gramin Bank', 'SBI', 'HDFC Bank'];
-    }
-    if (l.includes('kerala') || l.includes('thiruvananthapuram') || l.includes('thrissur') || l.includes('trivandrum')) {
-      return ['Federal Bank', 'South Indian Bank', 'Infosys', 'TCS', 'UST', 'Malabar Gold & Diamonds', 'Kerala PSC', 'Manappuram Finance'];
-    }
-    if (l.includes('nainital') || l.includes('haldwani') || l.includes('almora') || l.includes('bhimtal')) {
-      return ['High Court of Uttarakhand', 'Nainital Bank', 'District Legal Services Authority', 'Kumaun University', 'State Bank of India', 'ARIES'];
-    }
-    if (l.includes('dehradun') || l.includes('uttarakhand') || l.includes('haridwar') || l.includes('rishikesh')) {
-      return ['High Court of Uttarakhand', 'ONGC', 'THDC India', 'Nainital Bank', 'BHEL Haridwar', 'Uttarakhand PSC', 'SBI'];
-    }
-    return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
+    const resolved = resolvePanIndiaLocation(l);
+    return resolved.suggestedEmployers && resolved.suggestedEmployers.length > 0
+      ? resolved.suggestedEmployers
+      : ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
   };
 
   // Per-job tailoring state
@@ -325,46 +279,14 @@ export default function JobDashboard() {
     const matchedSkills = candidateSkills.filter((s) => jobText.includes(s.toLowerCase()));
     const skillRatio = matchedSkills.length / Math.max(candidateSkills.length, 1);
 
-    // Common in-demand skills to detect gaps (Tech, Finance, and Legal)
-    const inDemandSkills = [
-      'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Java',
-      'Go', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'PostgreSQL', 'GraphQL', 'REST API',
-      'System Design', 'Microservices', 'Tailwind', 'Redux', 'MongoDB', 'Redis',
-      'Financial Modeling', 'Excel', 'Tally', 'GST', 'Taxation', 'Audit', 'Accounting',
-      'Legal Research', 'Drafting', 'Constitutional Law', 'Contract Review', 'Civil Procedure (CPC)',
-      'Criminal Law (CrPC/BNSS)', 'Due Diligence', 'Moot Court', 'Arbitration', 'Corporate Law', 'Litigation'
-    ];
-    const missingSkills = inDemandSkills.filter(
-      (w) => jobText.includes(w.toLowerCase()) && !candidateSkills.some((s) => s.toLowerCase() === w.toLowerCase())
-    ).slice(0, 3);
+    // Multi-disciplinary missing skills tailored strictly to the job's actual field
+    const missingSkills = suggestRelevantMissingSkills(jobText, candidateSkills);
 
-    // Education check
-    const candidateEdu = (parsedProfile.education || '').toLowerCase();
-    let eduScore = 15;
-    let eduText = 'Education aligns';
-    if (
-      jobText.includes('b.tech') ||
-      jobText.includes('bachelor') ||
-      jobText.includes('degree') ||
-      jobText.includes('engineering') ||
-      jobText.includes('ll.b') ||
-      jobText.includes('llb') ||
-      jobText.includes('law') ||
-      jobText.includes('advocate')
-    ) {
-      if (
-        candidateEdu.includes('b.tech') ||
-        candidateEdu.includes('bachelor') ||
-        candidateEdu.includes('master') ||
-        candidateEdu.includes('degree') ||
-        candidateEdu.includes('ll.b') ||
-        candidateEdu.includes('llb') ||
-        candidateEdu.includes('law')
-      ) {
-        eduScore = 20;
-        eduText = 'Degree matches requirements';
-      }
-    }
+    // Multi-degree education check across BA, BCA, B.Com, CA, CMA, CS, BBA, BMS, MBBS, BDS, B.Pharm, LLB, BALLB, MBA, etc.
+    const candidateEdu = parsedProfile.education || '';
+    const eduEval = evaluateDegreeAlignment(jobText, candidateEdu);
+    const eduScore = eduEval.score;
+    const eduText = eduEval.text;
 
     // Experience check
     let expScore = 15;
@@ -834,20 +756,18 @@ export default function JobDashboard() {
     return true;
   });
 
-  // Trending Roles & Locations for Discovery Portal
   const TRENDING_ROLES = [
     'Software Engineer',
+    'CA Articleship',
+    'B.Com Accounts Executive',
+    'Legal Intern (High Court / Corporate)',
+    'BBA / MBA Operations Manager',
     'Product Manager',
     'Financial Analyst',
-    'Data Analyst',
-    'CA Articleship',
-    'Legal Intern',
-    'Law Research Associate',
-    'Accounts Executive',
-    'Operations Manager',
-    'Business Analyst',
-    'Experience Designer',
-    'Management Consultant',
+    'Medical Officer / Clinical Associate',
+    'Content Writer / Journalist (BA)',
+    'Data Analyst (BCA / B.Sc)',
+    'Site Engineer (Civil / Mech)',
   ];
 
   const POPULAR_LOCATIONS = [
