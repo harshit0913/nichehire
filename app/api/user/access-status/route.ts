@@ -50,10 +50,36 @@ export async function GET(req: Request) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // 2. Ensure each user has a unique referral code
-    let referralCode = profile?.referral_code;
+    // 1b. Check Founder Status via Email or Database Flag
+    const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.in,harshit0913@gmail.com')
+      .toLowerCase()
+      .split(',')
+      .map((e) => e.trim());
+    
+    const userEmail = (user.email || '').toLowerCase().trim();
+    const isFounderUser = founderEmails.includes(userEmail) || profile?.is_founder === true;
+
+    // 2. Ensure each user has a unique referral code (Founder gets clean 'FOUNDER' code)
+    let referralCode = isFounderUser ? 'FOUNDER' : profile?.referral_code;
     if (!referralCode) {
       referralCode = `REF-${user.id.slice(0, 8).toUpperCase()}`;
+    }
+
+    if (isFounderUser && (!profile?.is_founder || profile?.referral_code !== 'FOUNDER' || !profile?.assigned_role)) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: user.id,
+            is_founder: true,
+            tier: 'premium',
+            referral_code: 'FOUNDER',
+            assigned_role: profile?.assigned_role || 'Founder & CEO',
+          }, { onConflict: 'user_id' });
+      } catch (upsertFounderErr) {
+        console.warn('Could not persist founder profile flags:', upsertFounderErr);
+      }
+    } else if (!profile?.referral_code) {
       try {
         await supabase
           .from('user_profiles')
@@ -86,15 +112,17 @@ export async function GET(req: Request) {
 
     const userStatus: UserPremiumStatus = {
       userId: user.id,
-      tier: profile?.tier || 'member',
+      tier: profile?.tier || (isFounderUser ? 'premium' : 'member'),
       qualifyingReferralCount: Math.max(profile?.qualifying_referral_count || 0, qualifiedCount),
-      premiumSource: profile?.premium_source || null,
+      premiumSource: isFounderUser ? null : (profile?.premium_source || null),
       subscriptionStatus: profile?.subscription_status || null,
       subscriptionRenewsAt: profile?.subscription_renews_at || undefined,
-      highestTierAchieved: profile?.highest_tier_achieved || 'member',
+      highestTierAchieved: profile?.highest_tier_achieved || (isFounderUser ? 'premium' : 'member'),
       tierAchievedAt: profile?.tier_achieved_at || {},
-      isFounder: profile?.is_founder || false,
+      isFounder: isFounderUser,
       referredByUserId: profile?.referred_by || undefined,
+      assignedRole: profile?.assigned_role || (isFounderUser ? 'Founder & CEO' : undefined),
+      assignedRoleBy: profile?.assigned_role_by || undefined,
     };
 
     // 4. Fetch founder override (server-side only, bypassing client RLS restrictions safely)
@@ -134,6 +162,10 @@ export async function GET(req: Request) {
     const hrUsage = checkUsageLimit(userStatus, 'hr_email_draft', hrCount, override);
 
     return NextResponse.json({
+      userId: user.id,
+      email: user.email,
+      isFounder: isFounderUser,
+      assignedRole: profile?.assigned_role || (isFounderUser ? 'Founder & CEO' : null),
       level: access.level,
       quotaBypass: access.quotaBypass,
       badge: access.badge,

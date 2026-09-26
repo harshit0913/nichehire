@@ -897,12 +897,12 @@ export default function JobDashboard() {
               <span>🧭</span> Guidance
             </button>
 
-            <button
-              onClick={() => setPostJobOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
+            <Link
+              href="/employer/dashboard"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1"
             >
-              <span>💼</span> Post a Job
-            </button>
+              <span>🏢</span> Employers
+            </Link>
 
             <button
               onClick={() => {
@@ -923,6 +923,26 @@ export default function JobDashboard() {
             >
               Feedback
             </button>
+
+            {/* Founder Admin Direct Link if user is identified as founder */}
+            {accessStatus?.isFounder && (
+              <Link
+                href="/admin"
+                className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded shadow-xs transition-colors flex items-center gap-1"
+              >
+                <span>👑</span> Admin
+              </Link>
+            )}
+
+            {/* Candidate Dashboard Link */}
+            {user && (
+              <Link
+                href="/dashboard"
+                className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/10 hover:bg-[#2B4EE6]/20 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1"
+              >
+                <span>👤</span> Dashboard
+              </Link>
+            )}
 
             {/* User Tier Badge (Founder / Unlimited / Premium / Rising / Member) */}
             <UserTierBadge
@@ -2119,7 +2139,12 @@ export default function JobDashboard() {
       )}
 
       <HelpModal isOpen={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
-      <FeedbackModal isOpen={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        userId={user?.id}
+        userEmail={user?.email}
+      />
 
       <PremiumUnlockModal
         isOpen={premiumModalOpen}

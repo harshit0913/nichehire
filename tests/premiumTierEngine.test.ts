@@ -206,7 +206,68 @@ assert(
   'Case 15c: Revoked override immediately blocks cost-bearing usage'
 );
 
+// ─── Case 16: Founder assigned role output ───────────────────────────────────
+const founderProfile: UserPremiumStatus = {
+  userId: 'founder-harshit',
+  tier: 'premium',
+  qualifyingReferralCount: 5,
+  premiumSource: null,
+  highestTierAchieved: 'premium',
+  tierAchievedAt: {},
+  isFounder: true,
+  assignedRole: 'Founder & CEO',
+};
+const founderResolved = resolveAccess(founderProfile, null);
+assert(
+  founderResolved.level === 'unlimited' && founderResolved.quotaBypass && founderResolved.assignedRole === 'Founder & CEO',
+  'Case 16: Founder account receives unlimited bypass with Founder & CEO role'
+);
+
+// ─── Case 17: Founder-referred member with assigned role (Co-Founder / Intern)
+const coFounderProfile: UserPremiumStatus = {
+  userId: 'teammate-01',
+  tier: 'member',
+  qualifyingReferralCount: 2,
+  premiumSource: null,
+  highestTierAchieved: 'member',
+  tierAchievedAt: {},
+  isFounder: false,
+  assignedRole: 'Co-Founder',
+};
+const coFounderOverride: FounderOverride = {
+  userId: 'teammate-01',
+  accessLevel: 'unlimited',
+  grantedBy: 'founder-harshit',
+  createdAt: '2026-09-26T12:00:00Z',
+  updatedAt: '2026-09-26T12:00:00Z',
+  note: 'Core executive',
+};
+const coFounderResolved = resolveAccess(coFounderProfile, coFounderOverride);
+assert(
+  coFounderResolved.level === 'unlimited' && coFounderResolved.assignedRole === 'Co-Founder' && coFounderResolved.quotaBypass,
+  'Case 17: Co-Founder team assignment carries through with unlimited access'
+);
+
+// ─── Case 18: Bug Bounty premiumSource awards premium access ─────────────────
+const bugReporterProfile: UserPremiumStatus = {
+  userId: 'hunter-01',
+  tier: 'premium',
+  qualifyingReferralCount: 1,
+  premiumSource: 'bug_bounty',
+  subscriptionStatus: 'active',
+  subscriptionRenewsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+  highestTierAchieved: 'premium',
+  tierAchievedAt: { premium: new Date().toISOString() },
+  isFounder: false,
+};
+const bugReporterResolved = resolveAccess(bugReporterProfile, null);
+assert(
+  bugReporterResolved.level === 'premium' && bugReporterResolved.badge === 'subscription',
+  'Case 18: Bug bounty 7-day reward successfully unlocks active Premium tier'
+);
+
 console.log(`\nResults: ${passedCount} / ${totalCount} tests passed.\n`);
 if (passedCount !== totalCount) {
   process.exit(1);
 }
+

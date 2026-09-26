@@ -4,7 +4,7 @@ export interface UserPremiumStatus {
   userId: string;
   tier: TierLevel;
   qualifyingReferralCount: number;
-  premiumSource: 'referral' | 'subscription' | null;
+  premiumSource: 'referral' | 'subscription' | 'bug_bounty' | null;
   subscriptionStatus?: 'active' | 'cancelled' | 'past_due' | null;
   subscriptionRenewsAt?: string; // ISO date
   tierAchievedAt: {
@@ -15,6 +15,8 @@ export interface UserPremiumStatus {
   highestTierAchieved: TierLevel;
   isFounder?: boolean;          // Set strictly via database/admin action
   referredByUserId?: string;
+  assignedRole?: string;
+  assignedRoleBy?: string;
 }
 
 export interface FounderOverride {
@@ -30,6 +32,7 @@ export interface AccessResult {
   level: 'unlimited' | 'premium' | 'trusted' | 'rising' | 'member' | 'revoked';
   quotaBypass: boolean;
   badge: 'founder' | 'referral' | 'subscription' | 'earned' | 'none';
+  assignedRole?: string;
 }
 
 export interface PremiumUsage {

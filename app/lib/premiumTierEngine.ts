@@ -42,6 +42,7 @@ export function resolveAccess(
       level: 'unlimited',
       quotaBypass: true,
       badge: 'founder',
+      assignedRole: user.assignedRole || 'Founder & CEO',
     };
   }
 
@@ -54,12 +55,14 @@ export function resolveAccess(
           level: 'unlimited',
           quotaBypass: true,
           badge: 'referral',
+          assignedRole: user.assignedRole,
         };
       case 'premium':
         return {
           level: 'premium',
           quotaBypass: false,
           badge: 'referral',
+          assignedRole: user.assignedRole,
         };
       case 'basic':
         // Clean type-safe mapping of 'basic' to standard 'member' tier
@@ -67,12 +70,14 @@ export function resolveAccess(
           level: 'member',
           quotaBypass: false,
           badge: 'none',
+          assignedRole: user.assignedRole,
         };
       case 'revoked':
         return {
           level: 'revoked',
           quotaBypass: false,
           badge: 'none',
+          assignedRole: user.assignedRole,
         };
     }
   }
@@ -95,6 +100,7 @@ export function resolveAccess(
     level: calculatedTier,
     quotaBypass: false,
     badge,
+    assignedRole: user.assignedRole,
   };
 }
 

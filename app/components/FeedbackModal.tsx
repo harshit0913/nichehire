@@ -1,20 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  userId?: string;
+  userEmail?: string;
 }
 
-export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+export default function FeedbackModal({ isOpen, onClose, userId: propUserId, userEmail: propUserEmail }: FeedbackModalProps) {
   const [type, setType] = useState<'feature' | 'bug' | 'general'>('feature');
   const [message, setMessage] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(propUserEmail || '');
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(propUserId);
   const [submitted, setSubmitted] = useState(false);
+  const [successText, setSuccessText] = useState('');
+  const [bugBountyWon, setBugBountyWon] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (propUserEmail) setEmail(propUserEmail);
+    if (propUserId) setCurrentUserId(propUserId);
+
+    if (!propUserId) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user) {
+          setCurrentUserId(data.session.user.id);
+          if (!propUserEmail && data.session.user.email) {
+            setEmail(data.session.user.email);
+          }
+        }
+      });
+    }
+  }, [propUserId, propUserEmail]);
 
   if (!isOpen) return null;
 
@@ -32,6 +54,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           type,
           message,
           email,
+          userId: currentUserId || null,
           urlContext: typeof window !== 'undefined' ? window.location.href : '',
         }),
       });
@@ -42,12 +65,16 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       }
 
       setSubmitted(true);
+      setBugBountyWon(Boolean(data.bugBountyAwarded));
+      setSuccessText(data.message || 'Feedback received successfully!');
+
       setTimeout(() => {
         setSubmitted(false);
         setMessage('');
-        setEmail('');
+        setEmail(propUserEmail || '');
+        setBugBountyWon(false);
         onClose();
-      }, 1800);
+      }, 2500);
     } catch (err: any) {
       setErrorMsg(err.message || 'Submission failed. Please try again.');
     } finally {
@@ -74,8 +101,14 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         </div>
 
         {submitted ? (
-          <div className="py-8 text-center text-xs text-emerald-700 font-semibold bg-emerald-50 rounded-xl border border-emerald-200">
-            ✓ Thank you! Your feedback has been received.
+          <div className={`py-6 px-4 text-center rounded-xl border ${bugBountyWon ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+            <div className="text-2xl mb-1.5">{bugBountyWon ? '🎉 🛡️' : '✓'}</div>
+            <p className="text-xs font-bold">{successText}</p>
+            {bugBountyWon && (
+              <p className="text-[11px] text-amber-700 mt-1">
+                Your 7-day full access includes unlimited AI resume tailoring and recruiter cold outreach!
+              </p>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -90,7 +123,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <button
                 type="button"
                 onClick={() => setType('bug')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${type === 'bug' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors ${type === 'bug' ? 'bg-white shadow-xs text-rose-600' : 'text-gray-600'}`}
               >
                 🐞 Bug Report
               </button>
@@ -103,12 +136,23 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               </button>
             </div>
 
+            {/* Bug Bounty Callout Banner */}
+            {type === 'bug' && (
+              <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 animate-fadeIn">
+                <span className="text-base leading-none mt-0.5">🎁</span>
+                <div className="leading-snug">
+                  <span className="font-bold text-amber-950">Bug Bounty Reward:</span> Found an issue? Report it and automatically unlock <strong className="text-amber-950 underline decoration-amber-400">1 Week of Full NicheHire Premium</strong> on your account!
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                Your Email (Optional, if you want a reply)
+                Your Email (Required for bug bounty reward & replies)
               </label>
               <input
                 type="email"
+                required={type === 'bug'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
@@ -129,7 +173,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   type === 'feature'
                     ? 'e.g. Please add job scraping from Wellfound / AngelList...'
                     : type === 'bug'
-                    ? 'e.g. The PDF upload failed on my resume...'
+                    ? 'e.g. The PDF upload failed on my resume, or button X did not respond...'
                     : 'Tell us how your job search is going...'
                 }
                 className="w-full p-3 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -147,7 +191,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               disabled={isSubmitting}
               className="w-full py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] disabled:bg-gray-300 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2"
             >
-              <span>{isSubmitting ? 'Sending...' : 'Submit Feedback'}</span>
+              <span>{isSubmitting ? 'Sending...' : type === 'bug' ? '🐞 Submit Bug & Claim Premium' : 'Submit Feedback'}</span>
             </button>
           </form>
         )}

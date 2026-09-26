@@ -166,9 +166,32 @@ export async function POST(req: Request) {
       }
     }
 
+    // ─── Channel 4: Automated Bug Bounty Reward (1 Week Full Premium) ────────
+    let bugBountyAwarded = false;
+    if (type === 'bug' && userId) {
+      try {
+        const oneWeekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: userId,
+            tier: 'premium',
+            premium_source: 'bug_bounty',
+            subscription_status: 'active',
+            subscription_renews_at: oneWeekFromNow,
+          }, { onConflict: 'user_id' });
+        bugBountyAwarded = true;
+      } catch (bountyErr) {
+        console.warn('Could not grant 7-day bug bounty premium:', bountyErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Feedback received successfully. Thank you for helping us improve!',
+      bugBountyAwarded,
+      message: bugBountyAwarded
+        ? '🎉 Bug reported! As a reward, 1 Week of Full NicheHire Premium has been unlocked on your account!'
+        : 'Feedback received successfully. Thank you for helping us improve!',
     });
   } catch (err: any) {
     return NextResponse.json(
