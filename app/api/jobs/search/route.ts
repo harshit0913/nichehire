@@ -218,6 +218,18 @@ const REGION_MAP: Record<
     districts: ['irinjalakuda', 'chalakudy', 'kunnamkulam', 'guruvayur', 'kodungallur', 'ollukkara'],
     nearbyCities: ['palakkad', 'kochi', 'malappuram', 'ernakulam'],
   },
+  nainital: {
+    state: 'uttarakhand',
+    stateCodes: ['uk', 'ua'],
+    districts: ['haldwani', 'mallital', 'tallital', 'bhimtal', 'bhowali', 'ramnagar', 'mukteshwar', 'kaladhungi', 'jeolikote', 'high court'],
+    nearbyCities: ['dehradun', 'haridwar', 'rudrapur', 'pantnagar', 'almora', 'kashipur', 'rishikesh'],
+  },
+  dehradun: {
+    state: 'uttarakhand',
+    stateCodes: ['uk', 'ua'],
+    districts: ['rajpur road', 'jakhan', 'clem town', 'vikasnagar', 'rishikesh', 'mussoorie', 'sahastradhara', 'selakui'],
+    nearbyCities: ['haridwar', 'roorkee', 'nainital', 'haldwani', 'paonta sahib'],
+  },
 };
 
 function getGeoTier(jobLoc: string = '', queryLoc: string = ''): number {
@@ -600,6 +612,39 @@ const TOP_LOCAL_COMPANIES_MAP: Record<string, string[]> = {
     'V-Guard Industries',
     'SBI',
     'HDFC Bank',
+  ],
+  nainital: [
+    'High Court of Uttarakhand',
+    'Nainital Bank',
+    'District Legal Services Authority (DLSA)',
+    'Advocate General Office Uttarakhand',
+    'Kumaun University',
+    'Aryabhatta Research Institute (ARIES)',
+    'State Bank of India',
+    'Uttarakhand Judicial Academy',
+    'District Court Nainital',
+  ],
+  dehradun: [
+    'Oil and Natural Gas Corporation (ONGC)',
+    'Survey of India',
+    'Uttarakhand PSC',
+    'THDC India',
+    'Wadia Institute of Himalayan Geology',
+    'UPES (School of Law)',
+    'State Bank of India',
+    'Graphic Era University',
+    'National Institute for the Visually Handicapped (NIVH)',
+  ],
+  uttarakhand: [
+    'High Court of Uttarakhand',
+    'Nainital Bank',
+    'ONGC',
+    'BHEL Haridwar',
+    'THDC India',
+    'Uttarakhand Public Service Commission (UKPSC)',
+    'State Bank of India',
+    'Patanjali Ayurved',
+    'District Legal Services Authority',
   ],
 };
 

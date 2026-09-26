@@ -112,6 +112,7 @@ const REGIONAL_CENTROIDS: RegionCentroid[] = [
   // Kerala
   { state: 'Kerala', district: 'Thiruvananthapuram', lat: 8.5241, lon: 76.9366, radiusKm: 30 },
   { state: 'Kerala', district: 'Kochi', lat: 9.9312, lon: 76.2673, radiusKm: 30 },
+  { state: 'Kerala', district: 'Kannur', lat: 11.8745, lon: 75.3704, radiusKm: 35 },
 
   // Odisha
   { state: 'Odisha', district: 'Bhubaneswar', lat: 20.2961, lon: 85.8245, radiusKm: 35 },
@@ -124,6 +125,7 @@ const REGIONAL_CENTROIDS: RegionCentroid[] = [
 
   // Uttarakhand
   { state: 'Uttarakhand', district: 'Dehradun', lat: 30.3165, lon: 78.0322, radiusKm: 30 },
+  { state: 'Uttarakhand', district: 'Nainital', lat: 29.3919, lon: 79.4542, radiusKm: 35 },
 
   // Assam / North East
   { state: 'Assam', district: 'Guwahati', lat: 26.1445, lon: 91.7362, radiusKm: 35 },
@@ -260,4 +262,6 @@ export const POPULAR_DISTRICTS_BY_STATE: Record<string, string[]> = {
   'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'All Districts'],
   'West Bengal': ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol', 'All Districts'],
   'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'All Districts'],
+  'Uttarakhand': ['Nainital', 'Dehradun', 'Haridwar', 'Udham Singh Nagar (Haldwani / Rudrapur)', 'Almora', 'Pauri Garhwal', 'Tehri Garhwal', 'Chamoli', 'Rishikesh', 'All Districts'],
+  'Kerala': ['Kannur', 'Kochi / Ernakulam', 'Kozhikode', 'Thiruvananthapuram', 'Thrissur', 'Kollam', 'Palakkad', 'Malappuram', 'Kottayam', 'Alappuzha', 'All Districts'],
 };

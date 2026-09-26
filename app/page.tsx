@@ -214,6 +214,12 @@ export default function JobDashboard() {
     if (l.includes('kerala') || l.includes('thiruvananthapuram') || l.includes('thrissur') || l.includes('trivandrum')) {
       return ['Federal Bank', 'South Indian Bank', 'Infosys', 'TCS', 'UST', 'Malabar Gold & Diamonds', 'Kerala PSC', 'Manappuram Finance'];
     }
+    if (l.includes('nainital') || l.includes('haldwani') || l.includes('almora') || l.includes('bhimtal')) {
+      return ['High Court of Uttarakhand', 'Nainital Bank', 'District Legal Services Authority', 'Kumaun University', 'State Bank of India', 'ARIES'];
+    }
+    if (l.includes('dehradun') || l.includes('uttarakhand') || l.includes('haridwar') || l.includes('rishikesh')) {
+      return ['High Court of Uttarakhand', 'ONGC', 'THDC India', 'Nainital Bank', 'BHEL Haridwar', 'Uttarakhand PSC', 'SBI'];
+    }
     return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
   };
 
@@ -319,14 +325,16 @@ export default function JobDashboard() {
     const matchedSkills = candidateSkills.filter((s) => jobText.includes(s.toLowerCase()));
     const skillRatio = matchedSkills.length / Math.max(candidateSkills.length, 1);
 
-    // Common in-demand skills to detect gaps
-    const techWords = [
+    // Common in-demand skills to detect gaps (Tech, Finance, and Legal)
+    const inDemandSkills = [
       'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Java',
       'Go', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'PostgreSQL', 'GraphQL', 'REST API',
       'System Design', 'Microservices', 'Tailwind', 'Redux', 'MongoDB', 'Redis',
-      'Financial Modeling', 'Excel', 'Tally', 'GST', 'Taxation', 'Audit', 'Accounting'
+      'Financial Modeling', 'Excel', 'Tally', 'GST', 'Taxation', 'Audit', 'Accounting',
+      'Legal Research', 'Drafting', 'Constitutional Law', 'Contract Review', 'Civil Procedure (CPC)',
+      'Criminal Law (CrPC/BNSS)', 'Due Diligence', 'Moot Court', 'Arbitration', 'Corporate Law', 'Litigation'
     ];
-    const missingSkills = techWords.filter(
+    const missingSkills = inDemandSkills.filter(
       (w) => jobText.includes(w.toLowerCase()) && !candidateSkills.some((s) => s.toLowerCase() === w.toLowerCase())
     ).slice(0, 3);
 
@@ -334,8 +342,25 @@ export default function JobDashboard() {
     const candidateEdu = (parsedProfile.education || '').toLowerCase();
     let eduScore = 15;
     let eduText = 'Education aligns';
-    if (jobText.includes('b.tech') || jobText.includes('bachelor') || jobText.includes('degree') || jobText.includes('engineering')) {
-      if (candidateEdu.includes('b.tech') || candidateEdu.includes('bachelor') || candidateEdu.includes('master') || candidateEdu.includes('degree')) {
+    if (
+      jobText.includes('b.tech') ||
+      jobText.includes('bachelor') ||
+      jobText.includes('degree') ||
+      jobText.includes('engineering') ||
+      jobText.includes('ll.b') ||
+      jobText.includes('llb') ||
+      jobText.includes('law') ||
+      jobText.includes('advocate')
+    ) {
+      if (
+        candidateEdu.includes('b.tech') ||
+        candidateEdu.includes('bachelor') ||
+        candidateEdu.includes('master') ||
+        candidateEdu.includes('degree') ||
+        candidateEdu.includes('ll.b') ||
+        candidateEdu.includes('llb') ||
+        candidateEdu.includes('law')
+      ) {
         eduScore = 20;
         eduText = 'Degree matches requirements';
       }
@@ -816,6 +841,8 @@ export default function JobDashboard() {
     'Financial Analyst',
     'Data Analyst',
     'CA Articleship',
+    'Legal Intern',
+    'Law Research Associate',
     'Accounts Executive',
     'Operations Manager',
     'Business Analyst',
