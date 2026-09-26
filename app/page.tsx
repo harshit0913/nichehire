@@ -19,6 +19,7 @@ import JobCardItem, { Job, FitRecommendation, TailorState } from './components/J
 import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
 import type { WalkInJob } from './api/walkins/route';
+import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,81 @@ export default function JobDashboard() {
   const [applicants, setApplicants] = useState('Any Applicants');
   const [isStartupOnly, setIsStartupOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+
+  // User Location Detection State & Dynamic Company Suggestions
+  const [userLocationMatch, setUserLocationMatch] = useState<LocationMatch | null>(null);
+  const [isDetectingLoc, setIsDetectingLoc] = useState(false);
+  const [locationToast, setLocationToast] = useState('');
+
+  const detectCurrentLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setLocationToast('Geolocation is not supported by your browser.');
+      setTimeout(() => setLocationToast(''), 4000);
+      return;
+    }
+    setIsDetectingLoc(true);
+    setLocationToast('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsDetectingLoc(false);
+        const match = matchCoordinatesToRegion(pos.coords.latitude, pos.coords.longitude);
+        setUserLocationMatch(match);
+        const detectedName = match.district && match.district !== 'All Districts'
+          ? `${match.district}, ${match.state}`
+          : match.state;
+        setLocationQuery(detectedName);
+        setLocationToast(`📍 Location detected: ${detectedName}`);
+        setTimeout(() => setLocationToast(''), 4000);
+      },
+      () => {
+        setIsDetectingLoc(false);
+        setLocationToast('Could not auto-detect location. Please type your city or choose below.');
+        setTimeout(() => setLocationToast(''), 4000);
+      },
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
+  };
+
+  const getSuggestedCompanies = (loc: string) => {
+    const l = loc.toLowerCase().trim();
+    if (!l) {
+      return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
+    }
+    if (l.includes('bangalore') || l.includes('bengaluru') || l.includes('karnataka')) {
+      return ['Google', 'Microsoft', 'Amazon', 'Flipkart', 'Swiggy', 'Razorpay', 'CRED', 'Infosys', 'Wipro'];
+    }
+    if (l.includes('delhi') || l.includes('noida') || l.includes('gurgaon') || l.includes('gurugram') || l.includes('haryana')) {
+      return ['Google', 'Microsoft', 'Amazon', 'Adobe', 'Zomato', 'Paytm', 'MakeMyTrip', 'Airtel', 'TCS'];
+    }
+    if (l.includes('mumbai') || l.includes('maharashtra')) {
+      return ['Tata Sons', 'Reliance Industries', 'Amazon', 'Netflix', 'Morgan Stanley', 'J.P. Morgan', 'HDFC Bank', 'L&T'];
+    }
+    if (l.includes('hyderabad') || l.includes('telangana')) {
+      return ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'ServiceNow', 'Salesforce', 'Deloitte', 'Qualcomm'];
+    }
+    if (l.includes('pune')) {
+      return ['Google', 'Nvidia', 'Barclays', 'Persistent Systems', 'Veritas', 'Bajaj Finserv', 'Tech Mahindra', 'Infosys'];
+    }
+    if (l.includes('chennai') || l.includes('tamil nadu')) {
+      return ['Amazon', 'PayPal', 'Zoho', 'Freshworks', 'Ford', 'Caterpillar', 'TCS', 'Cognizant'];
+    }
+    if (l.includes('kolkata') || l.includes('west bengal')) {
+      return ['Google', 'ITC Limited', 'PwC', 'Tata Consultancy Services', 'Wipro', 'Bandhan Bank'];
+    }
+    if (l.includes('patna') || l.includes('bihar')) {
+      return ['Tata Steel', 'Reliance Retail', 'State Bank of India', 'Punjab National Bank', 'BSPHCL', 'BPSC', 'Amul', 'ITC'];
+    }
+    if (l.includes('ahmedabad') || l.includes('gujarat')) {
+      return ['Adani Group', 'Tata Motors', 'Torrent Pharma', 'Cadila Healthcare', 'TCS', 'Infosys'];
+    }
+    if (l.includes('jaipur') || l.includes('rajasthan')) {
+      return ['Genpact', 'Infosys', 'Wipro', 'AU Small Finance Bank', 'Metacube', 'Bosch'];
+    }
+    if (l.includes('indore') || l.includes('madhya pradesh') || l.includes('bhopal')) {
+      return ['TCS', 'Infosys', 'Impetus', 'Persistent Systems', 'Cognizant', 'Eicher Motors'];
+    }
+    return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
+  };
 
   // Per-job tailoring state
   const [tailorMap, setTailorMap] = useState<Record<string, TailorState>>({});
@@ -657,13 +733,13 @@ export default function JobDashboard() {
   // Trending Roles & Locations for Discovery Portal
   const TRENDING_ROLES = [
     'Software Engineer',
-    'Senior Frontend',
-    'Backend Engineer',
-    'Founding Engineer',
-    'Data Analyst',
     'Product Manager',
-    'AI Engineer',
     'Financial Analyst',
+    'Data Analyst',
+    'Operations Manager',
+    'Business Analyst',
+    'Experience Designer',
+    'Management Consultant',
   ];
 
   const POPULAR_LOCATIONS = [
@@ -848,18 +924,18 @@ export default function JobDashboard() {
             {/* Top Verified Pill */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E4E7EC] text-xs text-[#5B6478]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
-              <span>Direct from 35+ verified tech company portals</span>
+              <span>Verified Roles Direct From 100+ Official Company Portals</span>
             </div>
 
             {/* Main Editorial Headline (Inter + Newsreader serif) */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-normal text-[#12172B] tracking-tight leading-tight">
-              Verified tech opportunities. <br />
+              Verified careers & roles. <br />
               <span className="font-serif italic text-[#12172B]">Direct from company career portals.</span>
             </h1>
 
             {/* Sentence-case subhead */}
             <p className="text-sm sm:text-base text-[#5B6478] max-w-2xl mx-auto leading-relaxed">
-              Sourced straight from official corporate career sites (Yash Technologies, Bellurbis, Stripe, Vercel). Strictly <strong className="text-[#12172B] font-semibold">under 7 days old</strong> with automated AI fit scoring. Never recruiter spam or ghost listings.
+              Sourced straight from official corporate career sites (Google, Microsoft, Amazon, Tata, Stripe). Strictly <strong className="text-[#12172B] font-semibold">under 7 days old</strong> across Engineering, Finance, Operations, Design & Public Sector. Zero ghost jobs.
             </p>
 
             {/* Social Proof & Live Metrics Bar */}
@@ -878,19 +954,32 @@ export default function JobDashboard() {
               </div>
             </div>
 
-            {/* Company Portals Sourced (Marquee) */}
+            {/* Company Portals Sourced (Location-Aware Marquee) */}
             <div className="pt-1">
-              <span className="text-xs text-[#5B6478] block mb-2 font-normal">
-                Official corporate portals sourced daily:
-              </span>
+              <div className="flex items-center justify-center gap-2 mb-2 text-xs text-[#5B6478]">
+                <span>Top employers sourced daily:</span>
+                {locationQuery ? (
+                  <span className="px-2 py-0.5 rounded bg-white border border-[#2B4EE6]/30 text-[11px] font-medium text-[#2B4EE6]">
+                    📍 {locationQuery}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded bg-white border border-[#E4E7EC] text-[11px] font-medium text-[#5B6478]">
+                    🇮🇳 Pan-India
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-[#12172B]">
-                {['Yash Technologies', 'Stripe', 'Vercel', 'Bellurbis', 'InfoBeans', 'Groww', 'InMobi', 'Postman', 'CRED', 'Kimirica'].map((co) => (
-                  <span
+                {getSuggestedCompanies(locationQuery).map((co) => (
+                  <button
                     key={co}
-                    className="px-2.5 py-1 bg-white border border-[#E4E7EC] rounded text-[#12172B] text-xs font-medium hover:border-[#12172B]/30 transition-colors"
+                    onClick={() => {
+                      setSearchQuery(co);
+                      fetchJobs(co, locationQuery);
+                    }}
+                    className="px-2.5 py-1 bg-white border border-[#E4E7EC] rounded text-[#12172B] text-xs font-medium hover:border-[#2B4EE6] hover:text-[#2B4EE6] transition-colors"
                   >
                     {co}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -899,7 +988,7 @@ export default function JobDashboard() {
             <div className="inline-flex items-center gap-2.5 p-3 bg-white border border-[#E4E7EC] rounded-md text-xs text-[#5B6478] max-w-xl mx-auto text-left">
               <span className="text-sm text-[#0E9F6E] shrink-0">✓</span>
               <p className="text-xs leading-relaxed">
-                “Skipped weeks of aggregator ghosting. Applied direct to Yash Tech via NicheHire and interviewed within 48 hours.” <span className="font-semibold text-[#12172B]">— Senior Engineer, Indore</span>
+                “Applied direct to Amazon via NicheHire and interviewed within 48 hours. Zero recruiter spam or aggregator ghosting.” <span className="font-semibold text-[#12172B]">— Senior Product Analyst, India</span>
               </p>
             </div>
 
@@ -933,7 +1022,7 @@ export default function JobDashboard() {
 
                 <div className="text-xs text-[#5B6478] flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
-                  <span>Live crawlers active across 35+ career sites</span>
+                  <span>Direct corporate portals updated every 6 hours</span>
                 </div>
               </div>
 
@@ -945,7 +1034,7 @@ export default function JobDashboard() {
                       <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
                       <input
                         type="text"
-                        placeholder="Job title, technical skill, or role (e.g. React, Java, DevOps)..."
+                        placeholder="Job title, department, or role (e.g. Product Manager, Financial Analyst, Software Engineer)..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
@@ -953,16 +1042,25 @@ export default function JobDashboard() {
                       />
                     </div>
 
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative flex items-center">
                       <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">📍</span>
                       <input
                         type="text"
-                        placeholder="Location (e.g. Indore, Bangalore, or Remote)..."
+                        placeholder="Location (e.g. Bangalore, Delhi NCR, Mumbai, or Remote)..."
                         value={locationQuery}
                         onChange={(e) => setLocationQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
+                        className="w-full pl-9 pr-24 py-2.5 bg-white border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
                       />
+                      <button
+                        type="button"
+                        onClick={detectCurrentLocation}
+                        disabled={isDetectingLoc}
+                        className="absolute right-1.5 top-1.5 px-2.5 py-1 text-[11px] font-medium text-[#2B4EE6] hover:bg-[#2B4EE6]/10 rounded border border-[#2B4EE6]/20 transition-colors flex items-center gap-1"
+                        title="Detect your current city"
+                      >
+                        <span>🎯</span> {isDetectingLoc ? 'Detecting...' : 'Detect'}
+                      </button>
                     </div>
 
                     <button
@@ -973,6 +1071,21 @@ export default function JobDashboard() {
                       {isLoading ? 'Searching...' : 'Search Verified Jobs'}
                     </button>
                   </div>
+
+                  {locationToast && (
+                    <div className="text-xs text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 px-3 py-1.5 rounded flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <span>📍</span>
+                        <span>{locationToast}</span>
+                      </span>
+                      <button
+                        onClick={() => setLocationToast('')}
+                        className="text-[#5B6478] hover:text-[#12172B] text-xs font-semibold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
 
                   {/* Surface Core Filters on Landing View */}
                   <div className="pt-2 border-t border-[#E4E7EC] flex flex-wrap items-center gap-2 text-xs">
@@ -1050,7 +1163,7 @@ export default function JobDashboard() {
                   {/* Popular Locations */}
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="text-[#5B6478] text-[11px] font-medium mr-1">Locations:</span>
-                    {POPULAR_LOCATIONS.map((loc) => (
+                    {['Bangalore', 'Delhi NCR', 'Mumbai', 'Hyderabad', 'Pune', 'Remote'].map((loc) => (
                       <button
                         key={loc}
                         onClick={() => {
@@ -1100,7 +1213,7 @@ export default function JobDashboard() {
                     </div>
 
                     <h3 className="text-base font-semibold text-[#12172B]">
-                      {isParsing ? 'Analyzing your technical skills with AI…' : 'Drop your resume (PDF or DOCX)'}
+                      {isParsing ? 'Analyzing your skills & experience with AI…' : 'Drop your resume (PDF or DOCX)'}
                     </h3>
                     <p className="text-xs text-[#5B6478] max-w-md mx-auto mt-1 leading-relaxed">
                       Our system extracts your skills and experience to calculate instant <strong className="text-[#12172B]">High / Medium / Low Apply Chances</strong> against active verified openings.
@@ -1148,7 +1261,7 @@ export default function JobDashboard() {
                   <div className="p-3 bg-white border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
                     <span className="text-sm text-[#2B4EE6]">ℹ️</span>
                     <div>
-                      <strong className="text-[#12172B]">How Apply Chances scoring works:</strong> We evaluate technical skill overlap (50%), experience alignment (25%), education (20%), and portfolio relevance (5%):
+                      <strong className="text-[#12172B]">How Apply Chances scoring works:</strong> We evaluate skill overlap (50%), experience alignment (25%), education (20%), and role relevance (5%):
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span> High Match (65%+)
@@ -1256,7 +1369,7 @@ export default function JobDashboard() {
                     Direct from official company portals (≤ 7 days old)
                   </h2>
                   <p className="text-xs text-[#5B6478]">
-                    Verified authentic roles from Yash Technologies, Bellurbis, Stripe, Vercel, InMobi &amp; 30+ enterprise feeds.
+                    Verified authentic roles from Google, Microsoft, Amazon, Tata Group, Stripe &amp; 100+ direct enterprise feeds.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

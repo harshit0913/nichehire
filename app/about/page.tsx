@@ -82,7 +82,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-base font-semibold text-[#12172B]">Direct ATS &amp; career portal ingestion</h3>
               <p className="text-xs text-[#5B6478] leading-relaxed">
-                We do not re-scrape third-party aggregator sites. Instead, our automated engine queries official enterprise ATS infrastructure (Greenhouse, Lever, SAP SuccessFactors, Workday) and directly scrapes verified corporate career portals (such as Yash Technologies, Bellurbis, Kimirica, Vercel, and Stripe).
+                We do not re-scrape third-party aggregator sites. Instead, our automated engine queries official enterprise ATS infrastructure (Greenhouse, Lever, SAP SuccessFactors, Workday) and directly scrapes verified corporate career portals (such as Google, Microsoft, Amazon, Tata Group, Vercel, and Stripe).
               </p>
               <div className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-2.5 py-1.5 rounded border border-[#A7F3D0]">
                 ✓ Every apply link directs straight to the employer&apos;s authenticated domain.
@@ -110,7 +110,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-base font-semibold text-[#12172B]">Hierarchical geographic proximity engine</h3>
               <p className="text-xs text-[#5B6478] leading-relaxed">
-                When you search for jobs in a city (like Indore), other platforms flood you with irrelevant jobs worldwide. Our deterministic geographic hierarchy prioritizes jobs in: Local City → District → State Tech Hubs → State → India → Global Remote.
+                When you search for jobs in a city (like Bangalore, Delhi NCR, or Mumbai), other platforms flood you with irrelevant jobs worldwide. Our deterministic geographic hierarchy prioritizes jobs in: Local City → District → State Hubs → State → India → Global Remote.
               </p>
               <div className="text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 px-2.5 py-1.5 rounded border border-[#2B4EE6]/20">
                 ✓ See local openings first without wading through international spam.

@@ -408,7 +408,7 @@ export default function GovtExamsPage() {
 
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-medium">
             <Link href="/" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors hidden sm:inline">
-              Tech Jobs
+              All Careers
             </Link>
             <Link href="/about" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors hidden md:inline">
               About & Trust
