@@ -30,11 +30,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in to tailor your resume.' },
+        { status: 401 }
+      );
+    }
+
     // ─── Quota & Founder Access Enforcement ──────────────────────────────────
     // NOTE: Override is ALWAYS looked up server-side from database by userId, NEVER accepted from the request.
     let isUnlimited = false;
-    if (userId) {
-      const { data: profile } = await supabase
+    const { data: profile } = await supabase
         .from('user_profiles')
         .select('is_founder, tier')
         .eq('user_id', userId)
@@ -78,7 +84,6 @@ export async function POST(req: Request) {
           );
         }
       }
-    }
 
     const genAI = new GoogleGenerativeAI(apiKey);
 

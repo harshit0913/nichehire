@@ -13,10 +13,17 @@ const FALLBACK_MODELS = [
 
 export async function POST(req: Request) {
   try {
-    const { resumeText, jobTitle, company, jobDescription } = await req.json();
+    const { resumeText, jobTitle, company, jobDescription, userId } = await req.json();
 
     if (!jobTitle) {
       return NextResponse.json({ error: 'Job title is required.' }, { status: 400 });
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in to generate personalized interview prep kits.' },
+        { status: 401 }
+      );
     }
 
     if (!apiKey) {
