@@ -77,6 +77,14 @@ export async function POST(req: Request) {
     const { resumeText, fileBase64, mimeType, fileName } = await req.json();
     fallbackText = resumeText || '';
 
+    // Enforce 5MB payload guard
+    if (fileBase64 && fileBase64.length > 7_000_000) {
+      return NextResponse.json({ error: 'File size exceeds maximum 5MB limit.' }, { status: 413 });
+    }
+    if (resumeText && resumeText.length > 500_000) {
+      return NextResponse.json({ error: 'Resume text exceeds maximum limit.' }, { status: 413 });
+    }
+
     if (!resumeText?.trim() && !fileBase64) {
       return NextResponse.json({ error: 'Please provide resume text or upload a file.' }, { status: 400 });
     }

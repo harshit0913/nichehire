@@ -720,6 +720,13 @@ export default function JobDashboard() {
               Pricing
             </Link>
 
+            <Link
+              href="/govt-exams"
+              className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
+            >
+              <span>🏛️</span> Govt Exams
+            </Link>
+
             <button
               onClick={() => setPostJobOpen(true)}
               className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
@@ -1754,6 +1761,7 @@ export default function JobDashboard() {
               <h4 className="font-semibold text-[#12172B] text-xs">For job seekers</h4>
               <ul className="space-y-1.5 text-[#5B6478]">
                 <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-[#2B4EE6]">Browse verified jobs</button></li>
+                <li><Link href="/govt-exams" className="hover:text-[#2B4EE6] font-medium text-[#2B4EE6] flex items-center gap-1"><span>🏛️</span> Govt Exams Calendar</Link></li>
                 <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-[#2B4EE6]">Offline &amp; walk-in openings</button></li>
                 <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#2B4EE6]">AI resume matcher</button></li>
                 <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-[#2B4EE6]">How to apply direct</button></li>
