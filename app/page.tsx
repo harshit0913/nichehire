@@ -195,6 +195,19 @@ export default function JobDashboard() {
   };
 
   useEffect(() => {
+    // Capture referral query parameter from URL (e.g. ?ref=REF-123456 or ?r=REF-123456)
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get('ref') || params.get('r');
+        if (refParam) {
+          localStorage.setItem('nichehire_referral_code', refParam.trim().toUpperCase());
+        }
+      }
+    } catch {
+      // Ignore
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.access_token) {
@@ -561,11 +574,29 @@ export default function JobDashboard() {
   // ─── Tailor Resume ─────────────────────────────────────────────────────────
 
   const handleTailorResume = async (job: Job) => {
+    // 1. Must be signed in
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    // 2. Must have uploaded or created a resume
     if (!resumeText.trim()) {
+      setDiscoveryTab('resume');
       setTailorMap((prev) => ({
         ...prev,
-        [job.id]: { loading: false, open: true, error: 'Please upload or paste your resume first.' },
+        [job.id]: {
+          loading: false,
+          open: true,
+          error: 'Resume required: Please upload or paste your resume in the Resume Match tab (or create one using Resume Builder) before tailoring.',
+        },
       }));
+      return;
+    }
+
+    // 3. Quota check: if not unlimited bypass and remaining resumes <= 0
+    if (!accessStatus.quotaBypass && (accessStatus.remainingQuotas?.tailoredResumes ?? 0) <= 0) {
+      setPremiumModalOpen(true);
       return;
     }
 
@@ -585,7 +616,12 @@ export default function JobDashboard() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to tailor resume');
+      if (!res.ok) {
+        if (res.status === 403) {
+          setPremiumModalOpen(true);
+        }
+        throw new Error(data.error || 'Failed to tailor resume');
+      }
 
       // Refresh remaining quota
       const session = await supabase.auth.getSession();
@@ -1391,6 +1427,8 @@ export default function JobDashboard() {
                     onOpenDetails={openJobDetails}
                     onToggleSave={toggleSaveJob}
                     onTailorResume={handleTailorResume}
+                    onCloseTailor={closeTailor}
+                    onPrintPdf={handlePrintPdf}
                     formatTimeAgo={formatTimeAgo}
                   />
                 ))}
@@ -1707,6 +1745,8 @@ export default function JobDashboard() {
                   onOpenDetails={openJobDetails}
                   onToggleSave={toggleSaveJob}
                   onTailorResume={handleTailorResume}
+                  onCloseTailor={closeTailor}
+                  onPrintPdf={handlePrintPdf}
                   formatTimeAgo={formatTimeAgo}
                 />
               ))}
@@ -1785,10 +1825,28 @@ export default function JobDashboard() {
                 </button>
 
                 <button
-                  onClick={() => setActiveOutreachJob(selectedJob)}
-                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors"
+                  onClick={() => {
+                    if (!user) {
+                      setAuthModalOpen(true);
+                      return;
+                    }
+                    if (!accessStatus.quotaBypass && (accessStatus.remainingQuotas?.hrEmailDrafts ?? 0) <= 0) {
+                      setPremiumModalOpen(true);
+                      return;
+                    }
+                    setActiveOutreachJob(selectedJob);
+                  }}
+                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors cursor-pointer"
                 >
                   ✉️ Email HR
+                </button>
+
+                <button
+                  onClick={() => handleTailorResume(selectedJob)}
+                  disabled={tailorMap[selectedJob.id]?.loading}
+                  className="px-3 py-2 rounded border border-[#2B4EE6]/40 bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 text-xs font-medium text-[#2B4EE6] transition-colors cursor-pointer"
+                >
+                  {tailorMap[selectedJob.id]?.loading ? 'Tailoring…' : '✨ Tailor CV'}
                 </button>
 
                 <button
@@ -1798,6 +1856,66 @@ export default function JobDashboard() {
                   🎙️ Prep
                 </button>
               </div>
+
+              {/* Drawer Tailor Resume Panel */}
+              {tailorMap[selectedJob.id]?.open && (
+                <div className="p-4 bg-[#F7F8FA] rounded-md border border-[#2B4EE6]/30 space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">✨</span>
+                      <span className="text-xs font-bold text-[#12172B]">AI Tailored Resume</span>
+                      <span className="px-1.5 py-0.2 text-[10px] bg-[#2B4EE6]/10 text-[#2B4EE6] rounded font-semibold">
+                        ATS Optimized
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => closeTailor(selectedJob.id)}
+                      className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-200"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  {tailorMap[selectedJob.id]?.loading && (
+                    <div className="py-4 flex flex-col items-center justify-center gap-2 text-xs text-[#5B6478]">
+                      <span className="w-5 h-5 border-2 border-[#2B4EE6] border-t-transparent rounded-full animate-spin"></span>
+                      <span>Aligning bullet points with genuine job keywords…</span>
+                    </div>
+                  )}
+
+                  {tailorMap[selectedJob.id]?.error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                      {tailorMap[selectedJob.id]?.error}
+                    </div>
+                  )}
+
+                  {tailorMap[selectedJob.id]?.text && (
+                    <div className="space-y-3">
+                      <div className="bg-white p-3.5 rounded border border-[#E4E7EC] text-xs font-mono text-[#12172B] max-h-72 overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
+                        {tailorMap[selectedJob.id]?.text}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(tailorMap[selectedJob.id]?.text || '');
+                            alert('Tailored resume copied!');
+                          }}
+                          className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded text-xs font-medium text-[#12172B]"
+                        >
+                          📋 Copy Text
+                        </button>
+                        <button
+                          onClick={() => handlePrintPdf(tailorMap[selectedJob.id]?.text || '', selectedJob.title)}
+                          className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded text-xs font-medium shadow-2xs"
+                        >
+                          🖨️ Print / Download PDF
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Fit Analysis Box */}
               {(() => {
@@ -1987,6 +2105,7 @@ export default function JobDashboard() {
           onClose={() => setActiveOutreachJob(null)}
           job={activeOutreachJob}
           resumeText={resumeText}
+          userId={user?.id}
         />
       )}
 
@@ -2006,7 +2125,9 @@ export default function JobDashboard() {
         isOpen={premiumModalOpen}
         onClose={() => setPremiumModalOpen(false)}
         referralCount={accessStatus?.referralCount ?? 0}
-        referralCode={user?.id ? `REF-${user.id.slice(0, 8).toUpperCase()}` : 'REF-NICHE2026'}
+        provisionalCount={accessStatus?.provisionalCount ?? 0}
+        recentReferrals={accessStatus?.recentReferrals ?? []}
+        referralCode={accessStatus?.referralCode || (user?.id ? `REF-${user.id.slice(0, 8).toUpperCase()}` : 'REF-NICHE2026')}
         isLoggedIn={!!user}
         onLoginClick={() => {
           setPremiumModalOpen(false);

@@ -245,8 +245,76 @@ const BASE_CENTRAL_EXAM: ExamEligibilityCriteria = {
   );
 }
 
+// 11. BBA Degree Candidate Eligible for Central / Banking Examinations
+{
+  const bbaCandidate: CandidateProfile = {
+    age: 23,
+    category: 'General',
+    qualificationLevel: 'Graduate',
+    degreeType: 'BBA',
+    stream: 'Management & Administration',
+    isConfigured: true,
+  };
+  const bankingExam: ExamEligibilityCriteria = {
+    minAge: 20,
+    maxAge: 30,
+    ageRelaxation: { obc: 3, sc_st: 5 },
+    domicilePolicy: 'open_all_india',
+    minQualificationLevel: 'Graduate',
+    mandatoryDegreeTypes: ['Any'],
+    requiredStreams: ['Any'],
+  };
+  const res = calculateGovtEligibility(bbaCandidate, bankingExam);
+  assert(
+    res.status === 'eligible' && res.score === 100,
+    'Case 11: BBA candidate is 100% eligible for Banking / MT open-graduate examinations'
+  );
+}
+
+// 12. MBA Degree Candidate Eligible for Specialized PSU HR / Management Roles
+{
+  const mbaHrCandidate: CandidateProfile = {
+    age: 27,
+    category: 'OBC',
+    qualificationLevel: 'PostGraduate',
+    degreeType: 'MBA',
+    stream: 'Human Resources (HR)',
+    isConfigured: true,
+  };
+  const psuManagementExam: ExamEligibilityCriteria = {
+    minAge: 21,
+    maxAge: 28,
+    ageRelaxation: { obc: 3, sc_st: 5 },
+    domicilePolicy: 'open_all_india',
+    minQualificationLevel: 'PostGraduate',
+    mandatoryDegreeTypes: ['MBA', 'PGDM'],
+    requiredStreams: ['Human Resources', 'Management'],
+  };
+  const res = calculateGovtEligibility(mbaHrCandidate, psuManagementExam);
+  assert(
+    res.status === 'eligible' && res.score === 100,
+    'Case 12: MBA HR candidate is 100% eligible for specialized PSU Management / HR executive roles'
+  );
+}
+
+// 13. Unconfigured Profile Guard
+{
+  const unconfiguredCandidate: CandidateProfile = {
+    age: 24,
+    category: 'General',
+    qualificationLevel: 'Graduate',
+    isConfigured: false, // User hasn't customized profile
+  };
+  const res = calculateGovtEligibility(unconfiguredCandidate, BASE_CENTRAL_EXAM);
+  assert(
+    res.status === 'incomplete_profile',
+    'Case 13: Unconfigured profile (isConfigured: false) returns incomplete_profile status'
+  );
+}
+
 console.log(`\nResults: ${passedCount} / ${totalCount} tests passed.\n`);
 
 if (passedCount !== totalCount) {
   process.exit(1);
 }
+

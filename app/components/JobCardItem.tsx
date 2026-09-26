@@ -51,6 +51,8 @@ interface JobCardItemProps {
   onOpenDetails: (job: Job) => void;
   onToggleSave: (id: string) => void;
   onTailorResume: (job: Job) => void;
+  onCloseTailor?: (jobId: string) => void;
+  onPrintPdf?: (tailoredText: string, jobTitle: string) => void;
   formatTimeAgo: (timestamp?: number) => string;
 }
 
@@ -63,6 +65,8 @@ export default function JobCardItem({
   onOpenDetails,
   onToggleSave,
   onTailorResume,
+  onCloseTailor,
+  onPrintPdf,
   formatTimeAgo,
 }: JobCardItemProps) {
   // Compute initial initials for company monogram
@@ -252,6 +256,89 @@ export default function JobCardItem({
           </a>
         </div>
       </div>
+
+      {/* ─── Tailored Resume Expandable Drawer / Panel ─── */}
+      {tailor?.open && (
+        <div className="w-full mt-2 pt-3 border-t border-[#E4E7EC] space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]/70">
+            <div className="flex items-center gap-2">
+              <span className="text-base">✨</span>
+              <span className="text-xs font-bold text-[#12172B]">
+                AI Tailored Resume for {job.title}
+              </span>
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#2B4EE6]/10 text-[#2B4EE6] rounded border border-[#2B4EE6]/20">
+                ATS Optimized
+              </span>
+            </div>
+            {onCloseTailor && (
+              <button
+                type="button"
+                onClick={() => onCloseTailor(job.id)}
+                className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-100 transition-colors"
+              >
+                ✕ Close
+              </button>
+            )}
+          </div>
+
+          {tailor.loading && (
+            <div className="py-6 flex flex-col items-center justify-center gap-2 text-xs text-[#5B6478]">
+              <span className="w-5 h-5 border-2 border-[#2B4EE6] border-t-transparent rounded-full animate-spin"></span>
+              <span>Tailoring your bullet points with genuine job keywords…</span>
+            </div>
+          )}
+
+          {tailor.error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-start gap-2">
+              <span>⚠️</span>
+              <div className="flex-1">{tailor.error}</div>
+            </div>
+          )}
+
+          {tailor.text && (
+            <div className="space-y-3">
+              <div className="bg-[#F7F8FA] p-3.5 rounded border border-[#E4E7EC] text-xs font-mono text-[#12172B] max-h-80 overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
+                {tailor.text}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(tailor.text || '');
+                      alert('Tailored resume copied to clipboard!');
+                    }}
+                    className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded font-medium text-[#12172B] transition-colors"
+                  >
+                    📋 Copy Resume
+                  </button>
+
+                  {onPrintPdf && (
+                    <button
+                      type="button"
+                      onClick={() => onPrintPdf(tailor.text || '', job.title)}
+                      className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded font-medium transition-colors shadow-2xs"
+                    >
+                      🖨️ Print / Download PDF
+                    </button>
+                  )}
+                </div>
+
+                {onCloseTailor && (
+                  <button
+                    type="button"
+                    onClick={() => onCloseTailor(job.id)}
+                    className="text-xs text-[#5B6478] hover:text-[#12172B]"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }

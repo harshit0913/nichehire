@@ -10,11 +10,12 @@ export interface CandidateProfile {
   age?: number;
   category: CandidateCategory;
   qualificationLevel?: QualificationLevel;
-  degreeType?: string; // e.g. 'B.Tech', 'B.E.', 'B.Com', 'B.Sc', 'BA', 'LLB', 'MBBS', 'MBA', 'M.Tech', 'Diploma', '10th', '12th'
-  stream?: string;     // e.g. 'Computer Science', 'Mechanical', 'Civil', 'Electrical', 'Commerce', 'Law', 'General'
+  degreeType?: string; // e.g. 'BBA', 'MBA', 'BMS', 'PGDM', 'B.Tech', 'B.E.', 'B.Com', 'B.Sc', 'BA', 'LLB', 'Diploma'
+  stream?: string;     // e.g. 'Management', 'Finance', 'Marketing', 'HR', 'Computer Science', 'Mechanical', 'Commerce', 'General'
   domicileState?: string;
   isPwD?: boolean;
   isExServicemen?: boolean;
+  isConfigured?: boolean; // False if candidate has not yet personalized their profile
 }
 
 export type DomicilePolicy = 'mandatory' | 'quota_partial' | 'open_all_india';
@@ -72,19 +73,19 @@ export function calculateGovtEligibility(
 ): EligibilityCheckResult {
   const checks: EligibilityCheckResult['checks'] = [];
 
-  // Check 1: Incomplete Profile Guard
-  if (candidate.age === undefined || !candidate.qualificationLevel) {
+  // Check 1: Incomplete / Unconfigured Profile Guard
+  if (candidate.isConfigured === false || candidate.age === undefined || !candidate.qualificationLevel) {
     return {
       status: 'incomplete_profile',
       score: 50,
       badgeLabel: 'Profile Incomplete',
       isUnderUR: false,
-      summary: 'Add your age and qualification in the profile drawer to view your personalized eligibility match.',
+      summary: 'Add your age, reservation category, degree (e.g. BBA, MBA, B.Tech, B.Com), and state domicile in the profile drawer to view personalized eligibility matches.',
       checks: [
         {
           criterion: 'Profile Completion',
           passed: false,
-          message: 'Age or educational qualification is missing in candidate profile.',
+          message: 'Candidate profile is unconfigured. Set up your degree, age, and domicile to view real-time eligibility.',
         },
       ],
     };
@@ -251,7 +252,13 @@ export function calculateGovtEligibility(
     const candidateDegree = (candidate.degreeType || '').toLowerCase().trim();
     const degreeMatches = exam.mandatoryDegreeTypes.some((deg) => {
       const target = deg.toLowerCase();
-      return candidateDegree.includes(target) || (target === 'b.tech' && candidateDegree.includes('btech')) || (target === 'b.e.' && candidateDegree.includes('be'));
+      if (candidateDegree.includes(target) || target.includes(candidateDegree)) return true;
+      if (target === 'b.tech' && (candidateDegree.includes('btech') || candidateDegree.includes('b.e.') || candidateDegree.includes('engineering'))) return true;
+      if (target === 'b.e.' && (candidateDegree.includes('b.tech') || candidateDegree.includes('btech'))) return true;
+      if ((target === 'bba' || target === 'bms') && (candidateDegree.includes('bba') || candidateDegree.includes('bms') || candidateDegree.includes('bbs') || candidateDegree.includes('management'))) return true;
+      if ((target === 'mba' || target === 'pgdm') && (candidateDegree.includes('mba') || candidateDegree.includes('pgdm') || candidateDegree.includes('mms') || candidateDegree.includes('management'))) return true;
+      if ((target === 'b.com' || target === 'm.com') && (candidateDegree.includes('commerce') || candidateDegree.includes('accounting') || candidateDegree.includes('ca'))) return true;
+      return false;
     });
 
     if (!degreeMatches) {
@@ -280,7 +287,17 @@ export function calculateGovtEligibility(
     const candidateStream = (candidate.stream || '').toLowerCase().trim();
     const streamMatches = exam.requiredStreams.some((stream) => {
       const target = stream.toLowerCase();
-      return candidateStream.includes(target) || (target.includes('computer') && candidateStream.includes('it'));
+      if (candidateStream.includes(target) || target.includes(candidateStream)) return true;
+      if (target.includes('computer') && (candidateStream.includes('it') || candidateStream.includes('software'))) return true;
+      if ((target.includes('management') || target.includes('administration') || target.includes('hr') || target.includes('marketing') || target.includes('business')) &&
+          (candidateStream.includes('management') || candidateStream.includes('administration') || candidateStream.includes('business') || candidateStream.includes('hr') || candidateStream.includes('marketing') || candidateStream.includes('finance'))) {
+        return true;
+      }
+      if ((target.includes('commerce') || target.includes('finance') || target.includes('accounts')) &&
+          (candidateStream.includes('commerce') || candidateStream.includes('finance') || candidateStream.includes('accounts') || candidateStream.includes('banking'))) {
+        return true;
+      }
+      return false;
     });
 
     if (!candidateStream || candidateStream === 'general') {

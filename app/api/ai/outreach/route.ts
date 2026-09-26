@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { supabase } from '../../../supabase';
+import { hasUnlimitedAccess, checkUsageLimit } from '../../../lib/premiumTierEngine';
 
 const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
 
@@ -8,19 +10,75 @@ const FALLBACK_MODELS = [
   'gemini-3.6-flash',
   'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
-  'gemini-3.7-flash'
+  'gemini-3.7-flash',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash'
 ];
 
 export async function POST(req: Request) {
   try {
-    const { resumeText, jobTitle, company, recipientName } = await req.json();
+    const { resumeText, jobTitle, company, recipientName, userId } = await req.json();
 
     if (!jobTitle) {
       return NextResponse.json({ error: 'Job title is required.' }, { status: 400 });
     }
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in to generate personalized HR cold outreach pitches.' },
+        { status: 401 }
+      );
+    }
+
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key is not configured.' }, { status: 500 });
+    }
+
+    // ─── Quota & Founder Access Enforcement ──────────────────────────────────
+    let isUnlimited = false;
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_founder, tier')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const { data: override } = await supabase
+      .from('founder_overrides')
+      .select('access_level')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    isUnlimited = hasUnlimitedAccess(
+      { isFounder: profile?.is_founder || false },
+      override
+    );
+
+    if (!isUnlimited) {
+      const nowMonth = new Date().toISOString().slice(0, 7) + '-01';
+      const { data: usageRow } = await supabase
+        .from('premium_usage')
+        .select('hr_email_draft_count')
+        .eq('user_id', userId)
+        .eq('period_start', nowMonth)
+        .maybeSingle();
+
+      const currentCount = usageRow?.hr_email_draft_count || 0;
+      const usage = checkUsageLimit(
+        { isFounder: false, tier: profile?.tier || 'member' },
+        'hr_email_draft',
+        currentCount,
+        override
+      );
+
+      if (!usage.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Monthly limit reached (20/20 HR email drafts). Upgrade or earn referrals to unlock unlimited.',
+            remaining: 0,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -71,6 +129,29 @@ export async function POST(req: Request) {
     }
 
     const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+
+    // Meter usage
+    if (!isUnlimited) {
+      const nowMonth = new Date().toISOString().slice(0, 7) + '-01';
+      try {
+        const { data: existingUsage } = await supabase
+          .from('premium_usage')
+          .select('hr_email_draft_count')
+          .eq('user_id', userId)
+          .eq('period_start', nowMonth)
+          .maybeSingle();
+
+        const newCount = (existingUsage?.hr_email_draft_count || 0) + 1;
+        await supabase.from('premium_usage').upsert({
+          user_id: userId,
+          period_start: nowMonth,
+          hr_email_draft_count: newCount,
+        });
+      } catch (usageErr) {
+        console.warn('Could not increment premium outreach usage count:', usageErr);
+      }
+    }
+
     return NextResponse.json(parsed);
   } catch (error: any) {
     console.error('Outreach generation error:', error);

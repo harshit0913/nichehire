@@ -40,6 +40,23 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         });
         if (error) throw error;
         if (data.user) {
+          // Register referral if user arrived with a referral link
+          try {
+            const storedRef = localStorage.getItem('nichehire_referral_code');
+            if (storedRef) {
+              await fetch('/api/referrals/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  newUserId: data.user.id,
+                  referralCode: storedRef,
+                }),
+              });
+            }
+          } catch (refErr) {
+            console.warn('Could not register referral:', refErr);
+          }
+
           setSuccessMsg('Account created successfully! You are now signed in.');
           onSuccess(data.user);
           setTimeout(() => onClose(), 1200);

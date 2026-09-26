@@ -30,11 +30,12 @@ export default function GovtExamsPage() {
   const [locationToast, setLocationToast] = useState('');
 
   // ─── Candidate Profile State (100% Client-Side / DPDP Compliant) ───────────
+  const [hasConfiguredProfile, setHasConfiguredProfile] = useState<boolean>(false);
   const [candidateAge, setCandidateAge] = useState<number>(24);
   const [category, setCategory] = useState<CandidateCategory>('General');
   const [qualification, setQualification] = useState<QualificationLevel>('Graduate');
-  const [degreeType, setDegreeType] = useState<string>('B.Tech');
-  const [stream, setStream] = useState<string>('Computer Science');
+  const [degreeType, setDegreeType] = useState<string>('BBA');
+  const [stream, setStream] = useState<string>('Management & Administration');
   const [isPwD, setIsPwD] = useState(false);
   const [isExServicemen, setIsExServicemen] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
@@ -73,6 +74,7 @@ export default function GovtExamsPage() {
         if (p.isPwD !== undefined) setIsPwD(p.isPwD);
         if (p.isExServicemen !== undefined) setIsExServicemen(p.isExServicemen);
         if (p.domicileState) setSelectedState(p.domicileState);
+        setHasConfiguredProfile(true);
       }
     } catch {
       // LocalStorage access safe ignore
@@ -91,9 +93,11 @@ export default function GovtExamsPage() {
         domicileState: selectedState,
         isPwD,
         isExServicemen,
+        isConfigured: true,
         ...updated,
       };
       localStorage.setItem('nichehire_govt_profile', JSON.stringify(current));
+      setHasConfiguredProfile(true);
     } catch {
       // Ignore
     }
@@ -146,23 +150,37 @@ export default function GovtExamsPage() {
       let detectedDegree = degreeType;
       let detectedStream = stream;
 
-      if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('bachelor of technology') || lower.includes('b.e.') || lower.includes('engineering')) {
+      if (lower.includes('mba') || lower.includes('pgdm') || lower.includes('master of business') || lower.includes('mms')) {
+        detectedQual = 'PostGraduate';
+        detectedDegree = 'MBA';
+        if (lower.includes('finance')) detectedStream = 'Finance, Banking & Accounting';
+        else if (lower.includes('marketing')) detectedStream = 'Marketing & Operations';
+        else if (lower.includes('hr') || lower.includes('human resource')) detectedStream = 'Human Resources (HR)';
+        else detectedStream = 'Management & Administration';
+      } else if (lower.includes('bba') || lower.includes('bms') || lower.includes('bbs') || lower.includes('bachelor of business')) {
+        detectedQual = 'Graduate';
+        detectedDegree = 'BBA';
+        if (lower.includes('finance')) detectedStream = 'Finance, Banking & Accounting';
+        else if (lower.includes('marketing')) detectedStream = 'Marketing & Operations';
+        else if (lower.includes('hr') || lower.includes('human resource')) detectedStream = 'Human Resources (HR)';
+        else detectedStream = 'Management & Administration';
+      } else if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('bachelor of technology') || lower.includes('b.e.') || lower.includes('engineering')) {
         detectedQual = 'Graduate';
         detectedDegree = 'B.Tech';
         if (lower.includes('computer') || lower.includes('software') || lower.includes('it')) detectedStream = 'Computer Science';
         else if (lower.includes('mechanical')) detectedStream = 'Mechanical';
         else if (lower.includes('civil')) detectedStream = 'Civil Engineering';
         else if (lower.includes('electrical')) detectedStream = 'Electrical';
-      } else if (lower.includes('b.com') || lower.includes('accounting') || lower.includes('commerce') || lower.includes('ca')) {
-        detectedQual = 'Graduate';
-        detectedDegree = 'B.Com';
-        detectedStream = 'Commerce';
+      } else if (lower.includes('b.com') || lower.includes('m.com') || lower.includes('accounting') || lower.includes('commerce') || lower.includes('ca') || lower.includes('cma')) {
+        detectedQual = lower.includes('m.com') ? 'PostGraduate' : 'Graduate';
+        detectedDegree = lower.includes('m.com') ? 'M.Com' : 'B.Com';
+        detectedStream = 'Finance, Banking & Accounting';
       } else if (lower.includes('diploma') || lower.includes('polytechnic')) {
         detectedQual = 'Diploma';
         detectedDegree = 'Diploma';
-      } else if (lower.includes('m.tech') || lower.includes('mba') || lower.includes('master')) {
+      } else if (lower.includes('m.tech') || lower.includes('master of tech')) {
         detectedQual = 'PostGraduate';
-        detectedDegree = 'PostGraduate';
+        detectedDegree = 'M.Tech';
       }
 
       // Age estimation from grad year or birth year if present
@@ -178,11 +196,13 @@ export default function GovtExamsPage() {
       setQualification(detectedQual);
       setDegreeType(detectedDegree);
       setStream(detectedStream);
+      setHasConfiguredProfile(true);
 
       saveProfileLocally({
         qualificationLevel: detectedQual,
         degreeType: detectedDegree,
         stream: detectedStream,
+        isConfigured: true,
       });
 
       setCvExtractionNotice(`Auto-detected degree (${detectedDegree} in ${detectedStream}) locally inside your browser. Please verify your age & category in the drawer.`);
@@ -204,8 +224,9 @@ export default function GovtExamsPage() {
       domicileState: selectedState,
       isPwD,
       isExServicemen,
+      isConfigured: hasConfiguredProfile,
     }),
-    [candidateAge, category, qualification, degreeType, stream, selectedState, isPwD, isExServicemen]
+    [candidateAge, category, qualification, degreeType, stream, selectedState, isPwD, isExServicemen, hasConfiguredProfile]
   );
 
   // ─── Computed Exam Evaluations & Telemetry ─────────────────────────────────
@@ -418,13 +439,23 @@ export default function GovtExamsPage() {
             </Link>
             <button
               onClick={() => setProfileDrawerOpen(!profileDrawerOpen)}
-              className="px-3.5 py-1.5 bg-white text-[#12172B] border border-[#E4E7EC] hover:border-[#2B4EE6] rounded flex items-center gap-1.5 transition-colors"
+              className={`px-3.5 py-1.5 border rounded flex items-center gap-1.5 transition-colors ${
+                hasConfiguredProfile
+                  ? 'bg-white text-[#12172B] border-[#E4E7EC] hover:border-[#2B4EE6]'
+                  : 'bg-[#2B4EE6] text-white border-[#2B4EE6] hover:bg-[#1E3BBD] shadow-xs'
+              }`}
             >
               <span>⚙️</span>
-              <span className="hidden sm:inline">My Profile & Quota</span>
+              <span className="hidden sm:inline">
+                {hasConfiguredProfile ? 'My Profile & Quota' : 'Set Up My Profile'}
+              </span>
               <span className="sm:hidden">Profile</span>
-              <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-[#ECFDF5] text-[#0E9F6E] rounded border border-[#A7F3D0] font-bold">
-                {telemetry.eligibleCount} Eligible
+              <span className={`ml-1 px-1.5 py-0.2 text-[10px] rounded font-bold ${
+                hasConfiguredProfile
+                  ? 'bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]'
+                  : 'bg-white/20 text-white border border-white/30'
+              }`}>
+                {hasConfiguredProfile ? `${telemetry.eligibleCount} Eligible` : 'Not Set'}
               </span>
             </button>
           </nav>
@@ -468,6 +499,29 @@ export default function GovtExamsPage() {
 
       {/* ─── Main Content Container ──────────────────────────────────────────── */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full">
+        {/* ─── Profile Setup Prompt Banner (Shown when not yet configured) ───── */}
+        {!hasConfiguredProfile && (
+          <div className="p-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-lg text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl shrink-0">🎓</span>
+              <div>
+                <div className="font-semibold text-sm text-[#12172B]">
+                  Personalize Your Government Exam Matches & Age Relaxations
+                </div>
+                <div className="text-[#5B6478] text-xs mt-0.5 leading-relaxed">
+                  Select your academic degree (e.g. <strong>BBA, MBA, B.Tech, B.Com, LLB</strong>), reservation category, and state domicile to calculate accurate commission eligibility. 100% private in-browser matching.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setProfileDrawerOpen(true)}
+              className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors shadow-2xs shrink-0 flex items-center gap-1.5"
+            >
+              <span>⚙️</span> Set Up My Profile
+            </button>
+          </div>
+        )}
         {/* ─── Location & Border Confirmation Banner ─────────────────────────── */}
         {detectedLocation && !locationNoticeDismissed && (
           <div className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-md text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -731,18 +785,36 @@ export default function GovtExamsPage() {
                 <select
                   value={degreeType}
                   onChange={(e) => {
-                    setDegreeType(e.target.value);
-                    saveProfileLocally({ degreeType: e.target.value });
+                    const dt = e.target.value;
+                    setDegreeType(dt);
+                    if (dt === 'MBA' || dt === 'PGDM' || dt === 'M.Com' || dt === 'M.Tech' || dt === 'Other PostGraduate') {
+                      setQualification('PostGraduate');
+                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'PostGraduate' });
+                    } else if (dt === 'Diploma') {
+                      setQualification('Diploma');
+                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'Diploma' });
+                    } else {
+                      setQualification('Graduate');
+                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'Graduate' });
+                    }
                   }}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
-                  <option value="B.Tech">B.Tech / B.E.</option>
-                  <option value="B.Sc">B.Sc</option>
-                  <option value="B.Com">B.Com</option>
-                  <option value="BA">B.A. (Arts)</option>
-                  <option value="LLB">L.L.B. (Law)</option>
-                  <option value="Diploma">Diploma (Engineering)</option>
-                  <option value="Other">Other Graduate</option>
+                  <option value="BBA">BBA (Bachelor of Business Administration)</option>
+                  <option value="MBA">MBA (Master of Business Administration)</option>
+                  <option value="BMS">BMS / BBS (Management Studies)</option>
+                  <option value="PGDM">PGDM (Post Graduate Diploma in Management)</option>
+                  <option value="B.Com">B.Com (Commerce & Finance)</option>
+                  <option value="M.Com">M.Com (Commerce & Accounts)</option>
+                  <option value="CA / CS">CA / CS / CMA (Finance Specialist)</option>
+                  <option value="B.Tech">B.Tech / B.E. (Engineering)</option>
+                  <option value="M.Tech">M.Tech / M.E.</option>
+                  <option value="B.Sc">B.Sc (Science)</option>
+                  <option value="BA">B.A. (Arts / Humanities)</option>
+                  <option value="LLB">L.L.B. / Law</option>
+                  <option value="Diploma">Diploma (Polytechnic)</option>
+                  <option value="Other Graduate">Other Graduate Degree</option>
+                  <option value="Other PostGraduate">Other Post-Graduate Degree</option>
                 </select>
               </div>
 
@@ -756,12 +828,17 @@ export default function GovtExamsPage() {
                   }}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
+                  <option value="Management & Administration">Management & Administration</option>
+                  <option value="Finance, Banking & Accounting">Finance, Banking & Accounting</option>
+                  <option value="Marketing & Operations">Marketing & Operations</option>
+                  <option value="Human Resources (HR)">Human Resources (HR)</option>
                   <option value="Computer Science">Computer Science / IT</option>
                   <option value="Mechanical">Mechanical Engineering</option>
                   <option value="Civil Engineering">Civil Engineering</option>
                   <option value="Electrical">Electrical Engineering</option>
                   <option value="Electronics">Electronics & Telecom</option>
-                  <option value="Commerce">Commerce & Accounts</option>
+                  <option value="Commerce">Commerce & Accounting</option>
+                  <option value="Law">Law & Legal Studies</option>
                   <option value="General">General / Any Stream</option>
                 </select>
               </div>

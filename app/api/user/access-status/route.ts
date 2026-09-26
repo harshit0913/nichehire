@@ -14,6 +14,10 @@ export async function GET(req: Request) {
           level: 'member',
           quotaBypass: false,
           badge: 'none',
+          referralCode: 'REF-NICHE2026',
+          referralCount: 0,
+          provisionalCount: 0,
+          recentReferrals: [],
           remainingQuotas: { tailoredResumes: 0, hrEmailDrafts: 0 },
         },
         { status: 200 }
@@ -29,6 +33,10 @@ export async function GET(req: Request) {
           level: 'member',
           quotaBypass: false,
           badge: 'none',
+          referralCode: 'REF-NICHE2026',
+          referralCount: 0,
+          provisionalCount: 0,
+          recentReferrals: [],
           remainingQuotas: { tailoredResumes: 0, hrEmailDrafts: 0 },
         },
         { status: 200 }
@@ -42,10 +50,44 @@ export async function GET(req: Request) {
       .eq('user_id', user.id)
       .maybeSingle();
 
+    // 2. Ensure each user has a unique referral code
+    let referralCode = profile?.referral_code;
+    if (!referralCode) {
+      referralCode = `REF-${user.id.slice(0, 8).toUpperCase()}`;
+      try {
+        await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: user.id,
+            referral_code: referralCode,
+          }, { onConflict: 'user_id' });
+      } catch (upsertErr) {
+        console.warn('Could not auto-persist referral code:', upsertErr);
+      }
+    }
+
+    // 3. Fetch referral records and stats for tracking
+    const { data: referralRows } = await supabase
+      .from('referrals')
+      .select('id, referred_user_id, status, created_at, qualified_at')
+      .eq('referrer_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    const qualifiedCount = referralRows?.filter((r) => r.status === 'qualified').length || 0;
+    const provisionalCount = referralRows?.filter((r) => r.status === 'provisional').length || 0;
+    const recentReferrals = (referralRows || []).map((r) => ({
+      id: r.id,
+      maskedId: `Candidate #${r.referred_user_id.slice(0, 6).toUpperCase()}`,
+      status: r.status,
+      createdAt: r.created_at,
+      qualifiedAt: r.qualified_at,
+    }));
+
     const userStatus: UserPremiumStatus = {
       userId: user.id,
       tier: profile?.tier || 'member',
-      qualifyingReferralCount: profile?.qualifying_referral_count || 0,
+      qualifyingReferralCount: Math.max(profile?.qualifying_referral_count || 0, qualifiedCount),
       premiumSource: profile?.premium_source || null,
       subscriptionStatus: profile?.subscription_status || null,
       subscriptionRenewsAt: profile?.subscription_renews_at || undefined,
@@ -55,7 +97,7 @@ export async function GET(req: Request) {
       referredByUserId: profile?.referred_by || undefined,
     };
 
-    // 2. Fetch founder override (server-side only, bypassing client RLS restrictions safely)
+    // 4. Fetch founder override (server-side only, bypassing client RLS restrictions safely)
     const { data: overrideRow } = await supabase
       .from('founder_overrides')
       .select('*')
@@ -73,10 +115,10 @@ export async function GET(req: Request) {
         }
       : null;
 
-    // 3. Resolve derived access state
+    // 5. Resolve derived access state
     const access = resolveAccess(userStatus, override);
 
-    // 4. Calculate remaining quotas
+    // 6. Calculate remaining quotas
     const nowMonth = new Date().toISOString().slice(0, 7) + '-01';
     const { data: usageRow } = await supabase
       .from('premium_usage')
@@ -95,7 +137,10 @@ export async function GET(req: Request) {
       level: access.level,
       quotaBypass: access.quotaBypass,
       badge: access.badge,
+      referralCode,
       referralCount: userStatus.qualifyingReferralCount,
+      provisionalCount,
+      recentReferrals,
       remainingQuotas: {
         tailoredResumes: tailorUsage.remaining,
         hrEmailDrafts: hrUsage.remaining,

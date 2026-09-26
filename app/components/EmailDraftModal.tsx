@@ -7,6 +7,7 @@ interface EmailDraftModalProps {
   onClose: () => void;
   job: any;
   resumeText: string;
+  userId?: string;
 }
 
 // ─── VERIFIED CORPORATE HR & TALENT ACQUISITION DIRECTORY ─────────────────────
@@ -286,7 +287,7 @@ function discoverHRContacts(companyName: string = '', description: string = '') 
   };
 }
 
-export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: EmailDraftModalProps) {
+export default function EmailDraftModal({ isOpen, onClose, job, resumeText, userId }: EmailDraftModalProps) {
   const [hrEmail, setHrEmail] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [discoveredInfo, setDiscoveredInfo] = useState<{
@@ -302,6 +303,19 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: Em
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'email' | 'inmail'>('email');
+
+  // Keyboard shortcut: Press Escape to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Auto-discover and prefill HR details on modal open or when job changes
   useEffect(() => {
@@ -331,6 +345,7 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: Em
           jobTitle: job.title,
           company: job.company,
           recipientName: recipientName || 'Hiring Manager',
+          userId,
         }),
       });
 
@@ -363,12 +378,23 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: Em
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 relative border border-gray-100 my-8">
-        {/* Close Button */}
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 relative border border-gray-100 my-8 cursor-default"
+      >
+        {/* Prominent High-Contrast Close Button */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+          aria-label="Close modal"
+          title="Close modal (Esc)"
+          className="absolute top-4 right-4 z-50 w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-950 font-bold text-base transition-colors shadow-2xs border border-gray-200 cursor-pointer"
         >
           ✕
         </button>
@@ -464,20 +490,30 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: Em
         )}
 
         {!draft && (
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>Generating Personalized Pitch…</span>
-              </>
-            ) : (
-              <span>Generate High-Converting Pitch 🚀</span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={loading}
+              className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Generating Personalized Pitch…</span>
+                </>
+              ) : (
+                <span>Generate High-Converting Pitch 🚀</span>
+              )}
+            </button>
+          </div>
         )}
 
         {errorMsg && (
@@ -554,9 +590,16 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText }: Em
               <button
                 onClick={handleGenerate}
                 disabled={loading}
-                className="px-3 py-2 text-xs text-gray-500 hover:text-gray-800 font-medium"
+                className="px-3 py-2 text-xs text-gray-500 hover:text-gray-800 font-medium cursor-pointer"
               >
                 Regenerate
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-2 text-xs text-gray-500 hover:text-gray-800 font-medium cursor-pointer"
+              >
+                ✕ Close
               </button>
             </div>
           </div>
