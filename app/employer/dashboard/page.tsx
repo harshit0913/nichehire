@@ -1,4 +1,6 @@
 'use client';
+// NOTE: noindex is set on the /employer/dashboard route via metadata in a server layout.
+// This page uses 'use client' so metadata must be in a parent server component.
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -99,6 +101,7 @@ export default function EmployerDashboardPage() {
   const [paymentNotice, setPaymentNotice] = useState<{ type: 'success' | 'error'; message: string; utr?: string } | null>(null);
   const [myPayments, setMyPayments] = useState<PaymentSubmission[]>([]);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [screenshotError, setScreenshotError] = useState('');
 
   const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
 
@@ -244,9 +247,10 @@ export default function EmployerDashboardPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Screenshot size must be under 5MB.');
+      setScreenshotError('Screenshot must be under 5 MB. Please compress or crop the image.');
       return;
     }
+    setScreenshotError('');
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -422,9 +426,7 @@ export default function EmployerDashboardPage() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <head>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
+        {/* Note: noindex set via metadata export */}
 
         {!employerUser ? (
           /* Guest Recruiter Hub & Onboarding Screen (Zero Mock Shells) */

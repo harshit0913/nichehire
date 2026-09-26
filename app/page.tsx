@@ -198,11 +198,24 @@ export default function JobDashboard() {
     if (l.includes('indore') || l.includes('madhya pradesh') || l.includes('bhopal')) {
       return ['TCS', 'Infosys', 'Impetus', 'Persistent Systems', 'Cognizant', 'Eicher Motors'];
     }
+    if (l.includes('kannur') || l.includes('kunnur') || l.includes('cannanore')) {
+      return ['Kerala Gramin Bank', 'South Indian Bank', 'Federal Bank', 'Malabar Gold & Diamonds', 'SBI', 'HDFC Bank', 'Kerala PSC', 'Canara Bank'];
+    }
+    if (l.includes('kochi') || l.includes('cochin') || l.includes('ernakulam')) {
+      return ['Infosys', 'TCS', 'UST', 'Federal Bank', 'LuLu Group', 'Wipro', 'Deloitte', 'Ernst & Young', 'Cochin Shipyard'];
+    }
+    if (l.includes('kozhikode') || l.includes('calicut') || l.includes('malappuram')) {
+      return ['Federal Bank', 'South Indian Bank', 'Malabar Gold & Diamonds', 'Kerala Gramin Bank', 'SBI', 'HDFC Bank'];
+    }
+    if (l.includes('kerala') || l.includes('thiruvananthapuram') || l.includes('thrissur') || l.includes('trivandrum')) {
+      return ['Federal Bank', 'South Indian Bank', 'Infosys', 'TCS', 'UST', 'Malabar Gold & Diamonds', 'Kerala PSC', 'Manappuram Finance'];
+    }
     return ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tata Group', 'Adobe', 'Flipkart'];
   };
 
   // Per-job tailoring state
   const [tailorMap, setTailorMap] = useState<Record<string, TailorState>>({});
+  const [copiedTailorJobId, setCopiedTailorJobId] = useState<string | null>(null);
 
   // ─── Auth Lifecycle & Saved Jobs ───────────────────────────────────────────
 
@@ -798,6 +811,8 @@ export default function JobDashboard() {
     'Product Manager',
     'Financial Analyst',
     'Data Analyst',
+    'CA Articleship',
+    'Accounts Executive',
     'Operations Manager',
     'Business Analyst',
     'Experience Designer',
@@ -1717,7 +1732,8 @@ export default function JobDashboard() {
                 onClick={() => setHasSearched(false)}
                 className="text-xs text-[#2B4EE6] hover:underline font-medium flex items-center gap-1"
               >
-                ← Back to Featured
+                <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="rotate-180 shrink-0" />
+                Back to Featured
               </button>
             </div>
             <span className="text-xs text-[#5B6478]">
@@ -1985,12 +2001,13 @@ export default function JobDashboard() {
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(tailorMap[selectedJob.id]?.text || '');
-                            alert('Tailored resume copied!');
+                            setCopiedTailorJobId(selectedJob.id);
+                            setTimeout(() => setCopiedTailorJobId(null), 2000);
                           }}
                           className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded text-xs font-medium text-[#12172B] flex items-center gap-1.5"
                         >
                           <Copy size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-                          <span>Copy Text</span>
+                          <span>{copiedTailorJobId === selectedJob.id ? 'Copied!' : 'Copy Text'}</span>
                         </button>
                         <button
                           onClick={() => handlePrintPdf(tailorMap[selectedJob.id]?.text || '', selectedJob.title)}

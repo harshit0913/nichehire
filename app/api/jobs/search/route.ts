@@ -188,6 +188,36 @@ const REGION_MAP: Record<
     districts: ['mandideep', 'mp nagar', 'hoshangabad road', 'arera colony'],
     nearbyCities: ['indore', 'ujjain', 'gwalior', 'jabalpur'],
   },
+  kannur: {
+    state: 'kerala',
+    stateCodes: ['kl'],
+    districts: ['thalassery', 'payyannur', 'iritty', 'thalipparamba', 'mattannur', 'kuthuparamba'],
+    nearbyCities: ['kozhikode', 'calicut', 'kasaragod', 'malappuram', 'thrissur', 'kochi'],
+  },
+  kochi: {
+    state: 'kerala',
+    stateCodes: ['kl'],
+    districts: ['ernakulam', 'kakkanad', 'edapally', 'aluva', 'kalamassery', 'angamaly', 'perumbavoor', 'infopark', 'cyberpark'],
+    nearbyCities: ['thrissur', 'alappuzha', 'thiruvananthapuram', 'kottayam', 'idukki'],
+  },
+  kozhikode: {
+    state: 'kerala',
+    stateCodes: ['kl'],
+    districts: ['calicut', 'malappuram', 'feroke', 'kunnamangalam', 'mukkam', 'ramanattukara'],
+    nearbyCities: ['kannur', 'thrissur', 'palakkad', 'malappuram', 'kochi'],
+  },
+  thiruvananthapuram: {
+    state: 'kerala',
+    stateCodes: ['kl'],
+    districts: ['technopark', 'kazhakootam', 'vattiyoorkavu', 'pattom', 'kesavadasapuram', 'attingal', 'neyyattinkara'],
+    nearbyCities: ['kollam', 'kottayam', 'alappuzha', 'kochi'],
+  },
+  thrissur: {
+    state: 'kerala',
+    stateCodes: ['kl'],
+    districts: ['irinjalakuda', 'chalakudy', 'kunnamkulam', 'guruvayur', 'kodungallur', 'ollukkara'],
+    nearbyCities: ['palakkad', 'kochi', 'malappuram', 'ernakulam'],
+  },
 };
 
 function getGeoTier(jobLoc: string = '', queryLoc: string = ''): number {
@@ -492,6 +522,85 @@ const TOP_LOCAL_COMPANIES_MAP: Record<string, string[]> = {
     'Cipla',
     'Lupin',
   ],
+  kannur: [
+    'Kerala Gramin Bank',
+    'South Indian Bank',
+    'Federal Bank',
+    'Malabar Gold & Diamonds',
+    'State Bank of India',
+    'HDFC Bank',
+    'Canara Bank',
+    'Punjab National Bank',
+    'Kerala PSC',
+    'Nirmal Lifestyle',
+    'V-Guard Industries',
+  ],
+  kochi: [
+    'Infosys',
+    'TCS',
+    'UST',
+    'Federal Bank',
+    'South Indian Bank',
+    'LuLu Group',
+    'Wipro',
+    'Cognizant',
+    'Ernst & Young',
+    'Deloitte',
+    'KPMG',
+    'Malabar Gold & Diamonds',
+    'Cochin Shipyard',
+    'BPCL',
+    'Kerala PSC',
+  ],
+  kozhikode: [
+    'Federal Bank',
+    'South Indian Bank',
+    'Kerala Gramin Bank',
+    'HDFC Bank',
+    'Malabar Gold & Diamonds',
+    'SBI',
+    'Wipro',
+    'Kerala PSC',
+    'UL Cyber Park (IT companies)',
+    'Calicut University',
+  ],
+  thiruvananthapuram: [
+    'Infosys',
+    'TCS',
+    'Wipro',
+    'UST',
+    'ISRO',
+    'Kerala PSC',
+    'SBI',
+    'HDFC Bank',
+    'Ernst & Young',
+    'NeST Group',
+    'IBS Software',
+  ],
+  thrissur: [
+    'Federal Bank',
+    'South Indian Bank',
+    'Kerala Gramin Bank',
+    'SBI',
+    'Manappuram Finance',
+    'Malabar Gold & Diamonds',
+    'Kerala PSC',
+    'HDFC Bank',
+  ],
+  kerala: [
+    'Federal Bank',
+    'South Indian Bank',
+    'Kerala Gramin Bank',
+    'Malabar Gold & Diamonds',
+    'UST',
+    'Infosys',
+    'TCS',
+    'Kerala PSC',
+    'Manappuram Finance',
+    'V-Guard Industries',
+    'SBI',
+    'HDFC Bank',
+  ],
 };
 
 // 30+ Verified Direct Tech Unicorn & Enterprise Career Portals (Greenhouse & Lever)
@@ -586,7 +695,12 @@ export async function POST(req: Request) {
           const mode = detectWorkMode(locName, j.title, desc);
           const salaryMin = j.salary_min ? Math.round(j.salary_min) : null;
           const salaryMax = j.salary_max ? Math.round(j.salary_max) : null;
-          const salary = salaryMin && salaryMax ? `$${salaryMin.toLocaleString()} - $${salaryMax.toLocaleString()}` : salaryMin ? `$${salaryMin.toLocaleString()}+` : undefined;
+          const currencySymbol = countryCode === 'in' ? '₹' : '$';
+          const salary = salaryMin && salaryMax
+            ? `${currencySymbol}${salaryMin.toLocaleString('en-IN')} - ${currencySymbol}${salaryMax.toLocaleString('en-IN')}`
+            : salaryMin
+            ? `${currencySymbol}${salaryMin.toLocaleString('en-IN')}+`
+            : undefined;
 
           const pubTime = j.created ? new Date(j.created).getTime() : undefined;
           let postedText = 'Recent';
@@ -1287,7 +1401,7 @@ export async function POST(req: Request) {
           return diffMs <= 3 * 24 * 60 * 60 * 1000 || text.includes('hour') || text.includes('today') || text.includes('just now') || text.includes('yesterday') || text.includes('1d') || text.includes('2d') || text.includes('3d') || text.includes('1 day') || text.includes('2 days') || text.includes('3 days');
         }
         if (postedTime === 'Past Week') {
-          return diffMs <= 7 * 24 * 60 * 60 * 1000 || true;
+          return diffMs <= 7 * 24 * 60 * 60 * 1000 || text.includes('d ago') || text.includes('1 week') || text.includes('1w');
         }
         return true;
       });
