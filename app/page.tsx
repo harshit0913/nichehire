@@ -2090,6 +2090,7 @@ export default function JobDashboard() {
             <div className="space-y-2">
               <h4 className="font-semibold text-[#12172B] text-xs">For employers</h4>
               <ul className="space-y-1.5 text-[#5B6478]">
+                <li><Link href="/employer/dashboard" className="font-semibold text-[#2B4EE6] hover:underline">🏢 Employer Portal &amp; Login</Link></li>
                 <li><button onClick={() => setPostJobOpen(true)} className="hover:underline font-medium text-[#2B4EE6]">Post a verified role ➔</button></li>
                 <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Employer pricing &amp; plans</Link></li>
                 <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Greenhouse &amp; Lever sync</Link></li>

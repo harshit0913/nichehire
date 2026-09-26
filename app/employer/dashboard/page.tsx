@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PostJobModal from '../../components/PostJobModal';
+import EmployerAuthModal from '../../components/EmployerAuthModal';
 import { supabase } from '../../supabase';
 
 interface EmployerJob {
@@ -58,6 +59,11 @@ export default function EmployerDashboardPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loadingData, setLoadingData] = useState(true);
 
+  // Employer Auth State
+  const [employerAuthModalOpen, setEmployerAuthModalOpen] = useState(false);
+  const [employerUser, setEmployerUser] = useState<any>(null);
+  const [employerCompany, setEmployerCompany] = useState<string>('');
+
   // Payment Verification State
   const [selectedPlanAmount, setSelectedPlanAmount] = useState<number>(499);
   const [companyName, setCompanyName] = useState('');
@@ -74,6 +80,50 @@ export default function EmployerDashboardPage() {
   const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
 
   useEffect(() => {
+    // 1. Hydrate employer info from localStorage
+    try {
+      const storedComp = localStorage.getItem('nichehire_employer_company') || '';
+      const storedEmail = localStorage.getItem('nichehire_employer_email') || '';
+      if (storedComp) {
+        setEmployerCompany(storedComp);
+        setCompanyName(storedComp);
+      }
+      if (storedEmail) {
+        setWorkEmail(storedEmail);
+      }
+    } catch {}
+
+    // 2. Fetch current Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setEmployerUser(session.user);
+        const comp = session.user.user_metadata?.company_name || localStorage.getItem('nichehire_employer_company') || '';
+        if (comp) {
+          setEmployerCompany(comp);
+          setCompanyName(comp);
+        }
+        if (session.user.email) {
+          setWorkEmail(session.user.email);
+        }
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setEmployerUser(session.user);
+        const comp = session.user.user_metadata?.company_name || localStorage.getItem('nichehire_employer_company') || '';
+        if (comp) {
+          setEmployerCompany(comp);
+          setCompanyName(comp);
+        }
+        if (session.user.email) {
+          setWorkEmail(session.user.email);
+        }
+      } else {
+        setEmployerUser(null);
+      }
+    });
+
     async function loadEmployerData() {
       setLoadingData(true);
       try {
@@ -152,7 +202,19 @@ export default function EmployerDashboardPage() {
     }
 
     loadEmployerData();
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleEmployerSignOut = async () => {
+    await supabase.auth.signOut();
+    setEmployerUser(null);
+    setEmployerCompany('');
+    try {
+      localStorage.removeItem('nichehire_employer_company');
+      localStorage.removeItem('nichehire_employer_email');
+    } catch {}
+  };
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -286,24 +348,82 @@ export default function EmployerDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 text-xs">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+            >
+              <span>←</span> Job Board
+            </Link>
+
             <button
-              onClick={() => setPostJobModalOpen(true)}
+              onClick={() => {
+                if (!employerUser) {
+                  setEmployerAuthModalOpen(true);
+                } else {
+                  setPostJobModalOpen(true);
+                }
+              }}
               className="px-3.5 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
             >
               <span>+</span> Post a Job / Walk-in
             </button>
-            <Link
-              href="/dashboard"
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
-            >
-              <span>👤</span> Candidate Portal
-            </Link>
+
+            {employerUser ? (
+              <div className="flex items-center gap-2.5 pl-2 border-l border-gray-200">
+                <div className="hidden md:flex flex-col text-right">
+                  <span className="text-xs font-bold text-gray-900 leading-tight">
+                    {employerCompany || 'Verified Employer'}
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    {employerUser.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleEmployerSignOut}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 font-medium rounded-xl transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEmployerAuthModalOpen(true)}
+                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
+              >
+                <span>🏢</span> Employer Sign In / Register
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Onboarding Banner if not signed in */}
+        {!employerUser && (
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-7 shadow-sm border border-indigo-900/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-400/20">
+                <span>🏢</span> Official Recruiter & Employer Onboarding
+              </div>
+              <h2 className="text-lg font-bold text-white tracking-tight">
+                Create your verified Employer Account
+              </h2>
+              <p className="text-xs text-indigo-200/90 leading-relaxed">
+                Register with your official corporate work email to publish vacancies, review applicant resumes, inspect AI match scores, and hire verified finance &amp; tech professionals with zero middlemen.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button
+                onClick={() => setEmployerAuthModalOpen(true)}
+                className="w-full md:w-auto px-5 py-2.5 bg-white hover:bg-gray-100 text-indigo-900 font-bold text-xs rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>🏢</span> Register / Sign In Company
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top Header Card */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1.5">
@@ -916,6 +1036,22 @@ export default function EmployerDashboardPage() {
             },
             ...prev,
           ]);
+        }}
+      />
+
+      {/* Employer Authentication & Registration Modal */}
+      <EmployerAuthModal
+        isOpen={employerAuthModalOpen}
+        onClose={() => setEmployerAuthModalOpen(false)}
+        onSuccess={(user, compInfo) => {
+          setEmployerUser(user);
+          if (compInfo?.companyName) {
+            setEmployerCompany(compInfo.companyName);
+            setCompanyName(compInfo.companyName);
+          }
+          if (compInfo?.email) {
+            setWorkEmail(compInfo.email);
+          }
         }}
       />
     </div>

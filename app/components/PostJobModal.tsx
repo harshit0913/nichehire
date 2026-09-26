@@ -34,7 +34,15 @@ export default function PostJobModal({
 
   useEffect(() => {
     if (initialPlan) setPlan(initialPlan);
-  }, [initialPlan]);
+    try {
+      const storedComp = localStorage.getItem('nichehire_employer_company');
+      const storedEmail = localStorage.getItem('nichehire_employer_email');
+      if (storedComp && !company) setCompany(storedComp);
+      if (storedEmail && !workEmail) setWorkEmail(storedEmail);
+    } catch {
+      // Ignore
+    }
+  }, [initialPlan, isOpen]);
 
   if (!isOpen) return null;
 

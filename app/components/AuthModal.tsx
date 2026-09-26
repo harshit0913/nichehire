@@ -201,6 +201,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         <p className="text-center text-[11px] text-gray-400 mt-5">
           By continuing, you agree to NicheHire's Terms of Service & Privacy Policy.
         </p>
+
+        <div className="mt-4 pt-3 border-t border-gray-100 text-center">
+          <p className="text-xs text-gray-500">
+            Hiring talent?{' '}
+            <a
+              href="/employer/dashboard"
+              className="text-[#2B4EE6] font-semibold hover:underline"
+              onClick={onClose}
+            >
+              Go to Employer Portal &amp; Login ➔
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
