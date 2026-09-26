@@ -464,7 +464,10 @@ export function calculatePanIndiaGeoTier(jobLocation: string = '', queryLocation
   }
 
   // 5. Domestic other state vs International
-  const internationalKeywords = ['usa', 'us', 'uk', 'united kingdom', 'europe', 'germany', 'canada', 'australia', 'singapore'];
+  const internationalKeywords = [
+    'usa', 'us', 'uk', 'united kingdom', 'europe', 'germany', 'canada', 'australia',
+    'singapore', 'dublin', 'ireland', 'london', 'worldwide', 'global', 'international', 'emea', 'apac'
+  ];
   if (internationalKeywords.some((k) => loc.includes(k))) {
     return 6;
   }

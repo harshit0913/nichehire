@@ -658,19 +658,37 @@ export async function POST(req: Request) {
       try {
         const cleanWhat = query ? `&what=${encodeURIComponent(query)}` : '';
         const cleanLoc = locQuery && locQuery !== 'remote' ? `&where=${encodeURIComponent(location)}` : '';
-        const maxDaysParam = '&max_days_old=7'; // Strictly <= 7 days
+        const maxDaysParam = '&max_days_old=14'; // Expand window for regional depth
 
+        const geoInfo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
         let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50${cleanWhat}${cleanLoc}${maxDaysParam}`;
-        let res = await fetchWithTimeout(adzunaUrl);
-        let data = res.ok ? await res.json() : { results: [] };
-        let results = data.results || [];
+        
+        const adzunaPromises = [fetchWithTimeout(adzunaUrl)];
+
+        // Parallel State-Level Expansion for Pan-India Regional Depth
+        if (geoInfo && geoInfo.state && geoInfo.state !== 'All India' && geoInfo.state.toLowerCase() !== locQuery) {
+          const stateLoc = `&where=${encodeURIComponent(geoInfo.state)}`;
+          const stateAdzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50${cleanWhat}${stateLoc}${maxDaysParam}`;
+          adzunaPromises.push(fetchWithTimeout(stateAdzunaUrl));
+        }
+
+        const adzResults = await Promise.allSettled(adzunaPromises);
+        let results: any[] = [];
+        for (const r of adzResults) {
+          if (r.status === 'fulfilled' && r.value.ok) {
+            const data = await r.value.json();
+            if (Array.isArray(data.results)) {
+              results = [...results, ...data.results];
+            }
+          }
+        }
 
         if (results.length === 0 && cleanLoc) {
           const fallbackCountryName = Object.entries(ADZUNA_COUNTRY_MAP).find(([, code]) => code === countryCode)?.[0] || 'India';
           adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50${cleanWhat}&where=${encodeURIComponent(fallbackCountryName)}${maxDaysParam}`;
-          res = await fetchWithTimeout(adzunaUrl);
-          if (res.ok) {
-            data = await res.json();
+          const fallbackRes = await fetchWithTimeout(adzunaUrl);
+          if (fallbackRes.ok) {
+            const data = await fallbackRes.json();
             results = data.results || [];
           }
         }
@@ -922,6 +940,11 @@ export async function POST(req: Request) {
             : `${location}, India`
           : 'India';
 
+        const geoInfo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
+        const stateLoc = geoInfo && geoInfo.state && geoInfo.state !== 'All India' && geoInfo.state.toLowerCase() !== locQuery
+          ? `${geoInfo.state}, India`
+          : searchLoc;
+
         const [res1, res2] = await Promise.allSettled([
           fetchWithTimeout(joobleUrl, {
             method: 'POST',
@@ -937,8 +960,8 @@ export async function POST(req: Request) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               keywords: query || '',
-              location: searchLoc,
-              page: 2,
+              location: stateLoc,
+              page: 1,
             }),
           }),
         ]);
@@ -1340,9 +1363,13 @@ export async function POST(req: Request) {
 
     let filtered = [...rawJobs];
 
-    // --- STRICT 7-DAY MAXIMUM AGE RULE ---
-    // Reject any job older than 7 days
-    filtered = filtered.filter((j) => {
+    // --- ADAPTIVE FRESHNESS FILTER ---
+    // If user explicitly chooses a freshness sub-filter, honor it strictly.
+    // Otherwise:
+    // 1. First attempt strict 7-day filter.
+    // 2. If fewer than 25 jobs (common for regional / Tier-2/3 Indian cities),
+    //    gracefully allow active postings up to 21 days with honest age labeling.
+    const strictlyFresh = filtered.filter((j) => {
       if (j.postedAt) {
         return now - j.postedAt <= 7 * 24 * 60 * 60 * 1000;
       }
@@ -1356,6 +1383,29 @@ export async function POST(req: Request) {
       if (daysAgoMatch && parseInt(daysAgoMatch[1], 10) > 7) return false;
       return true;
     });
+
+    if (
+      strictlyFresh.length >= 25 ||
+      postedTime === 'Past Week' ||
+      postedTime === 'Past 24 Hours' ||
+      postedTime === 'Past 3 Days' ||
+      postedTime === 'Past 6 Hours' ||
+      postedTime === 'Past 12 Hours'
+    ) {
+      filtered = strictlyFresh;
+    } else {
+      // 21-day grace window for regional state-level depth
+      filtered = filtered.filter((j) => {
+        if (j.postedAt) {
+          return now - j.postedAt <= 21 * 24 * 60 * 60 * 1000;
+        }
+        const text = (j.postedText || '').toLowerCase();
+        if (text.includes('month') || text.includes('year')) return false;
+        const dayMatch = text.match(/(\d+)\s*d/);
+        if (dayMatch && parseInt(dayMatch[1], 10) > 21) return false;
+        return true;
+      });
+    }
 
     // --- WORK MODE FILTER ---
     if (workMode && workMode !== 'Any Mode') {
