@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { X, Crown, Users, Check, Copy, Star, Clock, Share2, Zap, CreditCard, Target } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface ReferredCandidate {
   id: string;
@@ -88,12 +90,13 @@ export default function PremiumUnlockModal({
           title="Close modal"
           className="absolute top-4 right-4 text-[#5B6478] hover:text-[#12172B] text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F8FA] transition-colors cursor-pointer"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         <div className="text-center max-w-lg mx-auto mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold mb-3 border border-purple-200">
-            <span>💎</span> Unified Premium &amp; Referral Program
+            <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-700" />
+            <span>Unified Premium &amp; Referral Program</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[#12172B]">
             Refer or Subscribe — You Get Identical Access
@@ -113,7 +116,7 @@ export default function PremiumUnlockModal({
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🤝</span>
+                <Users size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
                 <h3 className="text-sm font-bold text-[#12172B]">Path A: Invite Friends</h3>
               </div>
               <p className="text-xs text-[#5B6478] leading-relaxed">
@@ -129,9 +132,19 @@ export default function PremiumUnlockModal({
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:text-black bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                  className="px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:text-black bg-gray-100 hover:bg-gray-200 rounded transition-colors flex items-center gap-1"
                 >
-                  {codeCopied ? '✓ Copied' : 'Copy Code'}
+                  {codeCopied ? (
+                    <>
+                      <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-600" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>Copy Code</span>
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -148,13 +161,14 @@ export default function PremiumUnlockModal({
                   ></div>
                 </div>
                 <div className="flex justify-between text-[10px] text-[#5B6478]">
-                  <span>10 ⭐ Rising</span>
-                  <span>50 🟡 Trusted</span>
-                  <span>100 💎 Premium</span>
+                  <span className="flex items-center gap-1">10 <Star size={11} strokeWidth={ICON_STROKE_WIDTH} className="fill-emerald-500 text-emerald-500" /> Rising</span>
+                  <span>50 Trusted</span>
+                  <span className="flex items-center gap-1">100 <Crown size={11} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" /> Premium</span>
                 </div>
                 {provisionalCount > 0 && (
-                  <div className="text-[11px] text-[#D97B0A] bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                    🕒 <strong>{provisionalCount} referral(s)</strong> in standard 7-day anti-fraud verification
+                  <div className="text-[11px] text-[#D97B0A] bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center gap-1">
+                    <Clock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A] shrink-0" />
+                    <span><strong>{provisionalCount} referral(s)</strong> in standard 7-day anti-fraud verification</span>
                   </div>
                 )}
               </div>
@@ -180,13 +194,15 @@ export default function PremiumUnlockModal({
                   onClick={handleWhatsAppShare}
                   className="w-full py-1.5 px-3 text-xs font-semibold text-[#0E9F6E] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <span>💬</span> Share on WhatsApp
+                  <Share2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Share on WhatsApp</span>
                 </button>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#E4E7EC] text-[11px] text-[#5B6478] mt-3">
-              ✓ Permanent badge &amp; status retention
+            <div className="pt-3 border-t border-[#E4E7EC] text-[11px] text-[#5B6478] mt-3 flex items-center gap-1.5">
+              <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+              <span>Permanent badge &amp; status retention</span>
             </div>
           </div>
 
@@ -198,7 +214,7 @@ export default function PremiumUnlockModal({
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">⚡</span>
+                <Zap size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
                 <h3 className="text-sm font-bold text-[#12172B]">Path B: ₹199 / month</h3>
               </div>
               <p className="text-xs text-[#5B6478] leading-relaxed">
@@ -207,19 +223,19 @@ export default function PremiumUnlockModal({
 
               <div className="py-2 space-y-1.5 text-xs text-[#12172B]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E]">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>11 AI Tailored Resumes / month</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E]">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>20 Executive HR Email Drafts / month</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E]">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Full AI Resume Polish &amp; Strengthen</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E]">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Smart Job Fit &amp; Match % Indicators</span>
                 </div>
               </div>
@@ -234,7 +250,7 @@ export default function PremiumUnlockModal({
                 disabled={isProcessing}
                 className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
               >
-                <span>💳</span>
+                <CreditCard size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>{isProcessing ? 'Connecting Razorpay...' : isLoggedIn ? 'Subscribe via UPI / Card (₹199)' : 'Sign In to Subscribe'}</span>
               </button>
               <div className="text-[10px] text-[#5B6478] text-center">
@@ -248,7 +264,8 @@ export default function PremiumUnlockModal({
         <div className="mb-4 bg-[#F7F8FA] rounded-xl p-4 border border-[#E4E7EC]">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-bold text-[#12172B] flex items-center gap-1.5">
-              <span>📊</span> Live Referral Tracking
+              <Target size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+              <span>Live Referral Tracking</span>
             </h4>
             <span className="text-[11px] font-semibold text-[#5B6478]">
               {recentReferrals.length} Total Referred
@@ -271,12 +288,12 @@ export default function PremiumUnlockModal({
                   </div>
                   <div>
                     {ref.status === 'qualified' ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ✓ Qualified
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <Check size={10} strokeWidth={ICON_STROKE_WIDTH} /> Qualified
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                        ⏳ 7-Day Review
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                        <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} /> 7-Day Review
                       </span>
                     )}
                   </div>

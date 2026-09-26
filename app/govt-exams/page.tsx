@@ -19,6 +19,26 @@ import {
   POPULAR_DISTRICTS_BY_STATE,
   LocationMatch,
 } from '../lib/indianGeoBounds';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  BadgeCheck,
+  Calendar,
+  Check,
+  FileText,
+  Flag,
+  GraduationCap,
+  IndianRupee,
+  Info,
+  Landmark,
+  LocateFixed,
+  Search,
+  Settings,
+  Users,
+  X,
+  XCircle,
+} from '../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 export default function GovtExamsPage() {
   // ─── Location & Proximity State ───────────────────────────────────────────
@@ -421,8 +441,9 @@ export default function GovtExamsPage() {
               </div>
               <div className="flex items-baseline">
                 <span className="font-bold text-base text-[#12172B] tracking-tight">NicheHire</span>
-                <span className="ml-2 px-1.5 py-0.5 text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 rounded border border-[#2B4EE6]/20">
-                  Govt Exams Hub
+                <span className="ml-2 px-1.5 py-0.5 text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 rounded border border-[#2B4EE6]/20 inline-flex items-center gap-1">
+                  <Landmark size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Govt Exams Hub</span>
                 </span>
               </div>
             </Link>
@@ -446,7 +467,7 @@ export default function GovtExamsPage() {
                   : 'bg-[#2B4EE6] text-white border-[#2B4EE6] hover:bg-[#1E3BBD] shadow-xs'
               }`}
             >
-              <span>⚙️</span>
+              <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               <span className="hidden sm:inline">
                 {hasConfiguredProfile ? 'My Profile & Quota' : 'Set Up My Profile'}
               </span>
@@ -504,10 +525,10 @@ export default function GovtExamsPage() {
         {!hasConfiguredProfile && (
           <div className="p-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-lg text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-3">
-              <span className="text-2xl shrink-0">🎓</span>
+              <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
               <div>
                 <div className="font-semibold text-sm text-[#12172B]">
-                  Personalize Your Government Exam Matches & Age Relaxations
+                  Personalize Your Government Exam Matches &amp; Age Relaxations
                 </div>
                 <div className="text-[#5B6478] text-xs mt-0.5 leading-relaxed">
                   Select your academic degree (e.g. <strong>BBA, MBA, B.Tech, B.Com, LLB</strong>), reservation category, and state domicile to calculate accurate commission eligibility. 100% private in-browser matching.
@@ -519,7 +540,8 @@ export default function GovtExamsPage() {
               onClick={() => setProfileDrawerOpen(true)}
               className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors shadow-2xs shrink-0 flex items-center gap-1.5"
             >
-              <span>⚙️</span> Set Up My Profile
+              <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+              <span>Set Up My Profile</span>
             </button>
           </div>
         )}
@@ -527,7 +549,7 @@ export default function GovtExamsPage() {
         {detectedLocation && !locationNoticeDismissed && (
           <div className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-md text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-2">
-              <span className="text-base shrink-0">📍</span>
+              <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-amber-700" />
               <div>
                 <span className="font-semibold">Detected Region:</span>{' '}
                 <span className="font-bold underline">{detectedLocation.district}, {detectedLocation.state}</span>
@@ -546,7 +568,7 @@ export default function GovtExamsPage() {
                 onClick={() => setLocationNoticeDismissed(true)}
                 className="px-2.5 py-1 bg-[#12172B] text-white rounded text-[11px] font-medium"
               >
-                ✓ Confirm
+                Confirm
               </button>
               <button
                 onClick={() => {
@@ -555,7 +577,7 @@ export default function GovtExamsPage() {
                 }}
                 className="px-2.5 py-1 bg-white text-[#12172B] border border-[#E4E7EC] rounded text-[11px] font-medium hover:bg-[#F7F8FA]"
               >
-                ✎ Change State
+                Change State
               </button>
             </div>
           </div>
@@ -566,7 +588,7 @@ export default function GovtExamsPage() {
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             {/* Search Input */}
             <div className="flex-1 relative">
-              <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
+              <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-2.5 text-[#5B6478]" />
               <input
                 type="text"
                 placeholder="Search by exam name, commission (e.g. MPPSC, UPSC, BHEL), or stream..."
@@ -618,10 +640,10 @@ export default function GovtExamsPage() {
                 type="button"
                 onClick={handleDetectLocation}
                 disabled={isDetectingLocation}
-                className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1 shrink-0"
+                className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1.5 shrink-0"
                 title="Uses offline coordinate lookup. 100% private."
               >
-                <span>📍</span>
+                <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>{isDetectingLocation ? 'Detecting...' : 'Detect My Region'}</span>
               </button>
             </div>
@@ -671,7 +693,8 @@ export default function GovtExamsPage() {
                     : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
-                <span>✓</span> Show Only Eligible for Me ({telemetry.eligibleCount})
+                <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Show Only Eligible for Me ({telemetry.eligibleCount})</span>
               </button>
             </div>
 
@@ -686,7 +709,7 @@ export default function GovtExamsPage() {
                     : 'text-[#5B6478] hover:text-[#12172B]'
                 }`}
               >
-                Proximity Feed (Local ➔ National)
+                Proximity Feed (Local to National)
               </button>
               <button
                 type="button"
@@ -720,9 +743,10 @@ export default function GovtExamsPage() {
               </div>
               <button
                 onClick={() => setProfileDrawerOpen(false)}
-                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B]"
+                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B] flex items-center gap-1"
               >
-                ✕ Close
+                <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Close</span>
               </button>
             </div>
 
@@ -894,8 +918,9 @@ export default function GovtExamsPage() {
 
               {/* Local CV dropzone */}
               <div className="flex items-center gap-2">
-                <label className="px-3 py-1 bg-[#F7F8FA] hover:bg-white text-[#12172B] border border-[#E4E7EC] rounded text-xs font-medium cursor-pointer transition-colors">
-                  <span>📄 {isParsingCv ? 'Parsing locally...' : cvFileName ? 'Re-upload CV' : 'Auto-fill via CV'}</span>
+                <label className="px-3 py-1 bg-[#F7F8FA] hover:bg-white text-[#12172B] border border-[#E4E7EC] rounded text-xs font-medium cursor-pointer transition-colors flex items-center gap-1.5">
+                  <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>{isParsingCv ? 'Parsing locally...' : cvFileName ? 'Re-upload CV' : 'Auto-fill via CV'}</span>
                   <input
                     type="file"
                     accept=".txt,.pdf,.docx"
@@ -916,7 +941,7 @@ export default function GovtExamsPage() {
 
         {/* ─── Legal & Official Gazette Disclaimer Banner ───────────────────── */}
         <div className="p-3 bg-white border border-[#E4E7EC] rounded-md text-xs text-[#5B6478] flex items-start gap-2.5">
-          <span className="text-sm text-[#D97B0A] shrink-0">⚖️</span>
+          <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A] shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             <strong className="text-[#12172B]">Official Notification Disclaimer:</strong> NicheHire is an independent research directory and is not an agency of any government commission. Eligibility verdicts and examination timelines are algorithmic calculations. Aspirants must independently verify age cutoff dates, syllabus, and reservation concessions against the linked official gazette notification before paying any application fees.
           </p>
@@ -931,7 +956,7 @@ export default function GovtExamsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">📍</span>
+                      <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                       <h3 className="text-sm font-semibold text-[#12172B]">
                         Looking for Local Municipal or State PSC Jobs?
                       </h3>
@@ -945,7 +970,7 @@ export default function GovtExamsPage() {
                     disabled={isDetectingLocation}
                     className="px-3.5 py-2 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap self-start sm:self-auto shrink-0 flex items-center gap-1.5"
                   >
-                    <span>📍</span>
+                    <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                     <span>{isDetectingLocation ? 'Detecting...' : 'Detect My Region'}</span>
                   </button>
                 </div>
@@ -1180,9 +1205,10 @@ export default function GovtExamsPage() {
               </div>
               <button
                 onClick={() => setActiveChecklistExam(null)}
-                className="text-gray-400 hover:text-gray-600 text-sm font-bold"
+                className="text-gray-400 hover:text-gray-600 p-1"
+                aria-label="Close modal"
               >
-                ✕
+                <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
 
@@ -1197,7 +1223,13 @@ export default function GovtExamsPage() {
               }`}
             >
               <div className="font-bold flex items-center gap-1.5">
-                <span>{activeChecklistExam.result.status === 'eligible' ? '✓' : 'ℹ'}</span>
+                {activeChecklistExam.result.status === 'eligible' ? (
+                  <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                ) : activeChecklistExam.result.status === 'partially_eligible' ? (
+                  <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                ) : (
+                  <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                )}
                 <span>Verdict: {activeChecklistExam.result.badgeLabel}</span>
               </div>
               <p className="mt-1">{activeChecklistExam.result.summary}</p>
@@ -1214,12 +1246,12 @@ export default function GovtExamsPage() {
                     key={i}
                     className="p-2.5 rounded bg-[#F7F8FA] border border-[#E4E7EC] flex items-start gap-2.5"
                   >
-                    <span
-                      className={`font-bold shrink-0 ${
-                        chk.passed ? 'text-[#0E9F6E]' : 'text-[#D9534F]'
-                      }`}
-                    >
-                      {chk.passed ? '✓' : '✕'}
+                    <span className="shrink-0 mt-0.5">
+                      {chk.passed ? (
+                        <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                      ) : (
+                        <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                      )}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -1255,17 +1287,19 @@ export default function GovtExamsPage() {
                 href={activeChecklistExam.exam.officialLinks.notificationPdfUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-semibold text-[#2B4EE6] hover:underline"
+                className="text-xs font-semibold text-[#2B4EE6] hover:underline inline-flex items-center gap-1.5"
               >
-                Official Notification PDF 📄
+                <span>Official Notification PDF</span>
+                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               </a>
               <a
                 href={activeChecklistExam.exam.officialLinks.applyPortalUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors"
+                className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors inline-flex items-center gap-1.5"
               >
-                Apply on Official Portal ↗
+                <span>Apply on Official Portal</span>
+                <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               </a>
             </div>
           </div>
@@ -1290,9 +1324,10 @@ export default function GovtExamsPage() {
               </div>
               <button
                 onClick={() => setReportModalExam(null)}
-                className="text-gray-400 hover:text-gray-600 text-sm font-bold"
+                className="text-gray-400 hover:text-gray-600 p-1"
+                aria-label="Close modal"
               >
-                ✕
+                <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
 
@@ -1445,7 +1480,13 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
                 }`}
                 title={eligibilityResult.summary}
               >
-                <span>{eligibilityResult.status === 'eligible' ? '✓' : eligibilityResult.status === 'ineligible' ? '✕' : 'ℹ'}</span>
+                {eligibilityResult.status === 'eligible' ? (
+                  <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                ) : eligibilityResult.status === 'partially_eligible' ? (
+                  <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                ) : eligibilityResult.status === 'ineligible' ? (
+                  <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                ) : null}
                 <span>{eligibilityResult.badgeLabel}</span>
               </span>
 
@@ -1456,15 +1497,15 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
                 </span>
               ) : daysLeft <= 0 ? (
                 <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded animate-pulse">
-                  ⚡ Closes Today! (Final Hours)
+                  Closes Today! (Final Hours)
                 </span>
               ) : daysLeft === 1 ? (
                 <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">
-                  ⚡ 1 day left (Closes Tomorrow)
+                  1 day left (Closes Tomorrow)
                 </span>
               ) : daysLeft <= 7 ? (
                 <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">
-                  ⚡ {daysLeft} days left
+                  {daysLeft} days left
                 </span>
               ) : (
                 <span className="text-[11px] text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] px-1.5 py-0.5 rounded">
@@ -1483,14 +1524,21 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
         </div>
 
         {/* Metadata row */}
-        <div className="mt-2.5 flex items-center gap-2 flex-wrap text-xs text-[#5B6478]">
-          <span className="font-semibold text-[#12172B]">
-            👥 {exam.vacancies.toLocaleString('en-IN')} Vacancies
+        <div className="mt-2.5 flex items-center gap-3 flex-wrap text-xs text-[#5B6478]">
+          <span className="font-semibold text-[#12172B] inline-flex items-center gap-1.5">
+            <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            {exam.vacancies.toLocaleString('en-IN')} Vacancies
           </span>
           <span className="text-[#E4E7EC]">•</span>
-          <span>💰 {exam.salaryScale}</span>
+          <span className="inline-flex items-center gap-1">
+            <IndianRupee size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            {exam.salaryScale}
+          </span>
           <span className="text-[#E4E7EC]">•</span>
-          <span>📅 Last Date: <strong className="text-[#12172B]">{exam.importantDates.applyEndDate}</strong></span>
+          <span className="inline-flex items-center gap-1">
+            <Calendar size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            Last Date: <strong className="text-[#12172B]">{exam.importantDates.applyEndDate}</strong>
+          </span>
           {exam.importantDates.examDate && (
             <>
               <span className="text-[#E4E7EC]">•</span>
@@ -1508,8 +1556,9 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
           <span>Gazette Ref: <strong className="text-[#12172B]">{exam.officialGazetteRef}</strong></span>
           <span className="text-[#E4E7EC]">•</span>
           {isVerificationPending ? (
-            <span className="text-[#D97B0A] bg-[#FFFBEB] px-1.5 py-0.2 rounded border border-[#FDE68A]">
-              ⚠️ Verified {exam.lastVerifiedDate} (Re-check pending)
+            <span className="text-[#D97B0A] bg-[#FFFBEB] px-1.5 py-0.5 rounded border border-[#FDE68A] inline-flex items-center gap-1">
+              <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+              Verified {exam.lastVerifiedDate} (Re-check pending)
             </span>
           ) : (
             <span>Verified on <strong className="text-[#12172B]">{exam.lastVerifiedDate}</strong></span>
@@ -1517,9 +1566,10 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
           <span className="text-[#E4E7EC]">•</span>
           <button
             onClick={onReport}
-            className="text-[#5B6478] hover:text-[#D97B0A] underline"
+            className="text-[#5B6478] hover:text-[#D97B0A] underline inline-flex items-center gap-1"
           >
-            Report issue / date shift 🚩
+            <span>Report issue / date shift</span>
+            <Flag size={12} strokeWidth={ICON_STROKE_WIDTH} />
           </button>
         </div>
       </div>
@@ -1537,17 +1587,19 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
             href={exam.officialLinks.notificationPdfUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/30 hover:bg-[#2B4EE6]/10 rounded transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/30 hover:bg-[#2B4EE6]/10 rounded transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
           >
-            Gazette PDF 📄
+            <span>Gazette PDF</span>
+            <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
           <a
             href={exam.officialLinks.applyPortalUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap"
+            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
           >
-            Official Portal ↗
+            <span>Official Portal</span>
+            <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
         </div>
       </div>

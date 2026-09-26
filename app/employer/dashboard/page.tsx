@@ -5,6 +5,29 @@ import Link from 'next/link';
 import PostJobModal from '../../components/PostJobModal';
 import EmployerAuthModal from '../../components/EmployerAuthModal';
 import { supabase } from '../../supabase';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Briefcase,
+  Building2,
+  Check,
+  ClipboardList,
+  Clock,
+  Copy,
+  CreditCard,
+  Globe,
+  GraduationCap,
+  Landmark,
+  Plus,
+  Sparkles,
+  Target,
+  Users,
+  X,
+  XCircle,
+  Zap,
+} from '../../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../../lib/iconRules';
 
 interface EmployerJob {
   id: string;
@@ -343,16 +366,16 @@ export default function EmployerDashboardPage() {
               <span className="font-bold text-gray-900 tracking-tight text-base">NicheHire</span>
             </Link>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 flex items-center gap-1.5">
-              <span>🏢</span> Employer Workspace
+              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Employer Workspace
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <Link
               href="/"
-              className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
             >
-              <span>←</span> Job Board
+              <ArrowLeft size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Job Board
             </Link>
 
             <button
@@ -365,7 +388,7 @@ export default function EmployerDashboardPage() {
               }}
               className="px-3.5 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
             >
-              <span>+</span> Post a Job / Walk-in
+              <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Post a Job / Walk-in
             </button>
 
             {employerUser ? (
@@ -390,7 +413,7 @@ export default function EmployerDashboardPage() {
                 onClick={() => setEmployerAuthModalOpen(true)}
                 className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
               >
-                <span>🏢</span> Employer Sign In / Register
+                <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Employer Sign In / Register
               </button>
             )}
           </div>
@@ -409,7 +432,7 @@ export default function EmployerDashboardPage() {
             <div className="bg-gradient-to-br from-[#111827] via-[#1E1B4B] to-[#0F172A] rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-indigo-900/40 relative overflow-hidden">
               <div className="max-w-2xl space-y-4 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/20">
-                  <span>🏢</span> Recruiter &amp; Corporate Workspace
+                  <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Recruiter &amp; Corporate Workspace
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
                   Hire verified Finance, Commerce &amp; Tech talent directly.
@@ -422,19 +445,19 @@ export default function EmployerDashboardPage() {
                     onClick={() => setEmployerAuthModalOpen(true)}
                     className="px-6 py-3 bg-white text-indigo-950 hover:bg-gray-100 font-bold rounded-2xl text-xs transition-all shadow-md flex items-center gap-2"
                   >
-                    <span>🏢</span> Sign In / Register Organization
+                    <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Sign In / Register Organization
                   </button>
                   <Link
                     href="/pricing"
                     className="px-5 py-3 bg-indigo-900/60 hover:bg-indigo-900 text-white font-semibold rounded-2xl text-xs transition-colors border border-indigo-700/50 flex items-center gap-1.5"
                   >
-                    <span>⚡</span> View Employer Plans
+                    <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> View Employer Plans
                   </Link>
                   <Link
                     href="/"
                     className="px-4 py-3 bg-transparent hover:bg-white/10 text-indigo-200 font-medium rounded-2xl text-xs transition-colors flex items-center gap-1.5"
                   >
-                    <span>←</span> Return to Job Board
+                    <ArrowLeft size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Return to Job Board
                   </Link>
                 </div>
               </div>
@@ -443,8 +466,8 @@ export default function EmployerDashboardPage() {
             {/* 3 Value Pillars for Recruiters */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
-                  ✓
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Check size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
                 <h3 className="text-base font-bold text-gray-900">Zero Fake Applicants</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
@@ -453,8 +476,8 @@ export default function EmployerDashboardPage() {
               </div>
 
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                  🎯
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Target size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
                 <h3 className="text-base font-bold text-gray-900">Objective AI Fit Match</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
@@ -463,8 +486,8 @@ export default function EmployerDashboardPage() {
               </div>
 
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center font-bold text-lg">
-                  ⚡
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center">
+                  <Zap size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
                 <h3 className="text-base font-bold text-gray-900">0% Platform Cut</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
@@ -490,13 +513,13 @@ export default function EmployerDashboardPage() {
                   onClick={() => setActiveTab('payments')}
                   className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>⚡</span> Direct UPI (0% Platform Surcharge)
+                  <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Direct UPI (0% Platform Surcharge)
                 </button>
                 <button
                   onClick={() => setActiveTab('domains')}
                   className="flex-1 md:flex-none px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl border border-blue-100 transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>🌐</span> Free Domain Guide
+                  <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Free Domain Guide
                 </button>
               </div>
             </div>
@@ -550,7 +573,7 @@ export default function EmployerDashboardPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <span>👥</span> Candidates & AI Fit Match ({applicants.length})
+            <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Candidates & AI Fit Match ({applicants.length})
           </button>
           <button
             onClick={() => setActiveTab('jobs')}
@@ -560,7 +583,7 @@ export default function EmployerDashboardPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <span>📋</span> Active Postings ({jobs.length})
+            <ClipboardList size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Active Postings ({jobs.length})
           </button>
           <button
             onClick={() => setActiveTab('payments')}
@@ -570,7 +593,7 @@ export default function EmployerDashboardPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <span>💳</span> Payment Verification & Proof
+            <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Payment Verification & Proof
           </button>
           <button
             onClick={() => setActiveTab('domains')}
@@ -580,7 +603,7 @@ export default function EmployerDashboardPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <span>🌐</span> Free Domain & Setup Guide
+            <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Free Domain & Setup Guide
           </button>
         </div>
 
@@ -589,8 +612,8 @@ export default function EmployerDashboardPage() {
           <div className="space-y-4">
             {applicants.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 border border-gray-100 shadow-sm text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center text-2xl mx-auto">
-                  👥
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center mx-auto">
+                  <Users size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
                 <h3 className="text-base font-bold text-gray-900">No Applicants Received Yet</h3>
                 <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
@@ -599,9 +622,10 @@ export default function EmployerDashboardPage() {
                 <div className="pt-2">
                   <button
                     onClick={() => setPostJobModalOpen(true)}
-                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-block"
+                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5"
                   >
-                    + Publish a Job Opening to Receive Applicants
+                    <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Publish a Job Opening to Receive Applicants</span>
                   </button>
                 </div>
               </div>
@@ -679,16 +703,17 @@ export default function EmployerDashboardPage() {
               </div>
               <button
                 onClick={() => setPostJobModalOpen(true)}
-                className="px-4 py-2 bg-[#2B4EE6] text-white text-xs font-semibold rounded-xl hover:bg-[#1E3BBD] transition-colors"
+                className="px-4 py-2 bg-[#2B4EE6] text-white text-xs font-semibold rounded-xl hover:bg-[#1E3BBD] transition-colors inline-flex items-center gap-1.5"
               >
-                + New Listing
+                <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>New Listing</span>
               </button>
             </div>
 
             {jobs.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 border border-gray-100 shadow-sm text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center text-2xl mx-auto">
-                  💼
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center mx-auto">
+                  <Briefcase size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
                 <h3 className="text-base font-bold text-gray-900">No Job Openings Posted Yet</h3>
                 <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
@@ -697,9 +722,10 @@ export default function EmployerDashboardPage() {
                 <div className="pt-2">
                   <button
                     onClick={() => setPostJobModalOpen(true)}
-                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-block"
+                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5"
                   >
-                    + Post Your First Job
+                    <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Post Your First Job</span>
                   </button>
                 </div>
               </div>
@@ -729,9 +755,10 @@ export default function EmployerDashboardPage() {
                           setFilterJobId(job.id);
                           setActiveTab('applicants');
                         }}
-                        className="text-[#2B4EE6] hover:underline font-semibold"
+                        className="text-[#2B4EE6] hover:underline font-semibold inline-flex items-center gap-1"
                       >
-                        View Candidates →
+                        <span>View Candidates</span>
+                        <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                       </button>
                     </div>
                   </div>
@@ -748,7 +775,7 @@ export default function EmployerDashboardPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-1">
-                    <span>⚡</span> Direct UPI QR Payment
+                    <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Direct UPI QR Payment
                   </div>
                   <h2 className="text-lg font-black text-gray-900">Submit Payment Proof for Founder Verification</h2>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -784,7 +811,11 @@ export default function EmployerDashboardPage() {
                   }`}
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
-                    <span>{paymentNotice.type === 'success' ? '⏳ PENDING FOUNDER VERIFICATION' : '✕ Submission Error'}</span>
+                    {paymentNotice.type === 'success' ? (
+                      <span className="flex items-center gap-1.5"><Clock size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" /> PENDING FOUNDER VERIFICATION</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5"><XCircle size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" /> Submission Error</span>
+                    )}
                   </div>
                   <p className="leading-relaxed">{paymentNotice.message}</p>
                   {paymentNotice.utr && (
@@ -813,9 +844,19 @@ export default function EmployerDashboardPage() {
                     <span className="text-xs font-mono font-bold text-gray-900">{founderUpiId}</span>
                     <button
                       onClick={copyUpiId}
-                      className="text-[11px] text-[#2B4EE6] hover:underline font-semibold"
+                      className="text-[11px] text-[#2B4EE6] hover:underline font-semibold inline-flex items-center gap-1"
                     >
-                      {copiedUpi ? '✓ Copied' : 'Copy'}
+                      {copiedUpi ? (
+                        <>
+                          <Check size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Copy</span>
+                        </>
+                      )}
                     </button>
                   </div>
                   <div className="text-[11px] text-gray-400 max-w-xs leading-relaxed">
@@ -904,8 +945,9 @@ export default function EmployerDashboardPage() {
                           alt="Screenshot Preview"
                           className="w-14 h-14 object-cover rounded-lg border border-gray-200"
                         />
-                        <span className="text-[11px] text-emerald-700 font-semibold">
-                          ✓ Screenshot attached ready for submission
+                        <span className="text-[11px] text-emerald-700 font-semibold inline-flex items-center gap-1">
+                          <Check size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                          Screenshot attached ready for submission
                         </span>
                       </div>
                     )}
@@ -947,7 +989,7 @@ export default function EmployerDashboardPage() {
                           <td className="py-3 px-3 font-mono text-gray-600">{p.utr_number}</td>
                           <td className="py-3 px-3">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase inline-flex items-center gap-1 ${
                                 p.status === 'approved'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : p.status === 'rejected'
@@ -955,7 +997,22 @@ export default function EmployerDashboardPage() {
                                   : 'bg-amber-100 text-amber-800'
                               }`}
                             >
-                              {p.status === 'approved' ? '✓ Verified' : p.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                              {p.status === 'approved' ? (
+                                <>
+                                  <BadgeCheck size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                                  <span>Verified</span>
+                                </>
+                              ) : p.status === 'rejected' ? (
+                                <>
+                                  <XCircle size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                                  <span>Rejected</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                                  <span>Pending</span>
+                                </>
+                              )}
                             </span>
                           </td>
                           <td className="py-3 px-3 text-gray-400">{new Date(p.created_at).toLocaleString()}</td>
@@ -974,7 +1031,7 @@ export default function EmployerDashboardPage() {
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-xs font-bold mb-1">
-                <span>🌐</span> Domain & Hosting Strategy
+                <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Domain &amp; Hosting Strategy
               </div>
               <h2 className="text-xl font-black text-gray-900">How to Get a Free or Ultra-Affordable Domain for NicheHire</h2>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -984,7 +1041,9 @@ export default function EmployerDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="text-2xl mb-1">🎓</div>
+                <div className="mb-2 text-gray-700">
+                  <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                </div>
                 <h3 className="text-sm font-bold text-gray-900">GitHub Student Pack</h3>
                 <div className="text-[10px] font-bold text-emerald-700 uppercase">100% Free for 1 Year</div>
                 <p className="text-xs text-gray-600 mt-2 leading-relaxed">
@@ -1001,7 +1060,9 @@ export default function EmployerDashboardPage() {
               </div>
 
               <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="text-2xl mb-1">🆓</div>
+                <div className="mb-2 text-gray-700">
+                  <Globe size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                </div>
                 <h3 className="text-sm font-bold text-gray-900">eu.org (Free Forever)</h3>
                 <div className="text-[10px] font-bold text-emerald-700 uppercase">Zero Cost Always</div>
                 <p className="text-xs text-gray-600 mt-2 leading-relaxed">
@@ -1018,7 +1079,9 @@ export default function EmployerDashboardPage() {
               </div>
 
               <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="text-2xl mb-1">🇮🇳</div>
+                <div className="mb-2 text-gray-700">
+                  <Building2 size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                </div>
                 <h3 className="text-sm font-bold text-gray-900">Affordable .in / .store</h3>
                 <div className="text-[10px] font-bold text-blue-700 uppercase">₹79 to ₹399 / Year</div>
                 <p className="text-xs text-gray-600 mt-2 leading-relaxed">
@@ -1046,9 +1109,10 @@ export default function EmployerDashboardPage() {
           <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 relative border border-gray-100 my-8 space-y-5 animate-fadeIn">
             <button
               onClick={() => setSelectedApplicant(null)}
-              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+              aria-label="Close resume modal"
             >
-              ✕
+              <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
             </button>
 
             <div className="border-b border-gray-100 pb-4">

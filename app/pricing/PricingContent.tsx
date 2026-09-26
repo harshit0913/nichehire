@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import PostJobModal from '../components/PostJobModal';
+import { ArrowRight, Check } from '../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 export default function PricingContent() {
   const [postJobOpen, setPostJobOpen] = useState(false);
@@ -41,9 +43,10 @@ export default function PricingContent() {
             </Link>
             <button
               onClick={() => openModalWithTier('single')}
-              className="px-3.5 py-1.5 text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
+              className="px-3.5 py-1.5 text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors inline-flex items-center gap-1"
             >
-              Post a verified role ➔
+              <span>Post a verified role</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </button>
           </nav>
         </div>
@@ -89,23 +92,23 @@ export default function PricingContent() {
 
               <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>1 Verified Job Post (Active 14 days)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Direct apply link to your official career portal</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Google for Jobs Schema.org SEO indexing</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Automated corporate domain validation</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Standard candidate applicant feed</span>
                 </div>
               </div>
@@ -114,9 +117,10 @@ export default function PricingContent() {
             <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('free')}
-                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded border border-[#E4E7EC] transition-colors"
+                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded border border-[#E4E7EC] transition-colors inline-flex items-center justify-center gap-1"
               >
-                Claim free launch post ➔
+                <span>Claim free launch post</span>
+                <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
           </div>
@@ -141,27 +145,27 @@ export default function PricingContent() {
 
               <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>1 Featured Verified Post (Active 30 days)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>Priority top placement on search results</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>Direct recruiter outreach email enabled</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>Automated AI Candidate Fit Scoring &amp; skill tags</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>Schema.org real-time re-indexing</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2B4EE6] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                   <span>Verified Corporate Employer Seal</span>
                 </div>
               </div>
@@ -170,9 +174,10 @@ export default function PricingContent() {
             <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('single')}
-                className="w-full py-2.5 px-4 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
+                className="w-full py-2.5 px-4 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors inline-flex items-center justify-center gap-1"
               >
-                Post verified role for ₹4,999 ➔
+                <span>Post verified role for ₹4,999</span>
+                <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
           </div>
@@ -194,23 +199,23 @@ export default function PricingContent() {
 
               <div className="pt-4 border-t border-[#E4E7EC] space-y-2.5 text-xs text-[#12172B]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>3 Featured Verified Posts (Active 30 days each)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Priority placement across all 3 roles</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Direct recruiter outreach enabled</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Candidate match alerts &amp; screening</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#0E9F6E] font-bold">✓</span>
+                  <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   <span>Dedicated WhatsApp &amp; email support</span>
                 </div>
               </div>
@@ -219,9 +224,10 @@ export default function PricingContent() {
             <div className="pt-6">
               <button
                 onClick={() => openModalWithTier('growth')}
-                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC] font-medium text-xs rounded transition-colors"
+                className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC] font-medium text-xs rounded transition-colors inline-flex items-center justify-center gap-1"
               >
-                Get 3-post pack for ₹11,999 ➔
+                <span>Get 3-post pack for ₹11,999</span>
+                <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
           </div>
@@ -238,9 +244,10 @@ export default function PricingContent() {
           </div>
           <button
             onClick={() => openModalWithTier('growth')}
-            className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded whitespace-nowrap transition-colors"
+            className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-medium text-xs rounded whitespace-nowrap transition-colors inline-flex items-center gap-1"
           >
-            Inquire Enterprise ➔
+            <span>Inquire Enterprise</span>
+            <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </button>
         </section>
 
@@ -320,9 +327,10 @@ export default function PricingContent() {
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <button
               onClick={() => openModalWithTier('single')}
-              className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
+              className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors inline-flex items-center gap-1"
             >
-              Post verified job (₹4,999) ➔
+              <span>Post verified job (₹4,999)</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </button>
             <button
               onClick={() => openModalWithTier('free')}

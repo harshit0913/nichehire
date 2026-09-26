@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { CAREER_GUIDANCE_PRICING, CareerReport } from '../types/careerGuidance';
 import CareerReportViewer from './CareerReportViewer';
+import { X, Compass, Landmark, Briefcase, Target, ArrowRight, Sparkles, ArrowLeft, Users, AlertTriangle } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface CareerGuidanceModalProps {
   isOpen: boolean;
@@ -89,7 +91,7 @@ export default function CareerGuidanceModal({
           onClick={onClose}
           className="absolute top-4 right-4 text-[#5B6478] hover:text-[#12172B] text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F8FA]"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         {/* ─── State 1: Intake Form ────────────────────────────────────────── */}
@@ -97,7 +99,8 @@ export default function CareerGuidanceModal({
           <div className="space-y-5">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#2B4EE6] text-xs font-semibold mb-2 border border-blue-200">
-                <span>🧭</span> Career Guidance Advisory
+                <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Career Guidance Advisory</span>
               </div>
               <h2 className="text-xl font-bold text-[#12172B]">Strategic Career &amp; Exam Trajectory</h2>
               <p className="text-xs text-[#5B6478] mt-1">
@@ -120,35 +123,38 @@ export default function CareerGuidanceModal({
                   <button
                     type="button"
                     onClick={() => setTargetSector('govt')}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all ${
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all flex items-center justify-center gap-1.5 ${
                       targetSector === 'govt'
                         ? 'bg-[#12172B] text-white border-[#12172B]'
                         : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:bg-[#F7F8FA]'
                     }`}
                   >
-                    🏛️ Govt Exams
+                    <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Govt Exams</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetSector('private')}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all ${
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all flex items-center justify-center gap-1.5 ${
                       targetSector === 'private'
                         ? 'bg-[#12172B] text-white border-[#12172B]'
                         : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:bg-[#F7F8FA]'
                     }`}
                   >
-                    💻 Private Tech
+                    <Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Private Tech</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetSector('undecided')}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all ${
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all flex items-center justify-center gap-1.5 ${
                       targetSector === 'undecided'
                         ? 'bg-[#12172B] text-white border-[#12172B]'
                         : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:bg-[#F7F8FA]'
                     }`}
                   >
-                    ⚖️ Compare Both
+                    <Target size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Compare Both</span>
                   </button>
                 </div>
               </div>
@@ -188,16 +194,17 @@ export default function CareerGuidanceModal({
                 <button
                   type="button"
                   onClick={() => setStep('pricing')}
-                  className="text-xs font-semibold text-[#2B4EE6] hover:underline"
+                  className="text-xs font-semibold text-[#2B4EE6] hover:underline flex items-center gap-1"
                 >
-                  View Consultation Packages ➔
+                  <span>View Consultation Packages</span>
+                  <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 </button>
                 <button
                   type="button"
                   onClick={handleGenerateReport}
                   className="px-5 py-2 text-xs font-bold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
                 >
-                  <span>✨</span>
+                  <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>{isUnlimited ? 'Generate Report (Founder Pass)' : 'Generate AI Report'}</span>
                 </button>
               </div>
@@ -254,9 +261,10 @@ export default function CareerGuidanceModal({
             <div className="text-center">
               <button
                 onClick={() => setStep('intake')}
-                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B]"
+                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B] flex items-center justify-center gap-1 mx-auto"
               >
-                ← Back to intake details
+                <ArrowLeft size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Back to intake details</span>
               </button>
             </div>
           </div>
@@ -287,7 +295,8 @@ export default function CareerGuidanceModal({
           <div className="space-y-5">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-2 border border-indigo-200">
-                <span>🧑‍💼</span> 1-on-1 Strategy Call
+                <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>1-on-1 Strategy Call</span>
               </div>
               <h3 className="text-lg font-bold text-[#12172B]">Book Your Human Counselor Session</h3>
               <p className="text-xs text-[#5B6478]">
@@ -298,7 +307,8 @@ export default function CareerGuidanceModal({
             {/* 7-Day Availability Warning */}
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-1">
               <div className="font-bold flex items-center gap-1.5">
-                <span>⚠️</span> Counselor Slot Availability Notice
+                <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-800 shrink-0" />
+                <span>Counselor Slot Availability Notice</span>
               </div>
               <p className="text-[11px] leading-relaxed">
                 Counselor slots are capped weekly to maintain high advising quality. Available slots: <strong>3 open slots in the next 7 days</strong>.
@@ -327,9 +337,10 @@ export default function CareerGuidanceModal({
             <div className="pt-3 border-t border-[#E4E7EC] flex items-center justify-between">
               <button
                 onClick={() => setStep('intake')}
-                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B]"
+                className="text-xs font-semibold text-[#5B6478] hover:text-[#12172B] flex items-center gap-1"
               >
-                ← Back
+                <ArrowLeft size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Back</span>
               </button>
               <button
                 disabled={!consentGiven}

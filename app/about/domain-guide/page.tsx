@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { Globe, GraduationCap, Building2 } from '../../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../../lib/iconRules';
 
 export const metadata: Metadata = {
   title: 'Free & Affordable Domain Setup Guide — NicheHire',
@@ -32,7 +34,8 @@ export default function DomainGuidePage() {
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10">
         <div className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-bold text-blue-800">
-            <span>🌐</span> Founder & Operational Guide
+            <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            <span>Founder &amp; Operational Guide</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
             How to Get a Free or Ultra-Affordable Domain for NicheHire
@@ -55,7 +58,7 @@ export default function DomainGuidePage() {
                   1. GitHub Student Developer Pack (1 Year 100% Free)
                 </h2>
               </div>
-              <span className="text-2xl">🎓</span>
+              <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
               If you or anyone on your founding team has access to a college/university email address (e.g. <code>@college.ac.in</code> or <code>@edu</code>) or a student ID card, you can claim the <strong>GitHub Student Developer Pack</strong>.
@@ -74,7 +77,7 @@ export default function DomainGuidePage() {
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors"
             >
-              Apply at education.github.com/pack →
+              Apply at education.github.com/pack &rarr;
             </a>
           </div>
 
@@ -89,7 +92,7 @@ export default function DomainGuidePage() {
                   2. eu.org (100% Free Public Suffix Domain)
                 </h2>
               </div>
-              <span className="text-2xl">🆓</span>
+              <Globe size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-blue-600" />
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
               Founded in 1996 to facilitate non-profit internet access, <strong>eu.org</strong> provides free sub-domains (e.g. <code>nichehire.eu.org</code>) to anyone in the world. Crucially, ICANN and Google recognize <code>eu.org</code> on the Public Suffix List, which means it receives standard SEO indexing.
@@ -116,7 +119,7 @@ export default function DomainGuidePage() {
                   3. Low-Cost Indian Domain: .in or .co.in (₹299–₹399 / year)
                 </h2>
               </div>
-              <span className="text-2xl">🇮🇳</span>
+              <Building2 size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" />
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
               For recruiting Indian candidates and corporate HR teams, having a genuine <code>.in</code> domain (e.g. <code>nichehire.in</code>) yields significantly higher conversion and trust than free foreign subdomains.
@@ -135,7 +138,7 @@ export default function DomainGuidePage() {
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors"
             >
-              Search .in Domains on Spaceship →
+              Search .in Domains on Spaceship &rarr;
             </a>
           </div>
 
@@ -146,8 +149,8 @@ export default function DomainGuidePage() {
               Vercel provides free automatic SSL certificates (HTTPS) and global edge CDN caching for any custom domain.
             </p>
             <ol className="list-decimal list-inside space-y-2 text-xs text-blue-100/90 leading-relaxed">
-              <li>Open your <strong>Vercel Dashboard</strong> ➔ Select your <code>commerce-job-board</code> (or NicheHire) project.</li>
-              <li>Navigate to <strong>Settings</strong> ➔ <strong>Domains</strong>.</li>
+              <li>Open your <strong>Vercel Dashboard</strong> &rarr; Select your <code>commerce-job-board</code> (or NicheHire) project.</li>
+              <li>Navigate to <strong>Settings</strong> &rarr; <strong>Domains</strong>.</li>
               <li>Type your custom domain (e.g. <code>nichehire.in</code> or <code>www.nichehire.in</code>) and click <strong>Add</strong>.</li>
               <li>Vercel will show the required DNS record:
                 <div className="bg-black/40 p-3 rounded-xl font-mono text-[11px] text-amber-300 my-2">

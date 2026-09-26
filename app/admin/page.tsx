@@ -3,6 +3,24 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../supabase';
+import {
+  AlertTriangle,
+  BadgeCheck,
+  Building2,
+  Check,
+  Clock,
+  Copy,
+  CreditCard,
+  Crown,
+  Lock,
+  Mail,
+  MessageSquare,
+  Search,
+  Users,
+  X,
+  XCircle,
+} from '../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface FeedbackItem {
   id: string;
@@ -174,7 +192,7 @@ export default function FounderAdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to submit reply');
 
-      setActionSuccessMsg('✓ Official reply published to user dashboard and recorded.');
+      setActionSuccessMsg('Official reply published to user dashboard and recorded.');
       setTimeout(() => setActionSuccessMsg(''), 3000);
 
       await loadFeedbacks(sessionToken);
@@ -206,7 +224,7 @@ export default function FounderAdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update member');
 
-      setActionSuccessMsg(`✓ Updated ${data.assignedRole} permissions to ${data.accessLevel}!`);
+      setActionSuccessMsg(`Updated ${data.assignedRole} permissions to ${data.accessLevel}!`);
       setTimeout(() => setActionSuccessMsg(''), 3000);
 
       setEditingMemberId(null);
@@ -238,7 +256,7 @@ export default function FounderAdminPage() {
 
       setActionSuccessMsg(
         newStatus === 'approved'
-          ? '✓ Payment verified & approved! Featured placement activated for employer.'
+          ? 'Payment verified & approved! Featured placement activated for employer.'
           : 'Payment marked as rejected.'
       );
       setTimeout(() => setActionSuccessMsg(''), 4000);
@@ -286,8 +304,8 @@ export default function FounderAdminPage() {
     return (
       <div className="min-h-screen bg-[#0E131F] text-white flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-[#181F33] p-8 rounded-2xl border border-gray-800 text-center shadow-2xl">
-          <div className="w-14 h-14 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-rose-500/20">
-            🔒
+          <div className="w-14 h-14 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
+            <Lock size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
           </div>
           <h1 className="text-xl font-bold mb-2">Restricted Access</h1>
           <p className="text-xs text-gray-400 mb-6 leading-relaxed">
@@ -323,7 +341,7 @@ export default function FounderAdminPage() {
               <span className="font-bold text-white tracking-tight text-base">NicheHire</span>
             </Link>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-semibold flex items-center gap-1.5">
-              <span>👑</span> Founder Portal
+              <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Founder Portal
             </span>
           </div>
 
@@ -332,13 +350,13 @@ export default function FounderAdminPage() {
               href="/dashboard"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 transition-colors"
             >
-              <span>👤</span> Candidate View
+              <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Candidate View
             </Link>
             <Link
               href="/employer/dashboard"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 transition-colors"
             >
-              <span>🏢</span> Employer Dashboard
+              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Employer Dashboard
             </Link>
             <div className="border-l border-gray-800 pl-4 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
@@ -354,7 +372,9 @@ export default function FounderAdminPage() {
         {actionSuccessMsg && (
           <div className="p-3 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-medium flex items-center justify-between animate-fadeIn">
             <span>{actionSuccessMsg}</span>
-            <button onClick={() => setActionSuccessMsg('')} className="text-emerald-400 hover:text-white">✕</button>
+            <button onClick={() => setActionSuccessMsg('')} className="text-emerald-400 hover:text-white p-1" aria-label="Close notification">
+              <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            </button>
           </div>
         )}
 
@@ -362,8 +382,8 @@ export default function FounderAdminPage() {
         <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-purple-950/40 border border-blue-800/30 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-amber-400 text-sm">👑</span>
-              <h2 className="text-sm font-bold text-white">Your Founder Referral & Team Onboarding Link</h2>
+              <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-400" />
+              <h2 className="text-sm font-bold text-white">Your Founder Referral &amp; Team Onboarding Link</h2>
             </div>
             <p className="text-xs text-gray-400">
               Users signing up via this link automatically link to your founder profile. You can assign them custom roles (Co-Founder, Intern, Core Team) and grant unlimited/premium access below.
@@ -380,7 +400,11 @@ export default function FounderAdminPage() {
               onClick={copyReferralLink}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors shrink-0 shadow-sm"
             >
-              {copiedLink ? '✓ Copied!' : 'Copy Link'}
+              {copiedLink ? (
+                <span className="inline-flex items-center gap-1"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} /> Copied!</span>
+              ) : (
+                <span className="inline-flex items-center gap-1"><Copy size={12} strokeWidth={ICON_STROKE_WIDTH} /> Copy Link</span>
+              )}
             </button>
           </div>
         </div>
@@ -417,7 +441,7 @@ export default function FounderAdminPage() {
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            <span>💬</span> Feedback, Bugs & Suggestions
+            <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Feedback, Bugs &amp; Suggestions
             <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-300">
               {feedbacks.length}
             </span>
@@ -431,7 +455,7 @@ export default function FounderAdminPage() {
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            <span>👥</span> Referred Team & Role Permissions
+            <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Referred Team &amp; Role Permissions
             <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-300">
               {teamMembers.length}
             </span>
@@ -445,7 +469,7 @@ export default function FounderAdminPage() {
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            <span>💳</span> Employer Payments & UTRs
+            <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Employer Payments &amp; UTRs
             {pendingPaymentsCount > 0 ? (
               <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
                 {pendingPaymentsCount} pending
@@ -474,7 +498,7 @@ export default function FounderAdminPage() {
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    {t === 'all' ? 'All Types' : t === 'bug' ? '🐞 Bugs' : t === 'feature' ? '💡 Suggestions' : t === 'complaint' ? '⚠️ Complaints' : '💬 General'}
+                    {t === 'all' ? 'All Types' : t === 'bug' ? 'Bugs' : t === 'feature' ? 'Suggestions' : t === 'complaint' ? 'Complaints' : 'General'}
                   </button>
                 ))}
               </div>
@@ -523,17 +547,27 @@ export default function FounderAdminPage() {
                               : 'bg-gray-700 text-gray-300'
                           }`}
                         >
-                          {item.type === 'bug' ? '🐞 Bug Report' : item.type === 'feature' ? '💡 Feature Idea' : item.type === 'complaint' ? '⚠️ Complaint' : '💬 General'}
+                          {item.type === 'bug' ? 'Bug Report' : item.type === 'feature' ? 'Feature Idea' : item.type === 'complaint' ? 'Complaint' : 'General'}
                         </span>
 
                         <span
-                          className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                          className={`text-[11px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 ${
                             item.status === 'resolved'
                               ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
                               : 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20'
                           }`}
                         >
-                          {item.status === 'resolved' ? '✓ Resolved' : '● Needs Reply'}
+                          {item.status === 'resolved' ? (
+                            <>
+                              <BadgeCheck size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                              <span>Resolved</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                              <span>Needs Reply</span>
+                            </>
+                          )}
                         </span>
                       </div>
 
@@ -552,7 +586,9 @@ export default function FounderAdminPage() {
                     {item.admin_reply && (
                       <div className="bg-blue-950/30 border border-blue-500/30 rounded-xl p-3.5 text-xs space-y-1">
                         <div className="flex items-center justify-between text-[11px] font-semibold text-blue-300">
-                          <span>💬 Your Official Reply:</span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Your Official Reply:
+                          </span>
                           <span className="text-gray-400 font-normal">
                             {item.replied_at ? new Date(item.replied_at).toLocaleString() : ''}
                           </span>
@@ -577,9 +613,10 @@ export default function FounderAdminPage() {
                           {item.email && (
                             <a
                               href={`mailto:${item.email}?subject=NicheHire Support: Regarding your ${item.type}&body=Hi,%0A%0AThank you for contacting NicheHire support.`}
-                              className="text-[11px] text-gray-400 hover:text-blue-400 flex items-center gap-1 transition-colors"
+                              className="text-[11px] text-gray-400 hover:text-blue-400 flex items-center gap-1.5 transition-colors"
                             >
-                              <span>✉️</span> Reply via Personal Email
+                              <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                              <span>Reply via Personal Email</span>
                             </a>
                           )}
                         </div>
@@ -603,7 +640,7 @@ export default function FounderAdminPage() {
         {activeTab === 'team' && (
           <div className="space-y-4">
             <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-5 space-y-2">
-              <h3 className="text-sm font-bold text-white">Direct Founder Referrals & Role Assignments</h3>
+              <h3 className="text-sm font-bold text-white">Direct Founder Referrals &amp; Role Assignments</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
                 Candidates who joined NicheHire using your founder referral link (<code className="text-blue-400">?ref=FOUNDER</code>).
                 You can designate specific team titles (e.g. <strong>Co-Founder, Intern, Core Team, Advisor</strong>) and change their access override to <strong>Unlimited</strong> or <strong>Full Premium</strong>.
@@ -638,7 +675,7 @@ export default function FounderAdminPage() {
                       {teamMembers.map((m) => {
                         const isEditing = editingMemberId === m.userId;
                         return (
-                          <tr key={m.userId} className="hover:bg-white/[0.02] transition-colors">
+                           <tr key={m.userId} className="hover:bg-white/[0.02] transition-colors">
                             <td className="py-4 px-4 font-mono font-medium text-gray-200">
                               {m.displayLabel}
                             </td>
@@ -668,8 +705,8 @@ export default function FounderAdminPage() {
                                   onChange={(e: any) => setEditAccessLevel(e.target.value)}
                                   className="bg-gray-800 border border-gray-700 px-2.5 py-1 rounded-lg text-xs text-white focus:outline-none"
                                 >
-                                  <option value="unlimited">⚡ Unlimited Bypass</option>
-                                  <option value="premium">⭐ Full Premium</option>
+                                  <option value="unlimited">Unlimited Bypass</option>
+                                  <option value="premium">Full Premium</option>
                                   <option value="basic">Standard Member</option>
                                   <option value="revoked">Revoked</option>
                                 </select>
@@ -712,7 +749,7 @@ export default function FounderAdminPage() {
                                   }}
                                   className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-lg text-xs font-medium transition-colors"
                                 >
-                                  Edit Role & Access
+                                  Edit Role &amp; Access
                                 </button>
                               )}
                             </td>
@@ -732,7 +769,7 @@ export default function FounderAdminPage() {
           <div className="space-y-4">
             <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-5 space-y-2">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>💳</span> Employer Payment Proof & Manual Verification Center
+                <CreditCard size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} /> Employer Payment Proof &amp; Manual Verification Center
               </h3>
               <p className="text-xs text-gray-400 leading-relaxed">
                 When an employer pays via your UPI ID (<code className="text-emerald-400">harshit0913@slc</code>), their 12-digit UTR and payment screenshot appear here.
@@ -764,7 +801,7 @@ export default function FounderAdminPage() {
                           ₹{p.plan_amount}
                         </span>
                         <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                          className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase inline-flex items-center gap-1 ${
                             p.status === 'approved'
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                               : p.status === 'rejected'
@@ -772,7 +809,22 @@ export default function FounderAdminPage() {
                               : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           }`}
                         >
-                          {p.status === 'approved' ? '✓ Verified & Active' : p.status === 'rejected' ? '✕ Rejected' : '⏳ Pending Review'}
+                          {p.status === 'approved' ? (
+                            <>
+                              <BadgeCheck size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                              <span>Verified &amp; Active</span>
+                            </>
+                          ) : p.status === 'rejected' ? (
+                            <>
+                              <XCircle size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                              <span>Rejected</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                              <span>Pending Review</span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -809,9 +861,10 @@ export default function FounderAdminPage() {
                             />
                             <button
                               onClick={() => setViewingScreenshot(p.screenshot_data)}
-                              className="text-xs text-blue-400 hover:underline"
+                              className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1"
                             >
-                              🔍 Click to inspect screenshot in full size
+                              <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                              <span>Click to inspect screenshot in full size</span>
                             </button>
                           </div>
                         ) : (
@@ -832,16 +885,18 @@ export default function FounderAdminPage() {
                             disabled={verifyingPaymentId === p.id}
                             className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
                           >
-                            <span>✓ Approve Payment & Activate</span>
+                            <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                            <span>Approve Payment &amp; Activate</span>
                           </button>
                         )}
                         {p.status !== 'rejected' && (
                           <button
                             onClick={() => handleUpdatePaymentStatus(p.id, 'rejected')}
                             disabled={verifyingPaymentId === p.id}
-                            className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 rounded-xl text-xs font-medium transition-colors"
+                            className="px-3.5 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 rounded-xl text-xs font-medium transition-colors inline-flex items-center gap-1"
                           >
-                            <span>✕ Reject</span>
+                            <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                            <span>Reject</span>
                           </button>
                         )}
                       </div>
@@ -860,9 +915,10 @@ export default function FounderAdminPage() {
           <div className="bg-[#12192B] rounded-3xl max-w-2xl w-full p-6 relative border border-gray-800 space-y-4">
             <button
               onClick={() => setViewingScreenshot(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800"
+              className="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800"
+              aria-label="Close modal"
             >
-              ✕
+              <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
             </button>
             <h3 className="text-sm font-bold text-white">Payment Screenshot Proof</h3>
             <div className="bg-black/60 rounded-2xl p-2 border border-gray-800 flex items-center justify-center max-h-[75vh] overflow-auto">

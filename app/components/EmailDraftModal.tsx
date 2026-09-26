@@ -1,6 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  Check,
+  Copy,
+  Mail,
+  MessageSquare,
+  ShieldCheck,
+  X,
+} from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface EmailDraftModalProps {
   isOpen: boolean;
@@ -396,13 +405,13 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
           title="Close modal (Esc)"
           className="absolute top-4 right-4 z-50 w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-950 font-bold text-base transition-colors shadow-2xs border border-gray-200 cursor-pointer"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         {/* Header */}
         <div className="mb-4">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-2">
-            <span>✉️</span> AI Recruiter Outreach
+            <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> AI Recruiter Outreach
           </div>
           <h2 className="text-lg font-bold text-gray-900 leading-snug">
             Cold Outreach for {job.title}
@@ -416,7 +425,7 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
         {discoveredInfo && (
           <div className="mb-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-xl flex items-center justify-between text-xs flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-base">🛡️</span>
+              <ShieldCheck size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-700" />
               <div>
                 <div className="font-bold text-emerald-950 flex items-center gap-1">
                   <span>Auto-Discovered HR Contact</span>
@@ -510,7 +519,7 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
                   <span>Generating Personalized Pitch…</span>
                 </>
               ) : (
-                <span>Generate High-Converting Pitch 🚀</span>
+                <span>Generate High-Converting Pitch</span>
               )}
             </button>
           </div>
@@ -528,19 +537,21 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
             <div className="flex bg-gray-100 p-1 rounded-lg text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('email')}
-                className={`flex-1 py-1.5 rounded-md transition-colors ${
+                className={`flex-1 py-1.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${
                   activeTab === 'email' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'
                 }`}
               >
-                📧 Full Cold Email
+                <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Full Cold Email</span>
               </button>
               <button
                 onClick={() => setActiveTab('inmail')}
-                className={`flex-1 py-1.5 rounded-md transition-colors ${
+                className={`flex-1 py-1.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${
                   activeTab === 'inmail' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'
                 }`}
               >
-                💬 LinkedIn InMail
+                <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>LinkedIn InMail</span>
               </button>
             </div>
 
@@ -577,14 +588,18 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
                 }
                 className="flex-1 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
               >
-                {copied ? '✓ Copied to Clipboard!' : '📋 Copy to Clipboard'}
+                {copied ? (
+                  <span className="inline-flex items-center gap-1.5"><Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Copied to Clipboard!</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5"><Copy size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Copy to Clipboard</span>
+                )}
               </button>
               {activeTab === 'email' && (
                 <button
                   onClick={handleOpenMailClient}
                   className="flex-1 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                 >
-                  🚀 Open in Email App
+                  <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Open in Email App
                 </button>
               )}
               <button
@@ -599,7 +614,7 @@ export default function EmailDraftModal({ isOpen, onClose, job, resumeText, user
                 onClick={onClose}
                 className="px-3 py-2 text-xs text-gray-500 hover:text-gray-800 font-medium cursor-pointer"
               >
-                ✕ Close
+                Close
               </button>
             </div>
           </div>

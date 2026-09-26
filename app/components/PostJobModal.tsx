@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { X, BadgeCheck, AlertTriangle, ArrowRight, Clock } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -98,8 +100,8 @@ export default function PostJobModal({
 
       setSuccessMsg(
         plan === 'free'
-          ? '🎉 Free Launch Post Submitted! Our crawler is validating your corporate domain. Your role will be live within 15 minutes.'
-          : '🎉 Verified Role Submitted! Corporate domain check in progress. Your role is queued for #1 featured placement and Google for Jobs indexing.'
+          ? 'Free launch post submitted! Our crawler is validating your corporate domain. Your role will be live within 15 minutes.'
+          : 'Verified role submitted! Corporate domain check in progress. Your role is queued for #1 featured placement and Google for Jobs indexing.'
       );
       if (onSuccess) onSuccess(newListing);
 
@@ -127,12 +129,13 @@ export default function PostJobModal({
           onClick={onClose}
           className="absolute top-5 right-5 text-[#5B6478] hover:text-[#12172B] text-sm w-7 h-7 flex items-center justify-center rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] transition-colors"
         >
-          ✕
+          <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         <div className="mb-5">
           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0] mb-2">
-            <span>✓</span> For verified corporate employers
+            <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+            <span>For verified corporate employers</span>
           </div>
           <h2 className="text-xl font-semibold text-[#12172B]">Post a verified job opening</h2>
           <p className="text-xs text-[#5B6478] mt-1">
@@ -193,7 +196,8 @@ export default function PostJobModal({
 
         {errorMsg && (
           <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#FECACA] text-[#D9534F] text-xs rounded flex items-center gap-2">
-            <span>⚠️</span> {errorMsg}
+            <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F] shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
@@ -377,12 +381,16 @@ export default function PostJobModal({
             >
               {isSubmitting ? (
                 <>
-                  <span className="animate-spin text-xs">⏳</span> Verifying &amp; Publishing...
+                  <Clock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin" /> Verifying &amp; Publishing...
                 </>
               ) : plan === 'free' ? (
-                'Claim free launch post ➔'
+                <>
+                  Claim free launch post <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="inline ml-1" />
+                </>
               ) : (
-                'Post verified job (₹4,999) ➔'
+                <>
+                  Post verified job (₹4,999) <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="inline ml-1" />
+                </>
               )}
             </button>
           </div>

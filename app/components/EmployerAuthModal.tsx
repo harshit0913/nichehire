@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { supabase } from '../supabase';
+import { X, Building2, Check } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface EmployerAuthModalProps {
   isOpen: boolean;
@@ -75,7 +77,7 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
           localStorage.setItem('nichehire_employer_company', companyName.trim());
           localStorage.setItem('nichehire_employer_email', email.trim());
 
-          setSuccessMsg('🎉 Employer account created successfully! Signing you in...');
+          setSuccessMsg('Employer account created successfully! Signing you in...');
           onSuccess(data.user, { companyName: companyName.trim(), email: email.trim() });
           setTimeout(() => onClose(), 1200);
         }
@@ -94,7 +96,7 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
           }
           localStorage.setItem('nichehire_employer_email', data.user.email || email.trim());
 
-          setSuccessMsg('✓ Welcome back! Employer session authenticated.');
+          setSuccessMsg('Welcome back! Employer session authenticated.');
           onSuccess(data.user, { companyName: comp, email: data.user.email });
           setTimeout(() => onClose(), 800);
         }
@@ -114,13 +116,13 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
           onClick={onClose}
           className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mb-3 text-2xl border border-indigo-100">
-            🏢
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mb-3 border border-indigo-100">
+            <Building2 size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
           </div>
           <h2 className="text-xl font-black text-gray-900 tracking-tight">
             {mode === 'register' ? 'Register Your Company' : 'Employer & Recruiter Sign In'}

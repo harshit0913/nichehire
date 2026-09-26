@@ -4,6 +4,27 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../supabase';
 import FeedbackModal from '../components/FeedbackModal';
+import {
+  BadgeCheck,
+  Briefcase,
+  Building2,
+  Check,
+  Clock,
+  Copy,
+  Crown,
+  FileText,
+  Landmark,
+  Mail,
+  MessageSquare,
+  Plus,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Users,
+  Zap,
+} from '../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface UserDashboardData {
   userId: string;
@@ -108,8 +129,8 @@ export default function CandidateDashboardPage() {
     return (
       <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-gray-100 shadow-xl text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center text-xl mx-auto">
-            👤
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center mx-auto">
+            <Users size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
           </div>
           <h1 className="text-xl font-bold text-gray-900">Sign In Required</h1>
           <p className="text-xs text-gray-500 leading-relaxed">
@@ -138,18 +159,44 @@ export default function CandidateDashboardPage() {
       ? 'from-cyan-600 to-blue-500'
       : 'from-gray-700 to-gray-900';
 
-  const tierBadgeLabel =
-    data.isFounder
-      ? '👑 Founder'
-      : data.level === 'unlimited'
-      ? '⚡ Unlimited Bypass'
-      : data.level === 'premium'
-      ? '⭐ Full Premium'
-      : data.level === 'trusted'
-      ? '🛡️ Trusted Candidate'
-      : data.level === 'rising'
-      ? '🚀 Rising Member'
-      : 'Standard Member';
+  const renderTierBadge = () => {
+    if (data.isFounder) {
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Founder
+        </span>
+      );
+    }
+    if (data.level === 'unlimited') {
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <Zap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Unlimited Bypass
+        </span>
+      );
+    }
+    if (data.level === 'premium') {
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Full Premium
+        </span>
+      );
+    }
+    if (data.level === 'trusted') {
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Trusted Candidate
+        </span>
+      );
+    }
+    if (data.level === 'rising') {
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <Star size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="fill-[#0E9F6E] text-[#0E9F6E]" /> Rising Member
+        </span>
+      );
+    }
+    return <span>Standard Member</span>;
+  };
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-gray-900 font-sans selection:bg-[#2B4EE6]/15">
@@ -175,16 +222,16 @@ export default function CandidateDashboardPage() {
             {data.isFounder && (
               <Link
                 href="/admin"
-                className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-300 font-semibold hover:bg-amber-500/20 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-300 font-semibold hover:bg-amber-500/20 transition-colors inline-flex items-center gap-1.5"
               >
-                <span>👑</span> Founder Admin
+                <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Founder Admin
               </Link>
             )}
             <Link
               href="/employer/dashboard"
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
             >
-              <span>🏢</span> Employer Portal
+              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Employer Portal
             </Link>
             <Link
               href="/"
@@ -201,8 +248,14 @@ export default function CandidateDashboardPage() {
         {data.assignedRole && data.assignedRole !== 'Member' && (
           <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-purple-500/30 animate-fadeIn">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shrink-0">
-                {data.assignedRole.toLowerCase().includes('founder') ? '👑' : data.assignedRole.toLowerCase().includes('intern') ? '💼' : '🚀'}
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0">
+                {data.assignedRole.toLowerCase().includes('founder') ? (
+                  <Crown size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                ) : data.assignedRole.toLowerCase().includes('intern') ? (
+                  <Briefcase size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                ) : (
+                  <Zap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+                )}
               </div>
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-purple-200 font-bold">
@@ -220,8 +273,8 @@ export default function CandidateDashboardPage() {
               </div>
             </div>
             {data.quotaBypass && (
-              <div className="px-3.5 py-1.5 rounded-xl bg-amber-400/20 border border-amber-300/40 text-amber-200 text-xs font-semibold shrink-0">
-                ⚡ Unlimited AI Access Enabled
+              <div className="px-3.5 py-1.5 rounded-xl bg-amber-400/20 border border-amber-300/40 text-amber-200 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5">
+                <Zap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Unlimited AI Access Enabled
               </div>
             )}
           </div>
@@ -237,7 +290,7 @@ export default function CandidateDashboardPage() {
             <h1 className="text-2xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-2.5">
               <span>Your Candidate Dashboard</span>
               <span className={`text-xs px-3 py-1 rounded-full font-bold text-white bg-gradient-to-r ${tierColor} shadow-xs`}>
-                {tierBadgeLabel}
+                {renderTierBadge()}
               </span>
             </h1>
             <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
@@ -248,15 +301,15 @@ export default function CandidateDashboardPage() {
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <button
               onClick={() => setFeedbackModalOpen(true)}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-2xl transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-2xl transition-colors inline-flex items-center gap-2"
             >
-              <span>💬</span> Submit Feedback / Bug
+              <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Submit Feedback / Bug
             </button>
             <Link
               href="/govt-exams"
-              className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl transition-colors inline-flex items-center gap-2"
             >
-              <span>🏛️</span> Govt Exams Hub
+              <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Govt Exams Hub
             </Link>
           </div>
         </div>
@@ -267,7 +320,7 @@ export default function CandidateDashboardPage() {
           <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                <span>📄</span> AI Tailored Resumes
+                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> AI Tailored Resumes
               </span>
               <span className="text-[11px] text-gray-500 font-medium">Monthly Quota</span>
             </div>
@@ -296,7 +349,7 @@ export default function CandidateDashboardPage() {
           <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                <span>✉️</span> Recruiter Cold Emails
+                <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Recruiter Cold Emails
               </span>
               <span className="text-[11px] text-gray-500 font-medium">Monthly Quota</span>
             </div>
@@ -325,7 +378,7 @@ export default function CandidateDashboardPage() {
           <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                <span>👥</span> Qualified Referrals
+                <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Qualified Referrals
               </span>
               <span className="text-[11px] text-gray-500 font-medium">Lifetime Tier</span>
             </div>
@@ -340,7 +393,7 @@ export default function CandidateDashboardPage() {
               ></div>
             </div>
             <p className="text-[11px] text-gray-500">
-              10 ➔ Rising • 50 ➔ Trusted • 100 ➔ Lifetime Full Premium!
+              10 &rarr; Rising &bull; 50 &rarr; Trusted &bull; 100 &rarr; Lifetime Full Premium!
             </p>
           </div>
         </div>
@@ -350,7 +403,7 @@ export default function CandidateDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <span>🎁</span> Your Personal Referral Link
+                <Share2 size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} /> Your Personal Referral Link
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">
                 Share this link with classmates, colleagues, and job seekers to unlock permanent Premium perks.
@@ -373,13 +426,17 @@ export default function CandidateDashboardPage() {
                 onClick={copyRefLink}
                 className="flex-1 sm:flex-none px-4 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-2xl transition-colors shadow-xs shrink-0"
               >
-                {copiedRef ? '✓ Copied!' : 'Copy Link'}
+                {copiedRef ? (
+                  <span className="inline-flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} /> Copied!</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5"><Copy size={12} strokeWidth={ICON_STROKE_WIDTH} /> Copy Link</span>
+                )}
               </button>
               <button
                 onClick={shareOnWhatsApp}
                 className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-2xl transition-colors shadow-xs shrink-0 flex items-center justify-center gap-1.5"
               >
-                <span>💬</span> WhatsApp
+                <Share2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> WhatsApp
               </button>
             </div>
           </div>
@@ -390,7 +447,7 @@ export default function CandidateDashboardPage() {
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
             <div>
               <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <span>💬</span> My Feedback & Founder Responses
+                <MessageSquare size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} /> My Feedback &amp; Founder Responses
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">
                 Review your suggestions, bug reports, and official answers directly from Harshit Mishra (Founder).
@@ -398,15 +455,15 @@ export default function CandidateDashboardPage() {
             </div>
             <button
               onClick={() => setFeedbackModalOpen(true)}
-              className="text-xs text-[#2B4EE6] hover:text-[#1E3BBD] font-semibold flex items-center gap-1"
+              className="text-xs text-[#2B4EE6] hover:text-[#1E3BBD] font-semibold inline-flex items-center gap-1"
             >
-              + Send New Feedback
+              <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Send New Feedback
             </button>
           </div>
 
           {myFeedbacks.length === 0 ? (
             <div className="text-center py-10 space-y-2 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-              <span className="text-2xl">📝</span>
+              <MessageSquare size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto text-gray-400" />
               <p className="text-xs text-gray-500 font-medium">You haven't submitted any feedback or bug reports yet.</p>
               <button
                 onClick={() => setFeedbackModalOpen(true)}
@@ -424,10 +481,20 @@ export default function CandidateDashboardPage() {
                       <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
                         {item.type}
                       </span>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                         item.status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {item.status === 'resolved' ? '✓ Resolved' : '● In Review'}
+                        {item.status === 'resolved' ? (
+                          <>
+                            <BadgeCheck size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                            <span>Resolved</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                            <span>In Review</span>
+                          </>
+                        )}
                       </span>
                     </div>
                     <span className="text-[11px] text-gray-400">
@@ -444,7 +511,7 @@ export default function CandidateDashboardPage() {
                     <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-4 space-y-1.5 animate-fadeIn">
                       <div className="flex items-center justify-between text-xs font-bold text-blue-900">
                         <span className="flex items-center gap-1.5">
-                          <span>👑</span> Official Reply from Harshit Mishra (Founder & CEO):
+                          <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Official Reply from Harshit Mishra (Founder &amp; CEO):
                         </span>
                         <span className="text-[10px] text-blue-600 font-normal">
                           {item.replied_at ? new Date(item.replied_at).toLocaleDateString() : ''}
@@ -455,8 +522,8 @@ export default function CandidateDashboardPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-gray-500 italic">
-                      ⏳ Under review by founder. You will receive an official in-app reply here once reviewed.
+                    <div className="text-[11px] text-gray-500 italic flex items-center gap-1">
+                      <Clock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Under review by founder. You will receive an official in-app reply here once reviewed.
                     </div>
                   )}
                 </div>

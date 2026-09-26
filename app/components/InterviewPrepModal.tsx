@@ -1,6 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  HelpCircle,
+  Mic,
+  Sparkles,
+  Target,
+  X,
+} from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface InterviewPrepModalProps {
   isOpen: boolean;
@@ -49,21 +57,22 @@ export default function InterviewPrepModal({ isOpen, onClose, job, resumeText }:
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+          aria-label="Close modal"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         {/* Header */}
         <div className="mb-4">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold mb-2">
-            <span>🎙️</span> AI Interview Simulator
+            <Mic size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> AI Interview Simulator
           </div>
           <h2 className="text-lg font-bold text-gray-900">
             Interview Prep Kit: {job.title}
           </h2>
           <p className="text-xs text-gray-500">
-            {job.company} • Tailored to your resume & target role requirements
+            {job.company} • Tailored to your resume &amp; target role requirements
           </p>
         </div>
 
@@ -94,21 +103,24 @@ export default function InterviewPrepModal({ isOpen, onClose, job, resumeText }:
             <div className="flex bg-gray-100 p-1 rounded-xl text-xs font-semibold mb-4">
               <button
                 onClick={() => setActiveTab('technical')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${activeTab === 'technical' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 ${activeTab === 'technical' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
               >
-                💡 Technical Q&A ({prepData.technicalQuestions?.length || 0})
+                <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Technical Q&amp;A ({prepData.technicalQuestions?.length || 0})</span>
               </button>
               <button
                 onClick={() => setActiveTab('behavioral')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${activeTab === 'behavioral' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 ${activeTab === 'behavioral' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
               >
-                🎯 Behavioral & STAR ({prepData.behavioralQuestions?.length || 0})
+                <Target size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Behavioral &amp; STAR ({prepData.behavioralQuestions?.length || 0})</span>
               </button>
               <button
                 onClick={() => setActiveTab('reverse')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${activeTab === 'reverse' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 ${activeTab === 'reverse' ? 'bg-white shadow-xs text-purple-700' : 'text-gray-600'}`}
               >
-                ❓ Questions to Ask ({prepData.reverseInterviewQuestions?.length || 0})
+                <HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Questions to Ask ({prepData.reverseInterviewQuestions?.length || 0})</span>
               </button>
             </div>
 

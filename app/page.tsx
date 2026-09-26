@@ -20,6 +20,32 @@ import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
 import type { WalkInJob } from './api/walkins/route';
 import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  BadgeCheck,
+  Bookmark,
+  Building2,
+  Check,
+  Compass,
+  Copy,
+  Crown,
+  FileText,
+  Footprints,
+  Info,
+  Landmark,
+  LocateFixed,
+  Lock,
+  Mail,
+  Mic,
+  Printer,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  X,
+} from './components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from './lib/iconRules';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -122,7 +148,7 @@ export default function JobDashboard() {
           ? `${match.district}, ${match.state}`
           : match.state;
         setLocationQuery(detectedName);
-        setLocationToast(`📍 Location detected: ${detectedName}`);
+        setLocationToast(`Location detected: ${detectedName}`);
         setTimeout(() => setLocationToast(''), 4000);
       },
       () => {
@@ -832,7 +858,8 @@ export default function JobDashboard() {
                   : 'text-[#5B6478] hover:text-[#12172B]'
               }`}
             >
-              <span>★</span> Saved
+              <Bookmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Saved</span>
               {savedJobIds.length > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#FFFBEB] text-[#D97B0A] rounded border border-[#FDE68A]">
                   {savedJobIds.length}
@@ -851,7 +878,8 @@ export default function JobDashboard() {
                   : 'text-[#5B6478] hover:text-[#12172B]'
               }`}
             >
-              <span>🚶</span> Walk-Ins
+              <Footprints size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Walk-Ins</span>
               {walkins.length > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#F7F8FA] text-[#12172B] rounded border border-[#E4E7EC]">
                   {walkins.length}
@@ -880,28 +908,32 @@ export default function JobDashboard() {
               href="/govt-exams"
               className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
             >
-              <span>🏛️</span> Govt Exams
+              <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Govt Exams</span>
             </Link>
 
             <button
               onClick={() => setResumeBuilderOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden md:flex items-center gap-1"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden md:flex items-center gap-1.5"
             >
-              <span>📄</span> Resume Builder
+              <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Resume Builder</span>
             </button>
 
             <button
               onClick={() => setCareerGuidanceOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden lg:flex items-center gap-1"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden lg:flex items-center gap-1.5"
             >
-              <span>🧭</span> Guidance
+              <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Guidance</span>
             </button>
 
             <Link
               href="/employer/dashboard"
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
             >
-              <span>🏢</span> Employers
+              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <span>Employers</span>
             </Link>
 
             <button
@@ -928,9 +960,10 @@ export default function JobDashboard() {
             {accessStatus?.isFounder && (
               <Link
                 href="/admin"
-                className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded shadow-xs transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded shadow-xs transition-colors flex items-center gap-1.5"
               >
-                <span>👑</span> Admin
+                <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-amber-900" />
+                <span>Admin</span>
               </Link>
             )}
 
@@ -938,9 +971,10 @@ export default function JobDashboard() {
             {user && (
               <Link
                 href="/dashboard"
-                className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/10 hover:bg-[#2B4EE6]/20 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/10 hover:bg-[#2B4EE6]/20 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1.5"
               >
-                <span>👤</span> Dashboard
+                <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <span>Dashboard</span>
               </Link>
             )}
 
@@ -1017,12 +1051,13 @@ export default function JobDashboard() {
               <div className="flex items-center justify-center gap-2 mb-2 text-xs text-[#5B6478]">
                 <span>Top employers sourced daily:</span>
                 {locationQuery ? (
-                  <span className="px-2 py-0.5 rounded bg-white border border-[#2B4EE6]/30 text-[11px] font-medium text-[#2B4EE6]">
-                    📍 {locationQuery}
+                  <span className="px-2 py-0.5 rounded bg-white border border-[#2B4EE6]/30 text-[11px] font-medium text-[#2B4EE6] inline-flex items-center gap-1">
+                    <LocateFixed size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>{locationQuery}</span>
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded bg-white border border-[#E4E7EC] text-[11px] font-medium text-[#5B6478]">
-                    🇮🇳 Pan-India
+                    Pan-India
                   </span>
                 )}
               </div>
@@ -1044,7 +1079,7 @@ export default function JobDashboard() {
 
             {/* Candidate Testimonial */}
             <div className="inline-flex items-center gap-2.5 p-3 bg-white border border-[#E4E7EC] rounded-md text-xs text-[#5B6478] max-w-xl mx-auto text-left">
-              <span className="text-sm text-[#0E9F6E] shrink-0">✓</span>
+              <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
               <p className="text-xs leading-relaxed">
                 “Applied direct to Amazon via NicheHire and interviewed within 48 hours. Zero recruiter spam or aggregator ghosting.” <span className="font-semibold text-[#12172B]">— Senior Product Analyst, India</span>
               </p>
@@ -1089,7 +1124,7 @@ export default function JobDashboard() {
                 <div className="space-y-3.5">
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 relative">
-                      <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
+                      <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-3 text-[#5B6478]" />
                       <input
                         type="text"
                         placeholder="Job title, department, or role (e.g. Product Manager, Financial Analyst, Software Engineer)..."
@@ -1101,7 +1136,7 @@ export default function JobDashboard() {
                     </div>
 
                     <div className="flex-1 relative flex items-center">
-                      <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">📍</span>
+                      <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-3 text-[#5B6478]" />
                       <input
                         type="text"
                         placeholder="Location (e.g. Bangalore, Delhi NCR, Mumbai, or Remote)..."
@@ -1117,7 +1152,8 @@ export default function JobDashboard() {
                         className="absolute right-1.5 top-1.5 px-2.5 py-1 text-[11px] font-medium text-[#2B4EE6] hover:bg-[#2B4EE6]/10 rounded border border-[#2B4EE6]/20 transition-colors flex items-center gap-1"
                         title="Detect your current city"
                       >
-                        <span>🎯</span> {isDetectingLoc ? 'Detecting...' : 'Detect'}
+                        <LocateFixed size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                        <span>{isDetectingLoc ? 'Detecting...' : 'Detect'}</span>
                       </button>
                     </div>
 
@@ -1133,14 +1169,14 @@ export default function JobDashboard() {
                   {locationToast && (
                     <div className="text-xs text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 px-3 py-1.5 rounded flex items-center justify-between gap-1.5">
                       <span className="flex items-center gap-1.5">
-                        <span>📍</span>
+                        <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                         <span>{locationToast}</span>
                       </span>
                       <button
                         onClick={() => setLocationToast('')}
                         className="text-[#5B6478] hover:text-[#12172B] text-xs font-semibold"
                       >
-                        ✕
+                        <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                       </button>
                     </div>
                   )}
@@ -1197,7 +1233,8 @@ export default function JobDashboard() {
                           : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                       }`}
                     >
-                      <span>🛡️</span> Direct Portals Only
+                      <ShieldCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>Direct Portals Only</span>
                     </button>
                   </div>
 
@@ -1266,8 +1303,8 @@ export default function JobDashboard() {
                       className="hidden"
                     />
 
-                    <div className="w-12 h-12 rounded bg-white border border-[#E4E7EC] text-[#2B4EE6] flex items-center justify-center text-xl mx-auto mb-3">
-                      📄
+                    <div className="w-12 h-12 rounded bg-white border border-[#E4E7EC] text-[#2B4EE6] flex items-center justify-center mx-auto mb-3">
+                      <FileText size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
                     </div>
 
                     <h3 className="text-base font-semibold text-[#12172B]">
@@ -1292,7 +1329,8 @@ export default function JobDashboard() {
                     <div className="p-3.5 bg-white border border-[#0E9F6E]/40 rounded flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div>
                         <div className="font-semibold text-[#12172B] flex items-center gap-1.5">
-                          <span className="text-[#0E9F6E]">✓</span> Profile analyzed: {parsedProfile.role || 'Software Engineer'} ({parsedProfile.experienceLevel || 'Mid-Level'})
+                          <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+                          <span>Profile analyzed: {parsedProfile.role || 'Software Engineer'} ({parsedProfile.experienceLevel || 'Mid-Level'})</span>
                         </div>
                         <div className="text-[11px] text-[#5B6478] mt-0.5">
                           {parsedProfile.skills?.slice(0, 6).join(', ')}
@@ -1300,16 +1338,17 @@ export default function JobDashboard() {
                       </div>
                       <button
                         onClick={() => fetchJobs(parsedProfile.role, parsedProfile.location)}
-                        className="px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors shrink-0"
+                        className="px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors shrink-0 flex items-center gap-1"
                       >
-                        View matched openings ➔
+                        <span>View matched openings</span>
+                        <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                       </button>
                     </div>
                   )}
 
                   {/* Privacy Guarantee Trust Note */}
                   <div className="p-3 bg-[#F7F8FA] border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
-                    <span className="text-sm text-[#0E9F6E]">🔒</span>
+                    <Lock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0 mt-0.5" />
                     <div>
                       <strong className="text-[#12172B]">100% In-memory privacy guarantee:</strong> Your resume text is parsed temporarily to calculate match scores and search parameters. We never store, sell, or broadcast your personal data to external recruiters.
                     </div>
@@ -1317,7 +1356,7 @@ export default function JobDashboard() {
 
                   {/* Apply Chances Methodology Explainer */}
                   <div className="p-3 bg-white border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
-                    <span className="text-sm text-[#2B4EE6]">ℹ️</span>
+                    <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0 mt-0.5" />
                     <div>
                       <strong className="text-[#12172B]">How Apply Chances scoring works:</strong> We evaluate skill overlap (50%), experience alignment (25%), education (20%), and role relevance (5%):
                       <div className="flex flex-wrap gap-2 mt-1.5">
@@ -1421,7 +1460,8 @@ export default function JobDashboard() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#E4E7EC]">
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0] mb-1">
-                    <span>🏢</span> Direct Corporate Portals
+                    <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Direct Corporate Portals</span>
                   </div>
                   <h2 className="text-lg font-semibold text-[#12172B]">
                     Curated Direct Company Portals &amp; Openings
@@ -1439,7 +1479,7 @@ export default function JobDashboard() {
 
               {/* Truth-in-Advertising Disclosure */}
               <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-lg text-xs text-blue-900 flex items-start gap-2">
-                <span className="text-sm shrink-0">ℹ️</span>
+                <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-blue-700 shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-relaxed text-blue-800">
                   <strong>Direct Portal Directory:</strong> The opportunities below link straight to each employer&apos;s verified career portal. Job availability, requirements, and live status are managed directly on the respective company website.
                 </p>
@@ -1475,7 +1515,7 @@ export default function JobDashboard() {
           <div className="bg-white p-4 rounded-md border border-[#E4E7EC] mb-6 space-y-3">
             <div className="flex flex-col md:flex-row gap-2.5">
               <div className="flex-1 relative">
-                <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">🔍</span>
+                <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-2.5 text-[#5B6478]" />
                 <input
                   type="text"
                   placeholder="Job title, keywords, or role..."
@@ -1487,7 +1527,7 @@ export default function JobDashboard() {
               </div>
 
               <div className="flex-1 relative">
-                <span className="absolute left-3.5 top-2.5 text-[#5B6478] text-sm">📍</span>
+                <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-2.5 text-[#5B6478]" />
                 <input
                   type="text"
                   placeholder="City, state, or Remote..."
@@ -1618,7 +1658,8 @@ export default function JobDashboard() {
                   verifiedOnly ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]' : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
-                <span>🛡️</span> Verified Portals Only
+                <ShieldCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Verified Portals Only</span>
               </button>
 
               {/* Startups Toggle */}
@@ -1632,7 +1673,7 @@ export default function JobDashboard() {
                   isStartupOnly ? 'bg-[#12172B] text-white' : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
-                <span>🚀</span> Startups
+                <span>Startups</span>
               </button>
 
               {/* Reset */}
@@ -1702,12 +1743,12 @@ export default function JobDashboard() {
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-md bg-white border-[#E4E7EC]">
               {activeTab === 'saved' ? (
                 <>
-                  <div className="w-10 h-10 rounded bg-[#FFFBEB] text-[#D97B0A] flex items-center justify-center text-base mb-2 border border-[#FDE68A]">
-                    ★
+                  <div className="w-10 h-10 rounded bg-[#FFFBEB] text-[#D97B0A] flex items-center justify-center mb-2 border border-[#FDE68A]">
+                    <Bookmark size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
                   </div>
                   <h3 className="text-sm font-semibold text-[#12172B]">No saved jobs yet</h3>
                   <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
-                    Save jobs to compare them here → Click the star icon (☆) on any verified role to add it to your shortlist.
+                    Save jobs to compare them here → Click the bookmark icon on any verified role to add it to your shortlist.
                   </p>
                   <button
                     onClick={() => {
@@ -1721,8 +1762,8 @@ export default function JobDashboard() {
                 </>
               ) : activeTab === 'walkins' ? (
                 <>
-                  <div className="w-10 h-10 rounded bg-[#F7F8FA] text-[#12172B] flex items-center justify-center text-base mb-2 border border-[#E4E7EC]">
-                    🚶
+                  <div className="w-10 h-10 rounded bg-[#F7F8FA] text-[#12172B] flex items-center justify-center mb-2 border border-[#E4E7EC]">
+                    <Footprints size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#12172B]" />
                   </div>
                   <h3 className="text-sm font-semibold text-[#12172B]">No walk-in drives found</h3>
                   <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
@@ -1737,7 +1778,9 @@ export default function JobDashboard() {
                 </>
               ) : (
                 <>
-                  <div className="text-2xl mb-2 text-[#5B6478]">🔍</div>
+                  <div className="w-10 h-10 rounded bg-[#F7F8FA] text-[#5B6478] flex items-center justify-center mb-2 border border-[#E4E7EC]">
+                    <Search size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#5B6478]" />
+                  </div>
                   <h3 className="text-sm font-semibold text-[#12172B]">No jobs match your current filters</h3>
                   <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
                     Try widening your filters (e.g. choose Any Age or All Modes).
@@ -1803,16 +1846,17 @@ export default function JobDashboard() {
                   <span className="font-semibold text-[#12172B] text-xs">{selectedJob.company}</span>
                   {selectedJob.isVerified && (
                     <span className="px-1.5 py-0.5 text-[11px] font-medium rounded text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] inline-flex items-center gap-1">
-                      <svg className="w-3 h-3 text-[#0E9F6E]" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                      </svg>
+                      <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                       Verified Direct
                     </span>
                   )}
                 </div>
                 <h2 className="text-lg font-semibold text-[#12172B] leading-snug">{selectedJob.title}</h2>
                 <p className="text-xs text-[#5B6478] mt-1 flex flex-wrap items-center gap-1.5">
-                  <span>📍 {selectedJob.location}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <LocateFixed size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>{selectedJob.location}</span>
+                  </span>
                   <span className="text-[#E4E7EC]">•</span>
                   <span>{selectedJob.workMode}</span>
                   <span className="text-[#E4E7EC]">•</span>
@@ -1826,7 +1870,7 @@ export default function JobDashboard() {
                 onClick={() => setSelectedJob(null)}
                 className="w-8 h-8 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] flex items-center justify-center text-[#5B6478] hover:text-[#12172B] transition-colors"
               >
-                ✕
+                <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
 
@@ -1840,18 +1884,26 @@ export default function JobDashboard() {
                   rel="noreferrer"
                   className="flex-1 py-2.5 px-5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded text-center transition-colors flex items-center justify-center gap-1.5"
                 >
-                  Apply on company portal ↗
+                  <span>Apply on company portal</span>
+                  <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 </a>
 
                 <button
                   onClick={() => toggleSaveJob(selectedJob.id)}
                   className={`px-3 py-2 rounded border text-xs font-medium transition-colors ${
                     savedJobIds.includes(selectedJob.id)
-                      ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
+                      ? 'bg-blue-50/60 text-[#2B4EE6] border-blue-200'
                       : 'border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B]'
                   }`}
                 >
-                  {savedJobIds.includes(selectedJob.id) ? '★ Saved' : '☆ Save'}
+                  <span className="flex items-center gap-1.5">
+                    <Bookmark
+                      size={ICON_SIZES.inline}
+                      strokeWidth={ICON_STROKE_WIDTH}
+                      className={savedJobIds.includes(selectedJob.id) ? 'fill-[#2B4EE6] text-[#2B4EE6]' : 'text-[#5B6478]'}
+                    />
+                    <span>{savedJobIds.includes(selectedJob.id) ? 'Saved' : 'Save'}</span>
+                  </span>
                 </button>
 
                 <button
@@ -1866,24 +1918,27 @@ export default function JobDashboard() {
                     }
                     setActiveOutreachJob(selectedJob);
                   }}
-                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors cursor-pointer"
+                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  ✉️ Email HR
+                  <Mail size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Email HR</span>
                 </button>
 
                 <button
                   onClick={() => handleTailorResume(selectedJob)}
                   disabled={tailorMap[selectedJob.id]?.loading}
-                  className="px-3 py-2 rounded border border-[#2B4EE6]/40 bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 text-xs font-medium text-[#2B4EE6] transition-colors cursor-pointer"
+                  className="px-3 py-2 rounded border border-[#2B4EE6]/40 bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 text-xs font-medium text-[#2B4EE6] transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  {tailorMap[selectedJob.id]?.loading ? 'Tailoring…' : '✨ Tailor CV'}
+                  <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>{tailorMap[selectedJob.id]?.loading ? 'Tailoring…' : 'Tailor CV'}</span>
                 </button>
 
                 <button
                   onClick={() => setActivePrepJob(selectedJob)}
-                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors"
+                  className="px-3 py-2 rounded border border-[#E4E7EC] hover:bg-[#F7F8FA] text-xs font-medium text-[#12172B] transition-colors flex items-center gap-1.5"
                 >
-                  🎙️ Prep
+                  <Mic size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Prep</span>
                 </button>
               </div>
 
@@ -1892,7 +1947,7 @@ export default function JobDashboard() {
                 <div className="p-4 bg-[#F7F8FA] rounded-md border border-[#2B4EE6]/30 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">✨</span>
+                      <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
                       <span className="text-xs font-bold text-[#12172B]">AI Tailored Resume</span>
                       <span className="px-1.5 py-0.2 text-[10px] bg-[#2B4EE6]/10 text-[#2B4EE6] rounded font-semibold">
                         ATS Optimized
@@ -1900,9 +1955,10 @@ export default function JobDashboard() {
                     </div>
                     <button
                       onClick={() => closeTailor(selectedJob.id)}
-                      className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-200"
+                      className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-200 flex items-center gap-1"
                     >
-                      ✕ Close
+                      <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>Close</span>
                     </button>
                   </div>
 
@@ -1931,15 +1987,17 @@ export default function JobDashboard() {
                             navigator.clipboard.writeText(tailorMap[selectedJob.id]?.text || '');
                             alert('Tailored resume copied!');
                           }}
-                          className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded text-xs font-medium text-[#12172B]"
+                          className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded text-xs font-medium text-[#12172B] flex items-center gap-1.5"
                         >
-                          📋 Copy Text
+                          <Copy size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Copy Text</span>
                         </button>
                         <button
                           onClick={() => handlePrintPdf(tailorMap[selectedJob.id]?.text || '', selectedJob.title)}
-                          className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded text-xs font-medium shadow-2xs"
+                          className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded text-xs font-medium shadow-2xs flex items-center gap-1.5"
                         >
-                          🖨️ Print / Download PDF
+                          <Printer size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Print / Download PDF</span>
                         </button>
                       </div>
                     </div>
@@ -1991,8 +2049,9 @@ export default function JobDashboard() {
                         <span className="text-[11px] font-medium text-[#12172B] block mb-1">Your matched skills:</span>
                         <div className="flex flex-wrap gap-1">
                           {rec.matchedSkills.map((s) => (
-                            <span key={s} className="px-2 py-0.5 bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] rounded text-[11px] font-medium">
-                              ✓ {s}
+                            <span key={s} className="px-2 py-0.5 bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] rounded text-[11px] font-medium inline-flex items-center gap-1">
+                              <Check size={11} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                              <span>{s}</span>
                             </span>
                           ))}
                         </div>
@@ -2028,7 +2087,8 @@ export default function JobDashboard() {
                       rel="noreferrer"
                       className="text-xs text-[#2B4EE6] hover:underline font-medium flex items-center gap-1"
                     >
-                      View on official portal ↗
+                      <span>View on official portal</span>
+                      <ArrowUpRight size={12} strokeWidth={ICON_STROKE_WIDTH} />
                     </a>
                   )}
                 </div>
@@ -2072,7 +2132,8 @@ export default function JobDashboard() {
                 The verified career platform engineered to eliminate ghost jobs. Sourced directly from official enterprise career portals and tier-1 ATS feeds under 7 days old.
               </p>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ECFDF5] text-[#0E9F6E] text-[11px] font-medium border border-[#A7F3D0]">
-                <span>✓</span> 100% Genuine Direct Portal Guarantee
+                <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                <span>100% Genuine Direct Portal Guarantee</span>
               </div>
             </div>
 
@@ -2080,7 +2141,7 @@ export default function JobDashboard() {
               <h4 className="font-semibold text-[#12172B] text-xs">For job seekers</h4>
               <ul className="space-y-1.5 text-[#5B6478]">
                 <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-[#2B4EE6]">Browse verified jobs</button></li>
-                <li><Link href="/govt-exams" className="hover:text-[#2B4EE6] font-medium text-[#2B4EE6] flex items-center gap-1"><span>🏛️</span> Govt Exams Calendar</Link></li>
+                <li><Link href="/govt-exams" className="hover:text-[#2B4EE6] font-medium text-[#2B4EE6] flex items-center gap-1"><Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>Govt Exams Calendar</span></Link></li>
                 <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-[#2B4EE6]">Offline &amp; walk-in openings</button></li>
                 <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#2B4EE6]">AI resume matcher</button></li>
                 <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-[#2B4EE6]">How to apply direct</button></li>
@@ -2100,8 +2161,8 @@ export default function JobDashboard() {
             <div className="space-y-2">
               <h4 className="font-semibold text-[#12172B] text-xs">For employers</h4>
               <ul className="space-y-1.5 text-[#5B6478]">
-                <li><Link href="/employer/dashboard" className="font-semibold text-[#2B4EE6] hover:underline">🏢 Employer Portal &amp; Login</Link></li>
-                <li><button onClick={() => setPostJobOpen(true)} className="hover:underline font-medium text-[#2B4EE6]">Post a verified role ➔</button></li>
+                <li><Link href="/employer/dashboard" className="font-semibold text-[#2B4EE6] hover:underline flex items-center gap-1"><Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>Employer Portal &amp; Login</span></Link></li>
+                <li><button onClick={() => setPostJobOpen(true)} className="hover:underline font-medium text-[#2B4EE6] flex items-center gap-1"><span>Post a verified role</span> <ArrowUpRight size={12} strokeWidth={ICON_STROKE_WIDTH} /></button></li>
                 <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Employer pricing &amp; plans</Link></li>
                 <li><Link href="/pricing" className="hover:text-[#2B4EE6]">Greenhouse &amp; Lever sync</Link></li>
                 <li><button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#2B4EE6]">Recruiter support</button></li>

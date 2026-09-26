@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { AccessResult } from '../types/premium';
+import { Crown, Star, Sparkles, ShieldCheck, Zap } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface UserTierBadgeProps {
   access: AccessResult;
@@ -10,6 +12,8 @@ interface UserTierBadgeProps {
 }
 
 export default function UserTierBadge({ access, onClick, compact = false }: UserTierBadgeProps) {
+  const iconSize = compact ? 13 : ICON_SIZES.inline;
+
   // 1. Founder Badge
   if (access.level === 'unlimited' && access.badge === 'founder') {
     return (
@@ -20,7 +24,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
         }`}
         title="Founder Account — Full Unmetered System Access"
       >
-        <span>👑</span>
+        <Crown size={iconSize} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-600 shrink-0" />
         <span>Founder</span>
         {!compact && (
           <span className="px-1.5 py-0.2 text-[9px] bg-amber-500/20 text-amber-800 rounded font-semibold">
@@ -41,7 +45,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
         }`}
         title="Founder Referral Override — Unlimited Access"
       >
-        <span>⚡</span>
+        <Zap size={iconSize} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
         <span>Unlimited</span>
         {!compact && (
           <span className="px-1.5 py-0.2 text-[9px] bg-emerald-100 text-emerald-800 rounded font-semibold">
@@ -62,7 +66,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
         }`}
         title="NicheHire Premium Member"
       >
-        <span>💎</span>
+        <Sparkles size={iconSize} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
         <span>Premium</span>
       </button>
     );
@@ -78,7 +82,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
         }`}
         title="Trusted Member (50+ Referrals) — Gold Name & HR Email Drafts"
       >
-        <span>🟡</span>
+        <ShieldCheck size={iconSize} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
         <span className="bg-gradient-to-r from-amber-700 to-yellow-600 bg-clip-text text-transparent">
           Trusted
         </span>
@@ -91,27 +95,30 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
     return (
       <button
         onClick={onClick}
-        className={`inline-flex items-center gap-1 font-semibold rounded-full transition-all bg-blue-50 text-blue-700 border border-blue-200 shadow-xs hover:border-blue-300 ${
+        className={`inline-flex items-center gap-1.5 font-semibold rounded-full transition-all bg-emerald-50 text-[#0E9F6E] border border-emerald-200 shadow-xs hover:border-emerald-300 ${
           compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         }`}
         title="Rising Member (10+ Referrals) — Star Badge & Job Match %"
       >
-        <span>⭐</span>
+        <Star
+          size={iconSize}
+          strokeWidth={ICON_STROKE_WIDTH}
+          className="fill-[#0E9F6E] text-[#0E9F6E] shrink-0"
+        />
         <span>Rising</span>
       </button>
     );
   }
 
-  // 6. Default Member
+  // 6. Default Member: Text-only styled label (no icon per Icon System rules)
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1 font-medium rounded-full transition-all bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300 ${
+      className={`inline-flex items-center font-medium rounded-full transition-all bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300 ${
         compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
       }`}
       title="Member — Invite friends or subscribe to unlock Premium"
     >
-      <span>🌱</span>
       <span>Member</span>
     </button>
   );

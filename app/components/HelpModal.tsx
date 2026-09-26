@@ -1,5 +1,8 @@
 'use client';
 
+import { X, HelpCircle } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
+
 interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,7 +18,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
     },
     {
       q: 'How do I get a 90%+ Match Score?',
-      a: 'Click "✦ Tailor Resume with AI" on any job card. Gemini rewrites your bullet points to emphasize relevant achievements and mirror the keywords the employer’s ATS scanner searches for, while keeping your experience 100% truthful.'
+      a: 'Click "Tailor Resume with AI" on any job card. Gemini rewrites your bullet points to emphasize relevant achievements and mirror the keywords the employer’s ATS scanner searches for, while keeping your experience 100% truthful.'
     },
     {
       q: 'What platforms does NicheHire scrape?',
@@ -38,12 +41,13 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         <div className="mb-5">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-2">
-            <span>💡</span> Help & User Guide
+            <HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            <span>Help &amp; User Guide</span>
           </div>
           <h2 className="text-lg font-bold text-gray-900">How to Win with NicheHire</h2>
           <p className="text-xs text-gray-500">Tips, tricks, and answers to get hired 3x faster</p>

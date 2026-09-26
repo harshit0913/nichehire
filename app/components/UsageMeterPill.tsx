@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { ArrowRight } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface UsageMeterPillProps {
   remaining: number;
@@ -56,9 +58,10 @@ export default function UsageMeterPill({
       {(isLow || isExhausted) && onUpgradeClick && (
         <button
           onClick={onUpgradeClick}
-          className="text-xs font-semibold text-[#2B4EE6] hover:underline"
+          className="text-xs font-semibold text-[#2B4EE6] hover:underline inline-flex items-center gap-1"
         >
-          Unlock More ➔
+          <span>Unlock More</span>
+          <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
       )}
     </div>

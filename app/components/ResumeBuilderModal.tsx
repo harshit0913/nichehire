@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { ResumeData, BulletDiffReview, StrengthenQuestion } from '../types/resumeBuilder';
+import { FileText, Printer, X, Sparkles, Target, AlertTriangle, Check, HelpCircle } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface ResumeBuilderModalProps {
   isOpen: boolean;
@@ -159,7 +161,7 @@ export default function ResumeBuilderModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#E4E7EC] flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
-            <span className="text-xl">📄</span>
+            <FileText size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
             <div>
               <h2 className="text-base font-bold text-[#12172B]">NicheHire Resume Builder</h2>
               <p className="text-xs text-[#5B6478]">
@@ -176,7 +178,7 @@ export default function ResumeBuilderModal({
                   activeTab === 'editor' ? 'bg-white shadow-xs text-[#12172B]' : 'text-[#5B6478]'
                 }`}
               >
-                ✏️ Form Editor
+                Form Editor
               </button>
               <button
                 onClick={() => setActiveTab('preview')}
@@ -184,7 +186,7 @@ export default function ResumeBuilderModal({
                   activeTab === 'preview' ? 'bg-white shadow-xs text-[#12172B]' : 'text-[#5B6478]'
                 }`}
               >
-                👁️ Live Preview
+                Live Preview
               </button>
             </div>
 
@@ -192,14 +194,15 @@ export default function ResumeBuilderModal({
               onClick={handlePrint}
               className="px-3 py-1.5 text-xs font-semibold text-[#12172B] bg-[#F7F8FA] hover:bg-[#E4E7EC] border border-[#E4E7EC] rounded-lg transition-colors flex items-center gap-1.5"
             >
-              <span>🖨️</span> Print / PDF
+              <Printer size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+              <span>Print / PDF</span>
             </button>
 
             <button
               onClick={onClose}
               className="text-[#5B6478] hover:text-[#12172B] text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F8FA]"
             >
-              ✕
+              <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
             </button>
           </div>
         </div>
@@ -216,7 +219,8 @@ export default function ResumeBuilderModal({
             <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#12172B] flex items-center gap-1.5">
-                  <span>✨</span> AI-Assisted Editing (Anti-Hallucination)
+                  <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  <span>AI-Assisted Editing (Anti-Hallucination)</span>
                 </span>
                 <span className="text-[10px] text-blue-700 bg-blue-100 font-semibold px-2 py-0.5 rounded">
                   11 actions/mo cap
@@ -231,7 +235,7 @@ export default function ResumeBuilderModal({
                   disabled={isAiLoading}
                   className="flex-1 py-1.5 px-3 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>🪄</span>
+                  <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>{isAiLoading ? 'Analyzing...' : 'AI Polish (Reword 1:1)'}</span>
                 </button>
                 <button
@@ -239,7 +243,7 @@ export default function ResumeBuilderModal({
                   disabled={isAiLoading}
                   className="flex-1 py-1.5 px-3 text-xs font-semibold text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>🎯</span>
+                  <Target size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>Strengthen Gaps</span>
                 </button>
               </div>
@@ -499,9 +503,9 @@ export default function ResumeBuilderModal({
                 </div>
                 <button
                   onClick={() => setShowDiffModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-lg"
+                  className="text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                 >
-                  ✕
+                  <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </button>
               </div>
 
@@ -517,7 +521,7 @@ export default function ResumeBuilderModal({
 
                     {rev.flaggedFabrications.length > 0 && (
                       <div className="p-2 bg-amber-50 text-amber-800 rounded border border-amber-200 text-[11px] font-medium flex items-center gap-1.5">
-                        <span>⚠️</span>
+                        <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-800 shrink-0" />
                         <span>Potential new terms detected: {rev.flaggedFabrications.join(', ')}</span>
                       </div>
                     )}
@@ -532,7 +536,14 @@ export default function ResumeBuilderModal({
                             : 'bg-[#2B4EE6] text-white hover:bg-[#1E3BBD]'
                         }`}
                       >
-                        {rev.status === 'accepted' ? '✓ Accepted' : 'Accept Change'}
+                        {rev.status === 'accepted' ? (
+                          <span className="flex items-center gap-1">
+                            <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-700" />
+                            <span>Accepted</span>
+                          </span>
+                        ) : (
+                          'Accept Change'
+                        )}
                       </button>
                     </div>
                   </div>
@@ -564,9 +575,9 @@ export default function ResumeBuilderModal({
                 </div>
                 <button
                   onClick={() => setShowStrengthenModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-lg"
+                  className="text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                 >
-                  ✕
+                  <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </button>
               </div>
 
@@ -574,7 +585,10 @@ export default function ResumeBuilderModal({
                 {strengthenQuestions.map((q) => (
                   <div key={q.bulletIndex} className="p-3 bg-[#F7F8FA] rounded-lg border border-[#E4E7EC] space-y-2">
                     <p className="text-xs text-[#5B6478] italic">"{q.originalBullet}"</p>
-                    <p className="text-xs font-bold text-[#2B4EE6]">❓ {q.question}</p>
+                    <p className="text-xs font-bold text-[#2B4EE6] flex items-center gap-1.5">
+                      <HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>{q.question}</span>
+                    </p>
                     <input
                       type="text"
                       placeholder="e.g. improved speed by 30%, handled 50,000 daily requests..."

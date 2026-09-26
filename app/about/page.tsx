@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ArrowRight, Check } from '../components/icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 export const metadata: Metadata = {
   title: 'About & Verification Engine — How NicheHire Guarantees Genuine Jobs',
@@ -39,9 +41,10 @@ export default function AboutPage() {
             </Link>
             <Link
               href="/pricing"
-              className="px-3.5 py-1.5 text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
+              className="px-3.5 py-1.5 text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors inline-flex items-center gap-1"
             >
-              Post a job ➔
+              <span>Post a job</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </Link>
           </nav>
         </div>
@@ -84,8 +87,9 @@ export default function AboutPage() {
               <p className="text-xs text-[#5B6478] leading-relaxed">
                 We do not re-scrape third-party aggregator sites. Instead, our automated engine queries official enterprise ATS infrastructure (Greenhouse, Lever, SAP SuccessFactors, Workday) and directly scrapes verified corporate career portals (such as Google, Microsoft, Amazon, Tata Group, Vercel, and Stripe).
               </p>
-              <div className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-2.5 py-1.5 rounded border border-[#A7F3D0]">
-                ✓ Every apply link directs straight to the employer&apos;s authenticated domain.
+              <div className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-2.5 py-1.5 rounded border border-[#A7F3D0] flex items-center gap-1.5">
+                <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+                <span>Every apply link directs straight to the employer&apos;s authenticated domain.</span>
               </div>
             </div>
 
@@ -98,8 +102,9 @@ export default function AboutPage() {
               <p className="text-xs text-[#5B6478] leading-relaxed">
                 Most job boards keep postings alive for 90 to 180 days to artificially inflate listing counts. On NicheHire, if a job is more than 7 days old, it is automatically purged from the index. You only spend your energy applying to jobs where hiring teams are actively reviewing candidates.
               </p>
-              <div className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-2.5 py-1.5 rounded border border-[#A7F3D0]">
-                ✓ Filter by 6h, 12h, 24h, or 3 days with real timestamps.
+              <div className="text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] px-2.5 py-1.5 rounded border border-[#A7F3D0] flex items-center gap-1.5">
+                <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+                <span>Filter by 6h, 12h, 24h, or 3 days with real timestamps.</span>
               </div>
             </div>
 
@@ -112,8 +117,9 @@ export default function AboutPage() {
               <p className="text-xs text-[#5B6478] leading-relaxed">
                 When you search for jobs in a city (like Bangalore, Delhi NCR, or Mumbai), other platforms flood you with irrelevant jobs worldwide. Our deterministic geographic hierarchy prioritizes jobs in: Local City → District → State Hubs → State → India → Global Remote.
               </p>
-              <div className="text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 px-2.5 py-1.5 rounded border border-[#2B4EE6]/20">
-                ✓ See local openings first without wading through international spam.
+              <div className="text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 px-2.5 py-1.5 rounded border border-[#2B4EE6]/20 flex items-center gap-1.5">
+                <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
+                <span>See local openings first without wading through international spam.</span>
               </div>
             </div>
 
@@ -126,8 +132,9 @@ export default function AboutPage() {
               <p className="text-xs text-[#5B6478] leading-relaxed">
                 Job seekers will never be charged a single rupee on NicheHire. We strictly prohibit fake employment offers, WhatsApp interview redirects, security deposit requests, and pyramid schemes. Any employer submitting a role must authenticate via a verified corporate domain.
               </p>
-              <div className="text-[11px] font-medium text-[#12172B] bg-[#F7F8FA] px-2.5 py-1.5 rounded border border-[#E4E7EC]">
-                ✓ 100% Free for candidates, always.
+              <div className="text-[11px] font-medium text-[#12172B] bg-[#F7F8FA] px-2.5 py-1.5 rounded border border-[#E4E7EC] flex items-center gap-1.5">
+                <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#12172B] shrink-0" />
+                <span>100% Free for candidates, always.</span>
               </div>
             </div>
           </div>
@@ -178,9 +185,10 @@ export default function AboutPage() {
             </div>
             <Link
               href="/"
-              className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
+              className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors inline-flex items-center gap-1"
             >
-              Try resume match ➔
+              <span>Try resume match</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </Link>
           </div>
 
@@ -207,9 +215,10 @@ export default function AboutPage() {
           <div className="flex flex-wrap justify-center gap-3 pt-1">
             <Link
               href="/"
-              className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors"
+              className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-medium text-xs rounded transition-colors inline-flex items-center gap-1"
             >
-              Explore live jobs ➔
+              <span>Explore live jobs</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </Link>
             <Link
               href="/pricing"

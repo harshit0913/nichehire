@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { X, MessageSquare, Sparkles, AlertTriangle, Check, Crown } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -89,12 +91,13 @@ export default function FeedbackModal({ isOpen, onClose, userId: propUserId, use
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         <div className="mb-4">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mb-2">
-            <span>💬</span> Your Feedback
+            <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            <span>Your Feedback</span>
           </div>
           <h2 className="text-lg font-bold text-gray-900">Help Us Make NicheHire Better</h2>
           <p className="text-xs text-gray-500">Share your thoughts, feature requests, or report an issue.</p>
@@ -102,7 +105,13 @@ export default function FeedbackModal({ isOpen, onClose, userId: propUserId, use
 
         {submitted ? (
           <div className={`py-6 px-4 text-center rounded-xl border ${bugBountyWon ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
-            <div className="text-2xl mb-1.5">{bugBountyWon ? '🎉 🛡️' : '✓'}</div>
+            <div className="mb-2 flex justify-center">
+              {bugBountyWon ? (
+                <Crown size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-500" />
+              ) : (
+                <Check size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-600" />
+              )}
+            </div>
             <p className="text-xs font-bold">{successText}</p>
             {bugBountyWon && (
               <p className="text-[11px] text-amber-700 mt-1">
@@ -116,30 +125,33 @@ export default function FeedbackModal({ isOpen, onClose, userId: propUserId, use
               <button
                 type="button"
                 onClick={() => setType('feature')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${type === 'feature' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${type === 'feature' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'}`}
               >
-                💡 Feature Idea
+                <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Feature Idea</span>
               </button>
               <button
                 type="button"
                 onClick={() => setType('bug')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${type === 'bug' ? 'bg-white shadow-xs text-rose-600' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${type === 'bug' ? 'bg-white shadow-xs text-rose-600' : 'text-gray-600'}`}
               >
-                🐞 Bug Report
+                <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-rose-600" />
+                <span>Bug Report</span>
               </button>
               <button
                 type="button"
                 onClick={() => setType('general')}
-                className={`flex-1 py-1.5 rounded-lg transition-colors ${type === 'general' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'}`}
+                className={`flex-1 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${type === 'general' ? 'bg-white shadow-xs text-blue-600' : 'text-gray-600'}`}
               >
-                💭 Other
+                <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Other</span>
               </button>
             </div>
 
             {/* Bug Bounty Callout Banner */}
             {type === 'bug' && (
               <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 animate-fadeIn">
-                <span className="text-base leading-none mt-0.5">🎁</span>
+                <Crown size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-600 shrink-0 mt-0.5" />
                 <div className="leading-snug">
                   <span className="font-bold text-amber-950">Bug Bounty Reward:</span> Found an issue? Report it and automatically unlock <strong className="text-amber-950 underline decoration-amber-400">1 Week of Full NicheHire Premium</strong> on your account!
                 </div>
@@ -191,7 +203,19 @@ export default function FeedbackModal({ isOpen, onClose, userId: propUserId, use
               disabled={isSubmitting}
               className="w-full py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] disabled:bg-gray-300 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2"
             >
-              <span>{isSubmitting ? 'Sending...' : type === 'bug' ? '🐞 Submit Bug & Claim Premium' : 'Submit Feedback'}</span>
+              {isSubmitting ? (
+                <span>Sending...</span>
+              ) : type === 'bug' ? (
+                <>
+                  <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Submit Bug &amp; Claim Premium</span>
+                </>
+              ) : (
+                <>
+                  <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Submit Feedback</span>
+                </>
+              )}
             </button>
           </form>
         )}

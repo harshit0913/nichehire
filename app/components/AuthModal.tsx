@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { supabase } from '../supabase';
+import { X, Lock, ArrowRight } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -88,13 +90,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 mb-3 text-2xl">
-            ⚡
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 mb-3">
+            <Lock size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
           </div>
           <h2 className="text-xl font-bold text-gray-900">
             {mode === 'signup' ? 'Create your Account' : mode === 'magic' ? 'Sign in with Magic Link' : 'Welcome to NicheHire'}
@@ -207,10 +209,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             Hiring talent?{' '}
             <a
               href="/employer/dashboard"
-              className="text-[#2B4EE6] font-semibold hover:underline"
+              className="text-[#2B4EE6] font-semibold hover:underline inline-flex items-center gap-1"
               onClick={onClose}
             >
-              Go to Employer Portal &amp; Login ➔
+              <span>Go to Employer Portal &amp; Login</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
             </a>
           </p>
         </div>

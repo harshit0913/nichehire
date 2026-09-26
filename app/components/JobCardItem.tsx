@@ -1,6 +1,17 @@
 'use client';
 
 import React from 'react';
+import {
+  BadgeCheck,
+  Bookmark,
+  Sparkles,
+  X,
+  AlertTriangle,
+  Copy,
+  Printer,
+  ArrowUpRight,
+} from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 export type Job = {
   id: string;
@@ -100,13 +111,7 @@ export default function JobCardItem({
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] px-1.5 py-0.5 rounded"
                   title="Verified genuine direct corporate opening under 7 days old"
                 >
-                  <svg className="w-3 h-3 text-[#0E9F6E]" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   Verified
                 </span>
               )}
@@ -167,7 +172,8 @@ export default function JobCardItem({
             <>
               <span className="text-[#E4E7EC]">•</span>
               <span className="text-emerald-700 font-medium inline-flex items-center gap-1">
-                <span>✓</span> Direct Portal
+                <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+                <span>Direct Portal</span>
               </span>
             </>
           )}
@@ -230,15 +236,19 @@ export default function JobCardItem({
           {/* Bookmark / Save */}
           <button
             onClick={() => onToggleSave(job.id)}
-            className={`p-2 rounded border text-xs transition-colors ${
+            className={`p-2 rounded border text-xs transition-colors flex items-center justify-center ${
               isSaved
-                ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
+                ? 'bg-blue-50/60 text-[#2B4EE6] border-blue-200'
                 : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B] hover:border-[#5B6478]/40'
             }`}
             title={isSaved ? 'Remove from saved jobs' : 'Save job to dashboard'}
             aria-label={isSaved ? 'Remove from saved jobs' : 'Save job to dashboard'}
           >
-            {isSaved ? '★' : '☆'}
+            <Bookmark
+              size={ICON_SIZES.inline}
+              strokeWidth={ICON_STROKE_WIDTH}
+              className={isSaved ? 'fill-[#2B4EE6] text-[#2B4EE6]' : 'text-[#5B6478]'}
+            />
           </button>
 
           {/* View Details Drawer */}
@@ -253,9 +263,10 @@ export default function JobCardItem({
           <button
             onClick={() => onTailorResume(job)}
             disabled={tailor?.loading}
-            className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/30 hover:bg-[#2B4EE6]/10 rounded transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/30 hover:bg-[#2B4EE6]/10 rounded transition-colors whitespace-nowrap flex items-center gap-1.5"
           >
-            {tailor?.loading ? 'Tailoring…' : 'Tailor CV'}
+            <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            <span>{tailor?.loading ? 'Tailoring…' : 'Tailor CV'}</span>
           </button>
 
           {/* Direct Apply CTA */}
@@ -263,9 +274,10 @@ export default function JobCardItem({
             href={job.url || '#'}
             target="_blank"
             rel="noreferrer"
-            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap"
+            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap flex items-center gap-1"
           >
-            Apply ↗
+            <span>Apply</span>
+            <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
         </div>
       </div>
@@ -275,7 +287,7 @@ export default function JobCardItem({
         <div className="w-full mt-2 pt-3 border-t border-[#E4E7EC] space-y-3 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]/70">
             <div className="flex items-center gap-2">
-              <span className="text-base">✨</span>
+              <Sparkles size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
               <span className="text-xs font-bold text-[#12172B]">
                 AI Tailored Resume for {job.title}
               </span>
@@ -287,9 +299,10 @@ export default function JobCardItem({
               <button
                 type="button"
                 onClick={() => onCloseTailor(job.id)}
-                className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-100 transition-colors"
+                className="text-xs text-[#5B6478] hover:text-[#12172B] font-medium px-2 py-0.5 rounded hover:bg-gray-100 transition-colors flex items-center gap-1"
               >
-                ✕ Close
+                <X size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Close</span>
               </button>
             )}
           </div>
@@ -303,7 +316,7 @@ export default function JobCardItem({
 
           {tailor.error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-start gap-2">
-              <span>⚠️</span>
+              <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A] shrink-0 mt-0.5" />
               <div className="flex-1">{tailor.error}</div>
             </div>
           )}
@@ -322,18 +335,20 @@ export default function JobCardItem({
                       navigator.clipboard.writeText(tailor.text || '');
                       alert('Tailored resume copied to clipboard!');
                     }}
-                    className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded font-medium text-[#12172B] transition-colors"
+                    className="px-3 py-1.5 bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] rounded font-medium text-[#12172B] transition-colors flex items-center gap-1.5"
                   >
-                    📋 Copy Resume
+                    <Copy size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Copy Resume</span>
                   </button>
 
                   {onPrintPdf && (
                     <button
                       type="button"
                       onClick={() => onPrintPdf(tailor.text || '', job.title)}
-                      className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded font-medium transition-colors shadow-2xs"
+                      className="px-3 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded font-medium transition-colors shadow-2xs flex items-center gap-1.5"
                     >
-                      🖨️ Print / Download PDF
+                      <Printer size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>Print / Download PDF</span>
                     </button>
                   )}
                 </div>

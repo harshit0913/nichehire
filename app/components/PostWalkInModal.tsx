@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { X, Footprints, Check } from './icons';
+import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
 interface PostWalkInModalProps {
   isOpen: boolean;
@@ -81,12 +83,13 @@ export default function PostWalkInModal({ isOpen, onClose, onSuccess }: PostWalk
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
         >
-          ✕
+          <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
         </button>
 
         <div className="mb-4">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold mb-2">
-            <span>🚶</span> Community Walk-Ins
+            <Footprints size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            <span>Community Walk-Ins</span>
           </div>
           <h2 className="text-lg font-bold text-gray-900">Post an Offline / Walk-In Opening</h2>
           <p className="text-xs text-gray-500">
@@ -105,8 +108,9 @@ export default function PostWalkInModal({ isOpen, onClose, onSuccess }: PostWalk
         )}
 
         {successMsg && (
-          <div className="p-4 mb-3 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl font-semibold text-center">
-            ✓ {successMsg}
+          <div className="p-4 mb-3 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl font-semibold text-center flex items-center justify-center gap-1.5">
+            <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-700" />
+            <span>{successMsg}</span>
           </div>
         )}
 
