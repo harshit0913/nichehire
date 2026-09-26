@@ -307,7 +307,12 @@ export default function EmployerDashboardPage() {
           contactEmail: workEmail.trim(),
           contactPhone: phone.trim(),
           planAmount: selectedPlanAmount,
-          planName: selectedPlanAmount === 1999 ? 'Growth Bundle (5 Posts)' : 'Featured #1 Placement',
+          planName:
+            selectedPlanAmount === 4999
+              ? 'Enterprise 30-Day Campaign'
+              : selectedPlanAmount === 1999
+              ? 'Growth Bundle (5 Posts)'
+              : 'Featured #1 Placement',
           utrNumber: utrNumber.trim(),
           screenshotData,
         }),
@@ -327,7 +332,12 @@ export default function EmployerDashboardPage() {
           id: data.paymentId || `pay-${Date.now()}`,
           company_name: companyName,
           plan_amount: selectedPlanAmount,
-          plan_name: selectedPlanAmount === 1999 ? 'Growth Bundle' : 'Featured Placement',
+          plan_name:
+            selectedPlanAmount === 4999
+              ? 'Enterprise Campaign'
+              : selectedPlanAmount === 1999
+              ? 'Growth Bundle'
+              : 'Featured Placement',
           utr_number: utrNumber.trim(),
           status: 'pending',
           created_at: new Date().toISOString(),
@@ -785,9 +795,9 @@ export default function EmployerDashboardPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-gray-500 font-medium">Select Plan:</span>
-                  {[499, 1999].map((amt) => (
+                  {[499, 1999, 4999].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => setSelectedPlanAmount(amt)}
@@ -797,7 +807,11 @@ export default function EmployerDashboardPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {amt === 499 ? 'Featured (#1 Placement) - ₹499' : 'Growth (5 Posts) - ₹1,999'}
+                      {amt === 499
+                        ? 'Featured (#1 Placement) - ₹499'
+                        : amt === 1999
+                        ? 'Growth (5 Posts) - ₹1,999'
+                        : 'Enterprise (30-Day) - ₹4,999'}
                     </button>
                   ))}
                 </div>

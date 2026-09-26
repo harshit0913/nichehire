@@ -22,6 +22,7 @@ import type { WalkInJob } from './api/walkins/route';
 import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowUpRight,
   BadgeCheck,
   Bookmark,
@@ -37,7 +38,9 @@ import {
   LocateFixed,
   Lock,
   Mail,
+  Menu,
   Mic,
+  Plus,
   Printer,
   Search,
   ShieldCheck,
@@ -79,6 +82,7 @@ export default function JobDashboard() {
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [careerGuidanceOpen, setCareerGuidanceOpen] = useState(false);
   const [resumeBuilderOpen, setResumeBuilderOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Access & Quota Status
   const [accessStatus, setAccessStatus] = useState<any>({
@@ -961,7 +965,8 @@ export default function JobDashboard() {
               }}
               className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
             >
-              <span>+</span> Walk-In
+              <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+              <span>Walk-In</span>
             </button>
 
             <button
@@ -1004,7 +1009,7 @@ export default function JobDashboard() {
 
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#5B6478] hidden md:inline">{user.email}</span>
+                <span className="text-xs text-[#5B6478] hidden md:inline truncate max-w-[140px]">{user.email}</span>
                 <button
                   onClick={handleSignOut}
                   className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-[#F7F8FA] hover:bg-[#E4E7EC] border border-[#E4E7EC] rounded transition-colors"
@@ -1020,8 +1025,100 @@ export default function JobDashboard() {
                 Sign In
               </button>
             )}
+
+            {/* Mobile Hamburger Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+              className="p-1.5 text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded border border-[#E4E7EC] lg:hidden transition-colors flex items-center justify-center"
+            >
+              {mobileMenuOpen ? (
+                <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
+              ) : (
+                <Menu size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-[#E4E7EC] bg-white px-4 py-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150 shadow-md">
+            <div className="grid grid-cols-2 gap-2 text-xs font-medium">
+              <button
+                onClick={() => {
+                  setActiveTab('all');
+                  setHasSearched(false);
+                  setMobileMenuOpen(false);
+                }}
+                className="p-2.5 rounded text-left bg-[#F7F8FA] hover:bg-[#E4E7EC] text-[#12172B] transition-colors"
+              >
+                All Jobs
+              </button>
+              <Link
+                href="/govt-exams"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded text-left bg-[#2B4EE6]/5 text-[#2B4EE6] hover:bg-[#2B4EE6]/10 transition-colors flex items-center gap-1.5 font-semibold"
+              >
+                <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <span>Govt &amp; CA Exams</span>
+              </Link>
+              <button
+                onClick={() => {
+                  setResumeBuilderOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+              >
+                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <span>Resume Builder</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCareerGuidanceOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+              >
+                <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <span>Guidance</span>
+              </button>
+              <Link
+                href="/employer/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+              >
+                <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <span>Employer Portal</span>
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors"
+              >
+                Employer Pricing
+              </Link>
+            </div>
+            <div className="pt-2 border-t border-[#E4E7EC] flex items-center justify-between text-xs text-[#5B6478]">
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-[#12172B]"
+              >
+                4-Pillar Verification
+              </Link>
+              <button
+                onClick={() => {
+                  setFeedbackModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="hover:text-[#12172B]"
+              >
+                Feedback &amp; Bug Bounty
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── Initial Discovery State ("What are you looking for?") ── */}
@@ -2170,7 +2267,8 @@ export default function JobDashboard() {
               <ul className="space-y-1.5 text-[#5B6478]">
                 <li><Link href="/about" className="hover:text-[#2B4EE6]">4-Pillar verification engine</Link></li>
                 <li><Link href="/about" className="hover:text-[#2B4EE6]">Strict ≤ 7-day cutoff policy</Link></li>
-                <li><Link href="/about" className="hover:text-[#2B4EE6]">Anti-scam &amp; zero fees pledge</Link></li>
+                <li><Link href="/privacy" className="hover:text-[#2B4EE6]">Privacy Policy (DPDP Act)</Link></li>
+                <li><Link href="/terms" className="hover:text-[#2B4EE6]">Terms of Service</Link></li>
                 <li><Link href="/about" className="hover:text-[#2B4EE6]">About NicheHire</Link></li>
               </ul>
             </div>
@@ -2191,8 +2289,10 @@ export default function JobDashboard() {
             <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
             <div className="flex items-center gap-4">
               <Link href="/about" className="hover:text-[#12172B]">About</Link>
+              <Link href="/privacy" className="hover:text-[#12172B]">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-[#12172B]">Terms</Link>
               <Link href="/pricing" className="hover:text-[#12172B]">Pricing</Link>
-              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#12172B]">Contact</button>
+              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#12172B]">Contact / Feedback</button>
             </div>
           </div>
         </div>
@@ -2273,6 +2373,7 @@ export default function JobDashboard() {
         isOpen={postWalkInOpen}
         onClose={() => setPostWalkInOpen(false)}
         onSuccess={() => fetchWalkins()}
+        initialLocation={locationQuery}
       />
 
       <PostJobModal

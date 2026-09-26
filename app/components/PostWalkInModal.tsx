@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Footprints, Check } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
@@ -8,12 +8,13 @@ interface PostWalkInModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newWalkin: any) => void;
+  initialLocation?: string;
 }
 
-export default function PostWalkInModal({ isOpen, onClose, onSuccess }: PostWalkInModalProps) {
+export default function PostWalkInModal({ isOpen, onClose, onSuccess, initialLocation = '' }: PostWalkInModalProps) {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(initialLocation);
   const [timings, setTimings] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [description, setDescription] = useState('');
@@ -22,6 +23,12 @@ export default function PostWalkInModal({ isOpen, onClose, onSuccess }: PostWalk
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen && initialLocation && !location) {
+      setLocation(initialLocation);
+    }
+  }, [isOpen, initialLocation]);
 
   if (!isOpen) return null;
 

@@ -65,8 +65,16 @@ export default function PricingContent() {
             <span className="font-serif italic text-[#12172B]">No recurring retainers. Pay per role.</span>
           </h1>
           <p className="text-sm sm:text-base text-[#5B6478] leading-relaxed">
-            Avoid expensive monthly subscriptions before seeing verified results. Start with our <strong className="text-[#12172B] font-semibold">₹4,999 single-post tier</strong> or test our <strong className="text-[#12172B] font-semibold">free launch pilot</strong> to prove that our direct-portal model yields higher-intent engineering and product hires.
+            Avoid expensive monthly subscriptions before seeing verified results. Test our <strong className="text-[#12172B] font-semibold">free launch pilot</strong>, unlock an introductory <strong className="text-[#12172B] font-semibold">₹499 featured direct placement</strong>, or scale with our <strong className="text-[#12172B] font-semibold">growth bundles</strong> with zero platform surcharge via direct bank UPI.
           </p>
+          <div className="pt-1 flex justify-center">
+            <Link
+              href="/employer/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors"
+            >
+              <span>Instant Bank UPI: ₹499 Featured &amp; ₹1,999 Growth Bundles in Employer Workspace &rarr;</span>
+            </Link>
+          </div>
         </section>
 
         {/* Pricing Cards Grid */}

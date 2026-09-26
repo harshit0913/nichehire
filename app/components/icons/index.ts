@@ -33,6 +33,7 @@ export {
   LocateFixed,
   Lock,
   Mail,
+  Menu,
   MessageSquare,
   Mic,
   Plus,
