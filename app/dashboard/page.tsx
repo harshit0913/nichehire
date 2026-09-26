@@ -153,6 +153,9 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-gray-900 font-sans selection:bg-[#2B4EE6]/15">
+      <head>
+        <meta name="robots" content="noindex, nofollow" />
+      </head>
       {/* Top Navbar */}
       <header className="border-b border-gray-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

@@ -399,56 +399,107 @@ export default function EmployerDashboardPage() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Onboarding Banner if not signed in */}
-        {!employerUser && (
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-7 shadow-sm border border-indigo-900/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-            <div className="space-y-1.5 max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-400/20">
-                <span>🏢</span> Official Recruiter & Employer Onboarding
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">
-                Create your verified Employer Account
-              </h2>
-              <p className="text-xs text-indigo-200/90 leading-relaxed">
-                Register with your official corporate work email to publish vacancies, review applicant resumes, inspect AI match scores, and hire verified finance &amp; tech professionals with zero middlemen.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <button
-                onClick={() => setEmployerAuthModalOpen(true)}
-                className="w-full md:w-auto px-5 py-2.5 bg-white hover:bg-gray-100 text-indigo-900 font-bold text-xs rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                <span>🏢</span> Register / Sign In Company
-              </button>
-            </div>
-          </div>
-        )}
+        <head>
+          <meta name="robots" content="noindex, nofollow" />
+        </head>
 
-        {/* Top Header Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              Recruiter & Employer Control Center
-            </h1>
-            <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
-              Publish genuine corporate openings, review real candidate applications, inspect structured resumes, and verify hiring transactions with 100% zero fake data guarantee.
-            </p>
+        {!employerUser ? (
+          /* Guest Recruiter Hub & Onboarding Screen (Zero Mock Shells) */
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-[#111827] via-[#1E1B4B] to-[#0F172A] rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-indigo-900/40 relative overflow-hidden">
+              <div className="max-w-2xl space-y-4 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/20">
+                  <span>🏢</span> Recruiter &amp; Corporate Workspace
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                  Hire verified Finance, Commerce &amp; Tech talent directly.
+                </h1>
+                <p className="text-sm text-indigo-200/90 leading-relaxed">
+                  Sign in or register your organization with corporate credentials to post verified vacancies, review candidate applications, and inspect AI fit scores. Zero middleman recruiter commissions.
+                </p>
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setEmployerAuthModalOpen(true)}
+                    className="px-6 py-3 bg-white text-indigo-950 hover:bg-gray-100 font-bold rounded-2xl text-xs transition-all shadow-md flex items-center gap-2"
+                  >
+                    <span>🏢</span> Sign In / Register Organization
+                  </button>
+                  <Link
+                    href="/pricing"
+                    className="px-5 py-3 bg-indigo-900/60 hover:bg-indigo-900 text-white font-semibold rounded-2xl text-xs transition-colors border border-indigo-700/50 flex items-center gap-1.5"
+                  >
+                    <span>⚡</span> View Employer Plans
+                  </Link>
+                  <Link
+                    href="/"
+                    className="px-4 py-3 bg-transparent hover:bg-white/10 text-indigo-200 font-medium rounded-2xl text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <span>←</span> Return to Job Board
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Value Pillars for Recruiters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                  ✓
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Zero Fake Applicants</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Every candidate application includes structured contact info, verified education details, and parsed resumes. Zero spam bot submissions.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                  🎯
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Objective AI Fit Match</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Our algorithm calculates candidate alignment against your exact job description, highlighting skills match and experience highlights instantly.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2B4EE6] flex items-center justify-center font-bold text-lg">
+                  ⚡
+                </div>
+                <h3 className="text-base font-bold text-gray-900">0% Platform Cut</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Pay transparently via direct bank UPI with ₹0 gateway surcharge. All applicant communication and hiring decisions remain 100% direct with you.
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
-              onClick={() => setActiveTab('payments')}
-              className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5"
-            >
-              <span>⚡</span> Zero-Fee UPI Payments
-            </button>
-            <button
-              onClick={() => setActiveTab('domains')}
-              className="flex-1 md:flex-none px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl border border-blue-100 transition-colors flex items-center justify-center gap-1.5"
-            >
-              <span>🌐</span> Free Domain Guide
-            </button>
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Top Header Card */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-1.5">
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+                  Recruiter &amp; Employer Control Center
+                </h1>
+                <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
+                  Publish genuine corporate openings, review real candidate applications, inspect structured resumes, and verify hiring transactions with 100% zero fake data guarantee.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>⚡</span> Direct UPI (0% Platform Surcharge)
+                </button>
+                <button
+                  onClick={() => setActiveTab('domains')}
+                  className="flex-1 md:flex-none px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl border border-blue-100 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>🌐</span> Free Domain Guide
+                </button>
+              </div>
+            </div>
 
         {/* Real Metric Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -984,6 +1035,8 @@ export default function EmployerDashboardPage() {
               </div>
             </div>
           </div>
+        )}
+          </>
         )}
       </main>
 

@@ -48,33 +48,8 @@ function detectWorkMode(location: string = '', title: string = '', description: 
 }
 
 function estimateApplicants(jobId: string, postedAt?: number, postedText?: string): { count: number; text: string } {
-  let hash = 0;
-  for (let i = 0; i < jobId.length; i++) {
-    hash = (hash << 5) - hash + jobId.charCodeAt(i);
-    hash |= 0;
-  }
-  const variance = Math.abs(hash) % 7;
-
-  const now = Date.now();
-  const diffHours = postedAt ? Math.floor(Math.max(0, now - postedAt) / (1000 * 60 * 60)) : 24;
-  const pText = (postedText || '').toLowerCase();
-
-  if (pText.includes('just now') || diffHours < 4) {
-    const count = 2 + (variance % 4);
-    return { count, text: `< 10 applicants • Be an early applicant` };
-  } else if (pText.includes('h ago') || diffHours < 12) {
-    const count = 6 + (variance % 5);
-    return { count, text: `${count} applicants • Early applicant` };
-  } else if (pText.includes('yesterday') || diffHours < 36) {
-    const count = 14 + variance * 2;
-    return { count, text: `${count} applicants` };
-  } else if (diffHours < 72 || pText.includes('2d') || pText.includes('3d')) {
-    const count = 28 + variance * 2;
-    return { count, text: `${count} applicants` };
-  } else {
-    const count = 42 + variance * 3;
-    return { count, text: `${count} applicants` };
-  }
+  // Never generate fake social-proof counts. Return honest direct portal availability.
+  return { count: 0, text: 'Direct Portal Link' };
 }
 
 const ADZUNA_COUNTRY_MAP: Record<string, string> = {

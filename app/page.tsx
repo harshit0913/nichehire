@@ -944,12 +944,14 @@ export default function JobDashboard() {
               </Link>
             )}
 
-            {/* User Tier Badge (Founder / Unlimited / Premium / Rising / Member) */}
-            <UserTierBadge
-              access={accessStatus}
-              onClick={() => setPremiumModalOpen(true)}
-              compact={true}
-            />
+            {/* User Tier Badge (Founder / Unlimited / Premium / Rising / Member) - Only for Authenticated Users */}
+            {user && (
+              <UserTierBadge
+                access={accessStatus}
+                onClick={() => setPremiumModalOpen(true)}
+                compact={true}
+              />
+            )}
 
             {user ? (
               <div className="flex items-center gap-2">
@@ -980,7 +982,7 @@ export default function JobDashboard() {
             {/* Top Verified Pill */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E4E7EC] text-xs text-[#5B6478]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
-              <span>Verified Roles Direct From 100+ Official Company Portals</span>
+              <span>Direct Links to Official Company Portals</span>
             </div>
 
             {/* Main Editorial Headline (Inter + Newsreader serif) */}
@@ -991,22 +993,22 @@ export default function JobDashboard() {
 
             {/* Sentence-case subhead */}
             <p className="text-sm sm:text-base text-[#5B6478] max-w-2xl mx-auto leading-relaxed">
-              Sourced straight from official corporate career sites (Google, Microsoft, Amazon, Tata, Stripe). Strictly <strong className="text-[#12172B] font-semibold">under 7 days old</strong> across Engineering, Finance, Operations, Design & Public Sector. Zero ghost jobs.
+              Direct access to official corporate career sites (Google, Microsoft, Amazon, Tata, Stripe) across Engineering, Finance, Operations, Design &amp; Public Sector exams. Zero aggregator ghost jobs.
             </p>
 
-            {/* Social Proof & Live Metrics Bar */}
+            {/* Direct Portal Highlights Bar (Truth in Advertising) */}
             <div className="pt-1 pb-1 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-[#5B6478]">
               <div className="inline-flex items-center gap-2 sm:gap-3 px-3.5 py-1.5 rounded-full bg-white border border-[#E4E7EC]">
                 <span className="flex items-center gap-1.5 font-medium text-[#12172B]">
                   <span className="w-2 h-2 rounded-full bg-[#0E9F6E]"></span>
-                  1,240 verified roles this week
+                  Direct Corporate Portals
                 </span>
                 <span className="text-[#E4E7EC]">•</span>
-                <span>48 added today</span>
+                <span>Zero Intermediaries</span>
                 <span className="text-[#E4E7EC] hidden sm:inline">•</span>
-                <span className="hidden sm:inline">≤ 7 days max age</span>
+                <span className="hidden sm:inline">100% Free for Candidates</span>
                 <span className="text-[#E4E7EC] hidden md:inline">•</span>
-                <span className="hidden md:inline">100% direct portals</span>
+                <span className="hidden md:inline">ATS-Optimized Guidance</span>
               </div>
             </div>
 
@@ -1339,9 +1341,9 @@ export default function JobDashboard() {
             <div id="how-it-works" className="pt-8 pb-2 text-left w-full space-y-4">
               <div className="text-center max-w-xl mx-auto space-y-1">
                 <span className="text-xs font-medium text-[#5B6478]">Why NicheHire</span>
-                <h2 className="text-2xl font-semibold text-[#12172B]">Engineered to eliminate ghost jobs</h2>
+                <h2 className="text-2xl font-semibold text-[#12172B]">Direct connection to verified career portals</h2>
                 <p className="text-xs text-[#5B6478]">
-                  Over 40% of listings on traditional aggregators are expired or fake. Here is how NicheHire guarantees 100% genuine opportunities.
+                  Many job seekers encounter expired, duplicate, or stale aggregator postings. Here is how NicheHire connects you directly to authentic corporate opportunities.
                 </p>
               </div>
 
@@ -1419,20 +1421,28 @@ export default function JobDashboard() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#E4E7EC]">
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0] mb-1">
-                    <span>✓</span> Today&apos;s live verified openings
+                    <span>🏢</span> Direct Corporate Portals
                   </div>
                   <h2 className="text-lg font-semibold text-[#12172B]">
-                    Direct from official company portals (≤ 7 days old)
+                    Curated Direct Company Portals &amp; Openings
                   </h2>
                   <p className="text-xs text-[#5B6478]">
-                    Verified authentic roles from Google, Microsoft, Amazon, Tata Group, Stripe &amp; 100+ direct enterprise feeds.
+                    Direct links to official corporate career sites (Google, Microsoft, Amazon, Tata Group, Stripe). Apply directly with zero intermediary aggregators.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-[#12172B] bg-[#F7F8FA] px-2.5 py-1 rounded border border-[#E4E7EC]">
-                    {INITIAL_VERIFIED_JOBS.length} Verified Roles
+                    {INITIAL_VERIFIED_JOBS.length} Curated Portals
                   </span>
                 </div>
+              </div>
+
+              {/* Truth-in-Advertising Disclosure */}
+              <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-lg text-xs text-blue-900 flex items-start gap-2">
+                <span className="text-sm shrink-0">ℹ️</span>
+                <p className="text-[11px] leading-relaxed text-blue-800">
+                  <strong>Direct Portal Directory:</strong> The opportunities below link straight to each employer&apos;s verified career portal. Job availability, requirements, and live status are managed directly on the respective company website.
+                </p>
               </div>
 
               <div className="space-y-3">

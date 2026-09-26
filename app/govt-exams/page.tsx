@@ -242,15 +242,16 @@ export default function GovtExamsPage() {
 
       // Check dates
       const endDate = new Date(exam.importantDates.applyEndDate);
-      const isPastDeadline = now > endDate;
+      const diffMs = endDate.getTime() - now.getTime();
+      const isPastDeadline = diffMs < 0;
 
       // Verification age check (14 days stale threshold)
       const verifiedDate = new Date(exam.lastVerifiedDate);
       const diffDays = Math.floor((now.getTime() - verifiedDate.getTime()) / (1000 * 60 * 60 * 24));
       const isVerificationPending = diffDays > 14;
 
-      // Days left
-      const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      // Exact day calculation: if within 24h of deadline, daysLeft is 0 (closing today)
+      const daysLeft = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       return {
         ...exam,
@@ -1452,6 +1453,14 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
               {isPastDeadline ? (
                 <span className="text-[11px] text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
                   Registration Closed
+                </span>
+              ) : daysLeft <= 0 ? (
+                <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded animate-pulse">
+                  ⚡ Closes Today! (Final Hours)
+                </span>
+              ) : daysLeft === 1 ? (
+                <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">
+                  ⚡ 1 day left (Closes Tomorrow)
                 </span>
               ) : daysLeft <= 7 ? (
                 <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">

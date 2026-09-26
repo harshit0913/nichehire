@@ -154,10 +154,23 @@ export default function JobCardItem({
             </>
           )}
 
-          <span className="text-[#E4E7EC]">•</span>
-          <span className="text-[#5B6478]">
-            {job.applicantText || (job.applicantCount ? `${job.applicantCount} applicants` : 'Early applicant')}
-          </span>
+          {typeof job.applicantCount === 'number' && job.source?.includes('Employer') && (
+            <>
+              <span className="text-[#E4E7EC]">•</span>
+              <span className="text-[#5B6478]">
+                {job.applicantCount === 0 ? 'Be first to apply' : `${job.applicantCount} applicants`}
+              </span>
+            </>
+          )}
+
+          {job.directPortal && (
+            <>
+              <span className="text-[#E4E7EC]">•</span>
+              <span className="text-emerald-700 font-medium inline-flex items-center gap-1">
+                <span>✓</span> Direct Portal
+              </span>
+            </>
+          )}
         </div>
 
         {/* Match Scoring Pill (Functional Traffic-Light Triad: Emerald / Amber / Coral) */}
@@ -222,8 +235,8 @@ export default function JobCardItem({
                 ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
                 : 'bg-white text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B] hover:border-[#5B6478]/40'
             }`}
-            title={isSaved ? 'Saved opportunity' : 'Save opportunity'}
-            aria-label="Save job"
+            title={isSaved ? 'Remove from saved jobs' : 'Save job to dashboard'}
+            aria-label={isSaved ? 'Remove from saved jobs' : 'Save job to dashboard'}
           >
             {isSaved ? '★' : '☆'}
           </button>

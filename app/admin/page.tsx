@@ -309,6 +309,9 @@ export default function FounderAdminPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans selection:bg-blue-500/20">
+      <head>
+        <meta name="robots" content="noindex, nofollow" />
+      </head>
       {/* Top Navigation */}
       <header className="border-b border-gray-800 bg-[#0E1424]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

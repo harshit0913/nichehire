@@ -60,7 +60,7 @@ export default function AboutPage() {
             <span className="font-serif italic text-[#12172B]">traditional job boards.</span>
           </h1>
           <p className="text-sm sm:text-base text-[#5B6478] leading-relaxed">
-            Over 40% of jobs listed on conventional aggregators are &ldquo;ghost jobs&rdquo; — expired postings, scraped duplicates, or vacancies filled weeks ago. NicheHire was engineered with one non-negotiable principle: <strong className="text-[#12172B] font-semibold">every job must be genuine, direct from the company portal, and under 7 days old.</strong>
+            Many job seekers on conventional aggregators struggle with &ldquo;ghost jobs&rdquo; — expired postings, scraped duplicates, or vacancies filled weeks ago. NicheHire was engineered with one non-negotiable principle: <strong className="text-[#12172B] font-semibold">direct navigation to official corporate portals, zero recruiter spam, and radical transparency.</strong>
           </p>
         </section>
 
