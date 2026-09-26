@@ -22,8 +22,8 @@ import {
 
 export default function GovtExamsPage() {
   // ─── Location & Proximity State ───────────────────────────────────────────
-  const [selectedState, setSelectedState] = useState<string>('Madhya Pradesh');
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('Indore');
+  const [selectedState, setSelectedState] = useState<string>('All India');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('All Districts');
   const [detectedLocation, setDetectedLocation] = useState<LocationMatch | null>(null);
   const [locationNoticeDismissed, setLocationNoticeDismissed] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -258,6 +258,23 @@ export default function GovtExamsPage() {
       // Category filter
       if (categoryFilter !== 'all' && e.category !== categoryFilter) return false;
 
+      // State & District filter for non-Central/non-PSU exams
+      if (selectedState !== 'All India') {
+        if (e.category === 'state' && e.state?.toLowerCase() !== selectedState.toLowerCase()) {
+          return false;
+        }
+        if (e.category === 'regional') {
+          if (e.state?.toLowerCase() !== selectedState.toLowerCase()) return false;
+          if (
+            selectedDistrict !== 'All Districts' &&
+            e.district &&
+            e.district.toLowerCase() !== selectedDistrict.toLowerCase()
+          ) {
+            return false;
+          }
+        }
+      }
+
       // Eligibility filter
       if (eligibilityOnly && e.eligibilityResult.status !== 'eligible' && e.eligibilityResult.status !== 'partially_eligible') {
         return false;
@@ -281,17 +298,44 @@ export default function GovtExamsPage() {
 
       return true;
     });
-  }, [evaluatedExams, categoryFilter, eligibilityOnly, selectedMonth, searchQuery]);
+  }, [evaluatedExams, categoryFilter, selectedState, selectedDistrict, eligibilityOnly, selectedMonth, searchQuery]);
 
   // ─── Hierarchical Grouping for Proximity View ──────────────────────────────
   const proximityGroups = useMemo(() => {
-    const regional = filteredExams.filter((e) => e.category === 'regional');
-    const state = filteredExams.filter((e) => e.category === 'state');
+    const isAllIndia = selectedState === 'All India';
+
+    // Tier 1: Regional & District Department Jobs
+    const regional = isAllIndia
+      ? []
+      : filteredExams.filter((e) => {
+          if (e.category !== 'regional') return false;
+          if (e.state?.toLowerCase() !== selectedState.toLowerCase()) return false;
+          if (
+            selectedDistrict !== 'All Districts' &&
+            e.district &&
+            e.district.toLowerCase() !== selectedDistrict.toLowerCase()
+          ) {
+            return false;
+          }
+          return true;
+        });
+
+    // Tier 2: State Government Jobs
+    const state = isAllIndia
+      ? []
+      : filteredExams.filter((e) => {
+          if (e.category !== 'state') return false;
+          return e.state?.toLowerCase() === selectedState.toLowerCase();
+        });
+
+    // Tier 3: Central Government Jobs (Always shown, 100% open all-India)
     const central = filteredExams.filter((e) => e.category === 'central');
+
+    // Tier 4: Public Sector Undertakings (PSUs) & Defense (Always shown, 100% open all-India)
     const psu = filteredExams.filter((e) => e.category === 'psu');
 
-    return { regional, state, central, psu };
-  }, [filteredExams]);
+    return { regional, state, central, psu, isAllIndia };
+  }, [filteredExams, selectedState, selectedDistrict]);
 
   // ─── Available Districts for Current State ─────────────────────────────────
   const availableDistricts = POPULAR_DISTRICTS_BY_STATE[selectedState] || ['All Districts'];
@@ -803,22 +847,52 @@ export default function GovtExamsPage() {
         {/* ─── View 1: Proximity Hierarchy Feed ─────────────────────────────── */}
         {activeView === 'hierarchy' && (
           <div className="space-y-8">
-            {/* Tier 1: Regional & District Department Openings */}
-            {(categoryFilter === 'all' || categoryFilter === 'regional') && (
+            {/* If All-India is selected, show an inviting prompt to pick a region */}
+            {proximityGroups.isAllIndia && (
+              <div className="p-5 bg-white border border-[#E4E7EC] rounded-md space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📍</span>
+                      <h3 className="text-sm font-semibold text-[#12172B]">
+                        Looking for Local Municipal or State PSC Jobs?
+                      </h3>
+                    </div>
+                    <p className="text-xs text-[#5B6478] leading-relaxed">
+                      Select your <strong>State &amp; District</strong> in the dropdown above (or tap <strong className="text-[#12172B]">Detect My Region</strong>) to reveal Nagar Nigam, Electricity Board, and State PSC openings for your area.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDetectLocation}
+                    disabled={isDetectingLocation}
+                    className="px-3.5 py-2 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap self-start sm:self-auto shrink-0 flex items-center gap-1.5"
+                  >
+                    <span>📍</span>
+                    <span>{isDetectingLocation ? 'Detecting...' : 'Detect My Region'}</span>
+                  </button>
+                </div>
+                <div className="pt-2 border-t border-[#E4E7EC] text-[11px] text-[#5B6478]">
+                  Currently displaying <strong>Major Central &amp; PSU Examinations</strong> (UPSC, SSC CGL/CHSL, Railways RRB, Banking, BHEL, IOCL, ISRO, DRDO) open to all students across India.
+                </div>
+              </div>
+            )}
+
+            {/* Tier 1: Regional & District Department Openings (Only when a specific state is chosen) */}
+            {!proximityGroups.isAllIndia && (categoryFilter === 'all' || categoryFilter === 'regional') && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#2B4EE6]"></span>
                       <h2 className="text-base font-semibold text-[#12172B]">
-                        Tier 1: Regional & District Department Openings
+                        Tier 1: Regional &amp; District Department Openings
                       </h2>
                       <span className="px-2 py-0.5 text-[10px] font-bold bg-[#2B4EE6]/10 text-[#2B4EE6] rounded border border-[#2B4EE6]/20">
-                        {selectedDistrict}, {selectedState}
+                        {selectedDistrict !== 'All Districts' ? `${selectedDistrict}, ` : ''}{selectedState}
                       </span>
                     </div>
                     <p className="text-xs text-[#5B6478] mt-0.5">
-                      Municipal Corporation (Nagar Nigam), Electricity Discoms, District Court Registries, and Local Development Authorities.
+                      Municipal Corporation (Nagar Nigam), Electricity Discoms, District Court Registries, and Local Development Authorities in {selectedState}.
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-[#12172B] bg-white px-2.5 py-1 rounded border border-[#E4E7EC]">
@@ -829,7 +903,7 @@ export default function GovtExamsPage() {
                 <div className="space-y-3">
                   {proximityGroups.regional.length === 0 ? (
                     <div className="p-6 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
-                      No active municipal or district department openings currently found for {selectedDistrict}. Check state-level openings below.
+                      No active municipal or district department openings currently verified in {selectedDistrict !== 'All Districts' ? selectedDistrict : selectedState}. Showing state-level openings below.
                     </div>
                   ) : (
                     proximityGroups.regional.map((exam) => (
@@ -845,22 +919,22 @@ export default function GovtExamsPage() {
               </section>
             )}
 
-            {/* Tier 2: State Government (PSC & ESB) */}
-            {(categoryFilter === 'all' || categoryFilter === 'state') && (
+            {/* Tier 2: State Government (PSC & ESB) (Only when a specific state is chosen) */}
+            {!proximityGroups.isAllIndia && (categoryFilter === 'all' || categoryFilter === 'state') && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#0E9F6E]"></span>
                       <h2 className="text-base font-semibold text-[#12172B]">
-                        Tier 2: State Government & Public Service Commissions
+                        Tier 2: State Government &amp; Public Service Commissions
                       </h2>
                       <span className="px-2 py-0.5 text-[10px] font-bold bg-[#ECFDF5] text-[#0E9F6E] rounded border border-[#A7F3D0]">
                         {selectedState} State Services
                       </span>
                     </div>
                     <p className="text-xs text-[#5B6478] mt-0.5">
-                      State Public Service Commission (PSC), Subordinate Staff Selection (ESB / Vyapam), and State Police recruitments.
+                      {selectedState} Public Service Commission (PSC), Subordinate Staff Selection, and State Police recruitments.
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-[#12172B] bg-white px-2.5 py-1 rounded border border-[#E4E7EC]">
@@ -869,14 +943,20 @@ export default function GovtExamsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {proximityGroups.state.map((exam) => (
-                    <ExamCardItem
-                      key={exam.id}
-                      exam={exam}
-                      onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
-                      onReport={() => setReportModalExam(exam)}
-                    />
-                  ))}
+                  {proximityGroups.state.length === 0 ? (
+                    <div className="p-6 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
+                      No state-specific PSC openings currently active for {selectedState}. All-India Central and PSU openings below are 100% open to applicants from {selectedState}.
+                    </div>
+                  ) : (
+                    proximityGroups.state.map((exam) => (
+                      <ExamCardItem
+                        key={exam.id}
+                        exam={exam}
+                        onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
+                        onReport={() => setReportModalExam(exam)}
+                      />
+                    ))
+                  )}
                 </div>
               </section>
             )}
