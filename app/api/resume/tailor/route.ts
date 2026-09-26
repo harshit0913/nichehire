@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { supabase } from '../../../supabase';
+import { hasUnlimitedAccess, checkUsageLimit } from '../../../lib/premiumTierEngine';
 
 const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
 
 const FALLBACK_MODELS = [
+  'gemini-1.5-flash',
   'gemini-flash-latest',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-3.7-flash'
+  'gemini-2.0-flash',
+  'gemini-1.5-pro'
 ];
 
 export async function POST(req: Request) {
   try {
-    const { resumeText, jobTitle, company, jobDescription } = await req.json();
+    const { resumeText, jobTitle, company, jobDescription, userId } = await req.json();
 
     if (!resumeText?.trim()) {
       return NextResponse.json({ error: 'Paste or upload your resume first.' }, { status: 400 });
@@ -27,6 +28,56 @@ export async function POST(req: Request) {
         { error: 'Resume tailoring is not configured. Add GOOGLE_API_KEY in your environment variables.' },
         { status: 500 }
       );
+    }
+
+    // ─── Quota & Founder Access Enforcement ──────────────────────────────────
+    // NOTE: Override is ALWAYS looked up server-side from database by userId, NEVER accepted from the request.
+    let isUnlimited = false;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('is_founder, tier')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const { data: override } = await supabase
+        .from('founder_overrides')
+        .select('access_level')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      isUnlimited = hasUnlimitedAccess(
+        { isFounder: profile?.is_founder || false },
+        override
+      );
+
+      if (!isUnlimited) {
+        const nowMonth = new Date().toISOString().slice(0, 7) + '-01';
+        const { data: usageRow } = await supabase
+          .from('premium_usage')
+          .select('tailored_resume_count')
+          .eq('user_id', userId)
+          .eq('period_start', nowMonth)
+          .maybeSingle();
+
+        const currentCount = usageRow?.tailored_resume_count || 0;
+        const usage = checkUsageLimit(
+          { isFounder: false, tier: profile?.tier || 'member' },
+          'tailored_resume',
+          currentCount,
+          override
+        );
+
+        if (!usage.allowed) {
+          return NextResponse.json(
+            {
+              error: 'Monthly limit reached (11/11 tailored resumes). Upgrade or earn referrals to unlock unlimited.',
+              remaining: 0,
+            },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -70,6 +121,27 @@ ${resumeText}`;
 
     if (!tailored) {
       throw lastError || new Error('All AI models failed to generate tailored resume.');
+    }
+
+    if (userId && !isUnlimited) {
+      const nowMonth = new Date().toISOString().slice(0, 7) + '-01';
+      try {
+        const { data: existingUsage } = await supabase
+          .from('premium_usage')
+          .select('tailored_resume_count')
+          .eq('user_id', userId)
+          .eq('period_start', nowMonth)
+          .maybeSingle();
+
+        const newCount = (existingUsage?.tailored_resume_count || 0) + 1;
+        await supabase.from('premium_usage').upsert({
+          user_id: userId,
+          period_start: nowMonth,
+          tailored_resume_count: newCount,
+        });
+      } catch (usageErr) {
+        console.warn('Could not increment premium usage count:', usageErr);
+      }
     }
 
     return NextResponse.json({ tailoredResume: tailored });

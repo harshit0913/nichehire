@@ -10,6 +10,11 @@ import HelpModal from './components/HelpModal';
 import FeedbackModal from './components/FeedbackModal';
 import PostWalkInModal from './components/PostWalkInModal';
 import PostJobModal from './components/PostJobModal';
+import UserTierBadge from './components/UserTierBadge';
+import PremiumUnlockModal from './components/PremiumUnlockModal';
+import CareerGuidanceModal from './components/CareerGuidanceModal';
+import ResumeBuilderModal from './components/ResumeBuilderModal';
+import UsageMeterPill from './components/UsageMeterPill';
 import JobCardItem, { Job, FitRecommendation, TailorState } from './components/JobCardItem';
 import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
@@ -44,6 +49,18 @@ export default function JobDashboard() {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [postWalkInOpen, setPostWalkInOpen] = useState(false);
   const [postJobOpen, setPostJobOpen] = useState(false);
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false);
+  const [careerGuidanceOpen, setCareerGuidanceOpen] = useState(false);
+  const [resumeBuilderOpen, setResumeBuilderOpen] = useState(false);
+
+  // Access & Quota Status
+  const [accessStatus, setAccessStatus] = useState<any>({
+    level: 'member',
+    quotaBypass: false,
+    badge: 'none',
+    remainingQuotas: { tailoredResumes: 11, hrEmailDrafts: 20 },
+    referralCount: 0,
+  });
 
   // Detailed Job View Drawer (LinkedIn Style)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -87,13 +104,33 @@ export default function JobDashboard() {
 
   // ─── Auth Lifecycle & Saved Jobs ───────────────────────────────────────────
 
+  const fetchAccessStatus = async (token?: string) => {
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch('/api/user/access-status', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setAccessStatus(data);
+      }
+    } catch {
+      // Ignore network errors
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.access_token) {
+        fetchAccessStatus(session.access_token);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.access_token) {
+        fetchAccessStatus(session.access_token);
+      }
     });
 
     try {
@@ -467,11 +504,18 @@ export default function JobDashboard() {
           jobTitle: job.title,
           company: job.company,
           jobDescription: job.description,
+          userId: user?.id,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to tailor resume');
+
+      // Refresh remaining quota
+      const session = await supabase.auth.getSession();
+      if (session.data.session?.access_token) {
+        fetchAccessStatus(session.data.session.access_token);
+      }
 
       setTailorMap((prev) => ({
         ...prev,
@@ -728,6 +772,20 @@ export default function JobDashboard() {
             </Link>
 
             <button
+              onClick={() => setResumeBuilderOpen(true)}
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden md:flex items-center gap-1"
+            >
+              <span>📄</span> Resume Builder
+            </button>
+
+            <button
+              onClick={() => setCareerGuidanceOpen(true)}
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden lg:flex items-center gap-1"
+            >
+              <span>🧭</span> Guidance
+            </button>
+
+            <button
               onClick={() => setPostJobOpen(true)}
               className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
             >
@@ -748,18 +806,18 @@ export default function JobDashboard() {
             </button>
 
             <button
-              onClick={() => setHelpModalOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden xl:inline"
-            >
-              Help
-            </button>
-
-            <button
               onClick={() => setFeedbackModalOpen(true)}
               className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden xl:inline"
             >
               Feedback
             </button>
+
+            {/* User Tier Badge (Founder / Unlimited / Premium / Rising / Member) */}
+            <UserTierBadge
+              access={accessStatus}
+              onClick={() => setPremiumModalOpen(true)}
+              compact={true}
+            />
 
             {user ? (
               <div className="flex items-center gap-2">
@@ -1830,6 +1888,38 @@ export default function JobDashboard() {
 
       <HelpModal isOpen={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
       <FeedbackModal isOpen={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
+
+      <PremiumUnlockModal
+        isOpen={premiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+        referralCount={accessStatus?.referralCount ?? 0}
+        referralCode={user?.id ? `REF-${user.id.slice(0, 8).toUpperCase()}` : 'REF-NICHE2026'}
+        isLoggedIn={!!user}
+        onLoginClick={() => {
+          setPremiumModalOpen(false);
+          setAuthModalOpen(true);
+        }}
+      />
+
+      <CareerGuidanceModal
+        isOpen={careerGuidanceOpen}
+        onClose={() => setCareerGuidanceOpen(false)}
+        userId={user?.id}
+        defaultResumeText={resumeText}
+        isLoggedIn={!!user}
+        onLoginClick={() => {
+          setCareerGuidanceOpen(false);
+          setAuthModalOpen(true);
+        }}
+        isUnlimited={accessStatus?.quotaBypass}
+      />
+
+      <ResumeBuilderModal
+        isOpen={resumeBuilderOpen}
+        onClose={() => setResumeBuilderOpen(false)}
+        userId={user?.id}
+        isLoggedIn={!!user}
+      />
 
       <PostWalkInModal
         isOpen={postWalkInOpen}
