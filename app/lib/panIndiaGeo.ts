@@ -308,8 +308,19 @@ export const PAN_INDIA_REGIONS: Record<string, StateInfo> = {
     code: 'SK',
     zone: 'Northeast',
     capital: 'Gangtok',
-    districts: ['Gangtok', 'Namchi', 'Gyalshing', 'Mangan'],
-    keyEmployers: ['Sikkim High Court', 'Sikkim PSC', 'Sun Pharma Sikkim', 'Cipla Sikkim', 'State Bank of India'],
+    districts: ['Gangtok', 'Namchi', 'Gyalshing', 'Mangan', 'Pakyong', 'Soreng', 'Rangpo', 'Singtam', 'Kumrek', 'Ranipool'],
+    keyEmployers: [
+      'Sikkim High Court',
+      'Sikkim PSC',
+      'Sun Pharma (Kumrek)',
+      'Cipla Limited (Rangpo)',
+      'Alkem Laboratories Sikkim',
+      'Glenmark Pharmaceuticals Sikkim',
+      'Torrent Pharmaceuticals Sikkim',
+      'State Bank of India',
+      'NHPC Teesta V',
+      'Sikkim Manipal University'
+    ],
   },
 };
 
@@ -324,6 +335,9 @@ export function resolvePanIndiaLocation(query: string): {
   matchedDistrict: string | null;
   nearbyClusters: string[];
   suggestedEmployers: string[];
+  zone?: string;
+  capital?: string;
+  districts?: string[];
 } {
   const q = (query || '').toLowerCase().trim();
   if (!q) {
@@ -333,6 +347,9 @@ export function resolvePanIndiaLocation(query: string): {
       matchedDistrict: null,
       nearbyClusters: ['Bangalore', 'Delhi NCR', 'Mumbai', 'Hyderabad', 'Pune'],
       suggestedEmployers: ['Google', 'Microsoft', 'Amazon', 'Tata Group', 'State Bank of India', 'Infosys'],
+      zone: 'National',
+      capital: 'New Delhi',
+      districts: [],
     };
   }
 
@@ -347,6 +364,9 @@ export function resolvePanIndiaLocation(query: string): {
         matchedDistrict: info.capital,
         nearbyClusters: info.districts.slice(0, 6),
         suggestedEmployers: info.keyEmployers,
+        zone: info.zone,
+        capital: info.capital,
+        districts: info.districts,
       };
     }
   }
@@ -363,6 +383,9 @@ export function resolvePanIndiaLocation(query: string): {
           matchedDistrict: d,
           nearbyClusters: others,
           suggestedEmployers: info.keyEmployers,
+          zone: info.zone,
+          capital: info.capital,
+          districts: info.districts,
         };
       }
     }
@@ -375,6 +398,9 @@ export function resolvePanIndiaLocation(query: string): {
     matchedDistrict: null,
     nearbyClusters: ['Bangalore', 'Delhi NCR', 'Mumbai', 'Hyderabad', 'Pune'],
     suggestedEmployers: ['Google', 'Microsoft', 'Amazon', 'Tata Group', 'State Bank of India', 'Infosys'],
+    zone: 'National',
+    capital: 'New Delhi',
+    districts: [],
   };
 }
 

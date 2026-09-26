@@ -38,23 +38,24 @@ export const ACADEMIC_DISCIPLINES: Record<string, DisciplineField> = {
   // ─── 2. MANAGEMENT & BUSINESS (BBA, BMS, MBA, PGDM) ────────────────────────
   management: {
     id: 'management',
-    name: 'Management, Business Administration & Marketing',
+    name: 'Management, Business Administration & Supply Chain',
     targetDegrees: [
       'BBA', 'BMS', 'BBS', 'MBA', 'PGDM', 'MMS', 'Master of Management', 'Diploma in Management'
     ],
     sampleRoles: [
       'Business Development Executive', 'Product Manager', 'Operations Manager',
-      'Digital Marketing Specialist', 'HR Generalist', 'Brand Manager',
-      'Management Consultant', 'Supply Chain Analyst', 'Sales Lead'
+      'Supply Chain Executive', 'Logistics Coordinator', 'Procurement Specialist',
+      'Inventory Manager', 'Warehouse Operations Lead', 'Digital Marketing Specialist',
+      'HR Generalist', 'Brand Manager', 'Management Consultant', 'Supply Chain Analyst', 'Sales Lead'
     ],
     coreSkills: [
-      'Business Strategy', 'Market Research & Analytics', 'Digital Marketing',
-      'SEO / SEM & Google Ads', 'Social Media Marketing', 'Sales Pipeline Management',
-      'Lead Generation & B2B Sales', 'CRM (Salesforce / HubSpot)', 'Supply Chain & Logistics',
-      'Operations Management', 'Vendor Management', 'HR Generalist',
-      'Talent Acquisition', 'Payroll & Statutory Compliance', 'Employee Engagement',
-      'P&L Management', 'Agile & Scrum Methodologies', 'Key Account Management',
-      'Performance Marketing', 'Budgeting & Forecasting'
+      'Supply Chain Management (SCM)', 'Logistics & Distribution', 'Inventory Control & Warehouse Operations',
+      'Procurement & Vendor Negotiation', 'ERP & SAP MM', 'Demand Planning & Forecasting',
+      'Business Strategy', 'Market Research & Analytics', 'Operations Management',
+      'Vendor Management', 'P&L Management', 'Digital Marketing', 'CRM (Salesforce / HubSpot)',
+      'Sales Pipeline Management', 'Lead Generation & B2B Sales', 'HR Generalist',
+      'Talent Acquisition', 'Payroll & Statutory Compliance', 'Agile & Scrum Methodologies',
+      'Budgeting & Forecasting'
     ],
   },
 
@@ -192,94 +193,124 @@ export const ACADEMIC_DISCIPLINES: Record<string, DisciplineField> = {
 /**
  * Detects the academic discipline of a job based on its title and description.
  */
-export function detectJobDiscipline(jobText: string): DisciplineField {
-  const low = jobText.toLowerCase();
+export function detectJobDiscipline(jobText: string, jobTitle?: string): DisciplineField {
+  const titleToCheck = (jobTitle || jobText.slice(0, 80)).toLowerCase();
+  const bodyToCheck = jobText.toLowerCase();
 
-  // 1. Law & Legal
-  if (
-    low.includes('legal') ||
-    low.includes('law') ||
-    low.includes('advocate') ||
-    low.includes('clerk') ||
-    low.includes('judicial') ||
-    low.includes('court') ||
-    low.includes('litigation') ||
-    low.includes('pleading') ||
-    low.includes('counsel')
-  ) {
-    return ACADEMIC_DISCIPLINES.law;
-  }
+  const matchDisciplineInText = (text: string): DisciplineField | null => {
+    // 1. Technology, Software & IT (BCA, MCA, B.Tech, Developers)
+    if (
+      text.includes('software') ||
+      text.includes('developer') ||
+      text.includes('frontend') ||
+      text.includes('backend') ||
+      text.includes('full stack') ||
+      text.includes('web development') ||
+      text.includes('react') ||
+      text.includes('next.js') ||
+      text.includes('python') ||
+      text.includes('cloud engineer') ||
+      text.includes('devops') ||
+      /\b(bca|mca|b\.tech|m\.tech|btech|mtech|dsa|cybersecurity)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.technology;
+    }
 
-  // 2. Healthcare & Medicine
-  if (
-    low.includes('doctor') ||
-    low.includes('mbbs') ||
-    low.includes('medical') ||
-    low.includes('clinical') ||
-    low.includes('pharma') ||
-    low.includes('nursing') ||
-    low.includes('patient') ||
-    low.includes('hospital')
-  ) {
-    return ACADEMIC_DISCIPLINES.healthcare;
-  }
+    // 2. Law & Legal Studies
+    if (
+      text.includes('legal') ||
+      text.includes('advocate') ||
+      text.includes('judicial') ||
+      text.includes('litigation') ||
+      text.includes('pleading') ||
+      text.includes('counsel') ||
+      /\b(law|llb|llm|court|clerk|ipc|crpc|cpc|bnss)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.law;
+    }
 
-  // 3. Commerce & Accounting
-  if (
-    low.includes('account') ||
-    low.includes('audit') ||
-    low.includes('tax') ||
-    low.includes('tally') ||
-    low.includes('gst') ||
-    low.includes('finance') ||
-    low.includes('ca ') ||
-    low.includes('articleship') ||
-    low.includes('cma') ||
-    low.includes('balance sheet')
-  ) {
-    return ACADEMIC_DISCIPLINES.commerce;
-  }
+    // 3. Healthcare & Medicine
+    if (
+      text.includes('doctor') ||
+      text.includes('medical') ||
+      text.includes('clinical') ||
+      text.includes('nursing') ||
+      text.includes('patient care') ||
+      text.includes('hospital') ||
+      /\b(mbbs|bds|bams|bhms|b\.pharm|m\.pharm|pharma)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.healthcare;
+    }
 
-  // 4. Management & Business
-  if (
-    low.includes('business development') ||
-    low.includes('marketing') ||
-    low.includes('brand') ||
-    low.includes('sales') ||
-    low.includes('human resources') ||
-    low.includes('hr ') ||
-    low.includes('operations manager') ||
-    low.includes('product manager')
-  ) {
-    return ACADEMIC_DISCIPLINES.management;
-  }
+    // 4. Commerce, Taxation & Professional Accounting (CA, CMA, Accounts, Audit)
+    if (
+      text.includes('account') ||
+      text.includes('audit') ||
+      text.includes('tally') ||
+      text.includes('gst') ||
+      text.includes('articleship') ||
+      text.includes('balance sheet') ||
+      text.includes('bookkeeping') ||
+      text.includes('taxation') ||
+      text.includes('income tax') ||
+      /\b(ca|cma|cs|tax|chartered accountant|ca inter|ca final)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.commerce;
+    }
 
-  // 5. Arts, Content & Media
-  if (
-    low.includes('content') ||
-    low.includes('copywrit') ||
-    low.includes('journalism') ||
-    low.includes('writer') ||
-    low.includes('editor') ||
-    low.includes('public relations') ||
-    low.includes('mass communication')
-  ) {
-    return ACADEMIC_DISCIPLINES.arts;
-  }
+    // 5. Management, Business & Supply Chain (MBA, SCM, Operations, Logistics)
+    if (
+      text.includes('supply chain') ||
+      text.includes('logistics') ||
+      text.includes('procurement') ||
+      text.includes('warehouse') ||
+      text.includes('inventory') ||
+      text.includes('dispatch') ||
+      text.includes('business development') ||
+      text.includes('product manager') ||
+      text.includes('brand manager') ||
+      text.includes('operations') ||
+      /\b(scm|wms|operations manager|operations trainee|operations lead)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.management;
+    }
 
-  // 6. Core Engineering
-  if (
-    low.includes('civil') ||
-    low.includes('mechanical') ||
-    low.includes('electrical') ||
-    low.includes('autocad') ||
-    low.includes('site engineer')
-  ) {
-    return ACADEMIC_DISCIPLINES.engineering;
-  }
+    // 6. Arts, Content & Media (BA, MA, Journalism)
+    if (
+      text.includes('content') ||
+      text.includes('copywrit') ||
+      text.includes('journalism') ||
+      text.includes('writer') ||
+      text.includes('editor') ||
+      text.includes('public relations') ||
+      text.includes('mass communication') ||
+      /\b(ba|ma|bjmc|b\.des)\b/i.test(text)
+    ) {
+      return ACADEMIC_DISCIPLINES.arts;
+    }
 
-  // 7. Technology default
-  return ACADEMIC_DISCIPLINES.technology;
+    // 7. Core Engineering (Civil, Mechanical, Electrical)
+    if (
+      text.includes('civil engineer') ||
+      text.includes('mechanical engineer') ||
+      text.includes('electrical engineer') ||
+      text.includes('autocad') ||
+      text.includes('site engineer') ||
+      text.includes('structural')
+    ) {
+      return ACADEMIC_DISCIPLINES.engineering;
+    }
+
+    return null;
+  };
+
+  const titleMatch = matchDisciplineInText(titleToCheck);
+  if (titleMatch) return titleMatch;
+
+  const bodyMatch = matchDisciplineInText(bodyToCheck);
+  if (bodyMatch) return bodyMatch;
+
+  return ACADEMIC_DISCIPLINES.management;
 }
 
 /**
@@ -312,16 +343,44 @@ export function suggestRelevantMissingSkills(jobText: string, candidateSkills: s
 /**
  * Checks whether a candidate's degree aligns with job requirements across ALL Indian qualifications.
  */
-export function evaluateDegreeAlignment(jobText: string, candidateEdu: string): { aligned: boolean; text: string; score: number } {
-  const jLow = jobText.toLowerCase();
-  const eLow = (candidateEdu || '').toLowerCase();
+export function evaluateDegreeAlignment(
+  jobText: string,
+  candidateEdu: string | Array<string | { degree?: string; institution?: string }>
+): { aligned: boolean; text: string; score: number } {
+  const jLow = (jobText || '').toLowerCase();
+  
+  let eduStr = '';
+  if (typeof candidateEdu === 'string') {
+    eduStr = candidateEdu;
+  } else if (Array.isArray(candidateEdu)) {
+    eduStr = candidateEdu
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') return `${item.degree || ''} ${item.institution || ''}`;
+        return '';
+      })
+      .join(' ');
+  }
+  const eLow = eduStr.toLowerCase().trim();
 
   if (!eLow) {
     return { aligned: false, text: 'No degree specified', score: 10 };
   }
 
-  // Check all disciplines
+  // 1. Check primary detected discipline first for highest contextual precision
+  const primaryDiscipline = detectJobDiscipline(jobText);
+  const isPrimaryCandidateMatch = primaryDiscipline.targetDegrees.some((d) => eLow.includes(d.toLowerCase()));
+  if (isPrimaryCandidateMatch) {
+    return {
+      aligned: true,
+      text: `${primaryDiscipline.name} degree directly matches role requirements`,
+      score: 25,
+    };
+  }
+
+  // 2. Check remaining disciplines
   for (const discipline of Object.values(ACADEMIC_DISCIPLINES)) {
+    if (discipline.id === primaryDiscipline.id) continue;
     const isJobInDiscipline = discipline.targetDegrees.some((d) => jLow.includes(d.toLowerCase())) ||
       discipline.sampleRoles.some((r) => jLow.includes(r.toLowerCase()));
 

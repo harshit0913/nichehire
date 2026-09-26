@@ -28,9 +28,10 @@ function fallbackExtract(text: string) {
     // Law & Legal
     'Legal Research', 'Drafting', 'Constitutional Law', 'Contract Review', 'Civil Procedure (CPC)',
     'Criminal Law (CrPC/BNSS)', 'Due Diligence', 'Moot Court', 'Arbitration', 'Litigation',
-    // Management & Sales
+    // Management, Supply Chain & Operations
     'Business Strategy', 'Digital Marketing', 'SEO', 'Sales Pipeline', 'Operations Management',
-    'HR Generalist', 'Talent Acquisition', 'Supply Chain', 'Vendor Management',
+    'HR Generalist', 'Talent Acquisition', 'Supply Chain', 'Vendor Management', 'Logistics',
+    'Warehouse Management', 'Inventory Management', 'SAP MM', 'Procurement', 'Dispatch',
     // Healthcare & Science
     'Clinical Diagnosis', 'Patient Care', 'Pharmacology', 'Medical Records', 'Statistical Analysis',
     // Arts & Writing
@@ -42,14 +43,18 @@ function fallbackExtract(text: string) {
 
   // Comprehensive multi-disciplinary education keywords
   let education = 'Bachelor\'s Degree';
-  if (lower.includes('ll.b') || lower.includes('llb') || lower.includes('ba llb') || lower.includes('bba llb') || lower.includes('law')) {
+  if (lower.includes('mba') || lower.includes('pgdm')) {
+    education = lower.includes('b.com') || lower.includes('bcom')
+      ? 'MBA & B.Com (Dual Graduate)'
+      : 'MBA / PGDM in Management';
+  } else if (lower.includes('ll.b') || lower.includes('llb') || lower.includes('ba llb') || lower.includes('bba llb') || lower.includes('law')) {
     education = 'B.A. LL.B / LL.B in Law';
   } else if (lower.includes('mbbs') || lower.includes('bds') || lower.includes('b.pharm')) {
     education = 'MBBS / Medical & Healthcare';
   } else if (lower.includes('b.com') || lower.includes('bcom') || lower.includes('chartered accountant') || lower.includes('ca inter') || lower.includes('ca final') || lower.includes('cma')) {
     education = 'B.Com / CA / Professional Accounting';
-  } else if (lower.includes('bba') || lower.includes('bms') || lower.includes('mba') || lower.includes('pgdm')) {
-    education = lower.includes('mba') || lower.includes('pgdm') ? 'MBA / PGDM' : 'BBA / BMS in Management';
+  } else if (lower.includes('bba') || lower.includes('bms')) {
+    education = 'BBA / BMS in Management';
   } else if (lower.includes('bca') || lower.includes('mca') || lower.includes('b.sc it') || lower.includes('b.sc cs')) {
     education = lower.includes('mca') ? 'MCA in Computer Applications' : 'BCA in Computer Applications';
   } else if (lower.includes('b.a.') || lower.includes('ba ') || lower.includes('journalism') || lower.includes('mass comm')) {

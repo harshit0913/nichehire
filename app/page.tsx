@@ -351,7 +351,7 @@ export default function JobDashboard() {
         missingSkills,
         educationMatch: eduText,
         experienceMatch: expText,
-        reason: `Significant requirements gap. Missing core skills like ${missingSkills.join(', ') || 'specialized tech'}.`,
+        reason: `Significant requirements gap. Missing core skills like ${missingSkills.join(', ') || 'core domain competencies'}.`,
       };
     }
   };
