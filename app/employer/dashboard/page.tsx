@@ -20,8 +20,6 @@ import {
   CreditCard,
   Edit3,
   ExternalLink,
-  Globe,
-  GraduationCap,
   Landmark,
   Plus,
   Sparkles,
@@ -126,7 +124,7 @@ const DEFAULT_COMPANY_PROFILE: EmployerCompanyProfile = {
 };
 
 export default function EmployerDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'applicants' | 'jobs' | 'profile' | 'payments' | 'domains'>('applicants');
+  const [activeTab, setActiveTab] = useState<'applicants' | 'jobs' | 'profile' | 'payments'>('applicants');
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [applicants, setApplicants] = useState<CandidateApplicant[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateApplicant | null>(null);
@@ -715,12 +713,6 @@ export default function EmployerDashboardPage() {
                 >
                   <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Direct UPI (0% Platform Surcharge)
                 </button>
-                <button
-                  onClick={() => setActiveTab('domains')}
-                  className="flex-1 md:flex-none px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2B4EE6] text-xs font-semibold rounded-2xl border border-blue-100 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Free Domain Guide
-                </button>
               </div>
             </div>
 
@@ -882,16 +874,6 @@ export default function EmployerDashboardPage() {
             }`}
           >
             <CreditCard size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Payment Verification & Proof
-          </button>
-          <button
-            onClick={() => setActiveTab('domains')}
-            className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
-              activeTab === 'domains'
-                ? 'border-[#2B4EE6] text-[#2B4EE6]'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
-          >
-            <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Free Domain & Setup Guide
           </button>
         </div>
 
@@ -1723,80 +1705,6 @@ export default function EmployerDashboardPage() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* TAB 4: FREE & AFFORDABLE DOMAINS GUIDE */}
-        {activeTab === 'domains' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-xs font-bold mb-1">
-                <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Domain &amp; Hosting Strategy
-              </div>
-              <h2 className="text-xl font-black text-gray-900">How to Get a Free or Ultra-Affordable Domain for NicheHire</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Step-by-step methods to link a custom domain to your Vercel deployment with zero monthly server costs.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="mb-2 text-gray-700">
-                  <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900">GitHub Student Pack</h3>
-                <div className="text-[10px] font-bold text-emerald-700 uppercase">100% Free for 1 Year</div>
-                <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-                  Free 1-year <strong>.me</strong> domain via Namecheap, free <strong>.tech</strong> or <strong>.site</strong> with free SSL.
-                </p>
-                <a
-                  href="https://education.github.com/pack"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-center py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors mt-3"
-                >
-                  Claim Student Pack
-                </a>
-              </div>
-
-              <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="mb-2 text-gray-700">
-                  <Globe size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900">eu.org (Free Forever)</h3>
-                <div className="text-[10px] font-bold text-emerald-700 uppercase">Zero Cost Always</div>
-                <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-                  100% free with no renewals fee. Recognized by Google on the ICANN Public Suffix List.
-                </p>
-                <a
-                  href="https://nic.eu.org"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-center py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition-colors mt-3"
-                >
-                  Register on nic.eu.org
-                </a>
-              </div>
-
-              <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
-                <div className="mb-2 text-gray-700">
-                  <Building2 size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900">Affordable .in / .store</h3>
-                <div className="text-[10px] font-bold text-blue-700 uppercase">₹79 to ₹399 / Year</div>
-                <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-                  Spaceship / Dynadot: .in often ₹399/yr, .site often ₹79. Best credibility for Indian recruiters.
-                </p>
-                <a
-                  href="https://www.spaceship.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-center py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors mt-3"
-                >
-                  Search .in on Spaceship
-                </a>
-              </div>
-            </div>
           </div>
         )}
           </>
