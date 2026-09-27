@@ -44,6 +44,9 @@ export default function EmployerMembershipModal({
   const [notice, setNotice] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const [screenshotData, setScreenshotData] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+
   const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
 
   if (!isOpen) return null;
@@ -99,17 +102,71 @@ export default function EmployerMembershipModal({
     setTimeout(() => setCopiedUpi(false), 2000);
   };
 
-  const handleConfirmPayment = () => {
-    if (!utrNumber.trim() || utrNumber.trim().length < 6) {
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice({ type: 'error', message: 'Screenshot file size exceeds 5MB limit.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const b64 = reader.result as string;
+      setScreenshotData(b64);
+      setScreenshotPreview(b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleConfirmPayment = async () => {
+    const cleanUtr = utrNumber.trim().toUpperCase().replace(/\s+/g, '');
+    const utrRegex = /^[0-9A-Z]{12}$/;
+
+    if (!cleanUtr || !utrRegex.test(cleanUtr)) {
       setNotice({
         type: 'error',
-        message: 'Please enter a valid 12-digit UPI Transaction Reference (UTR) number.',
+        message: 'Please enter a valid 12-digit UPI Transaction Reference (UTR / UPI Ref No) from your UPI payment receipt.',
       });
       return;
     }
 
     setIsProcessing(true);
+    setNotice(null);
+
     try {
+      const emailToUse = employerEmail || localStorage.getItem('nichehire_employer_email') || 'employer@nichehire.in';
+
+      const res = await fetch('/api/employer/payment-proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName || 'Corporate Recruiter',
+          contactEmail: emailToUse,
+          contactPhone: '',
+          planAmount: selectedPlan.price,
+          planName: selectedPlan.name,
+          utrNumber: cleanUtr,
+          screenshotData: screenshotData || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setNotice({
+          type: 'error',
+          message: data.error || 'Failed to submit payment proof.',
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      const isFounder = ['harshitmishra7073@gmail.com', 'harshit0913@gmail.com', 'founder@nichehire.in'].includes(
+        emailToUse.toLowerCase().trim()
+      );
+
       const newMembership: EmployerActiveMembership = {
         planId: selectedPlan.id,
         planName: selectedPlan.name,
@@ -119,36 +176,47 @@ export default function EmployerMembershipModal({
         durationDays: selectedPlan.durationDays,
         activatedAt: Date.now(),
         expiresAt: Date.now() + selectedPlan.durationDays * 24 * 60 * 60 * 1000,
-        status: 'active',
-        utrNumber: utrNumber.trim(),
+        status: isFounder ? 'active' : 'pending',
+        utrNumber: cleanUtr,
+        paymentId: data.paymentId,
       };
 
       localStorage.setItem(
-        `nichehire_employer_membership_${employerEmail || 'guest'}`,
+        `nichehire_employer_membership_${emailToUse}`,
         JSON.stringify(newMembership)
       );
 
-      // Save submission record for founder verification
+      // Record in local submission log
       const existingPayments = JSON.parse(
         localStorage.getItem('nichehire_payment_submissions') || '[]'
       );
       existingPayments.unshift({
-        id: `pay-${Date.now()}`,
+        id: data.paymentId || `pay-${Date.now()}`,
         company_name: companyName,
         plan_amount: selectedPlan.price,
         plan_name: selectedPlan.name,
-        utr_number: utrNumber.trim(),
-        status: 'pending',
+        utr_number: cleanUtr,
+        status: isFounder ? 'approved' : 'pending',
         created_at: new Date().toISOString(),
       });
       localStorage.setItem('nichehire_payment_submissions', JSON.stringify(existingPayments));
 
       onPlanActivated(newMembership);
-      onClose();
-    } catch {
+
+      setNotice({
+        type: 'success',
+        message: isFounder
+          ? `✓ Founder test account: ${selectedPlan.name} activated!`
+          : `✓ Payment proof submitted for UTR ${cleanUtr}! Status: PENDING Admin Verification. The founder verifies bank statements within 1–2 hours. Your job slots will unlock automatically once approved.`,
+      });
+
+      setTimeout(() => {
+        onClose();
+      }, 2400);
+    } catch (err: any) {
       setNotice({
         type: 'error',
-        message: 'Failed to record membership. Please try again.',
+        message: err.message || 'Failed to submit payment proof. Please try again.',
       });
     } finally {
       setIsProcessing(false);
@@ -350,20 +418,37 @@ export default function EmployerMembershipModal({
                   <label className="text-[11px] font-bold text-[#12172B]">12-Digit UTR Number *</label>
                   <input
                     type="text"
+                    maxLength={12}
                     placeholder="e.g. 427819284729"
                     value={utrNumber}
-                    onChange={(e) => setUtrNumber(e.target.value)}
-                    className="w-full p-2.5 text-xs font-mono border border-[#E4E7EC] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#2B4EE6]"
+                    onChange={(e) => setUtrNumber(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''))}
+                    className="w-full p-2.5 text-xs font-mono border border-[#E4E7EC] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#2B4EE6] tracking-wider font-bold"
                   />
                   <span className="text-[10px] text-[#5B6478]">
-                    Usually found under &quot;UPI Ref No.&quot; or &quot;Transaction ID&quot; in Google Pay / PhonePe.
+                    Must be exactly 12 alphanumeric characters found under &quot;UPI Ref No.&quot; or &quot;UTR&quot; in Google Pay / PhonePe.
                   </span>
                 </div>
 
-                <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-[11px] flex items-start gap-2">
-                  <ShieldCheck size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0 mt-0.5" />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-[#12172B]">Payment Screenshot (Optional Proof)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotChange}
+                    className="w-full text-[11px] text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-[#2B4EE6] hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  {screenshotPreview && (
+                    <div className="mt-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={screenshotPreview} alt="Screenshot preview" className="h-16 rounded-lg border border-gray-200 object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-[11px] flex items-start gap-2">
+                  <ShieldCheck size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0 mt-0.5" />
                   <p>
-                    <strong>Instant Activation:</strong> Your job quota ({selectedPlan.jobCount} jobs for {selectedPlan.durationDays} days) will be activated immediately upon submitting your UTR reference.
+                    <strong>Founder Verification:</strong> All UPI payments are cross-verified by Harshit Mishra (Founder) against bank statements within 1–2 hours to prevent fraudulent postings. Your {selectedPlan.jobCount} job posting slots will unlock automatically upon verification.
                   </p>
                 </div>
 
@@ -380,7 +465,7 @@ export default function EmployerMembershipModal({
                     className="px-5 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
                   >
                     <Check size={13} strokeWidth={ICON_STROKE_WIDTH} />
-                    <span>{isProcessing ? 'Activating...' : `Activate ${selectedPlan.name}`}</span>
+                    <span>{isProcessing ? 'Verifying...' : `Submit Payment for ${selectedPlan.name}`}</span>
                   </button>
                 </div>
               </div>

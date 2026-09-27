@@ -21,8 +21,10 @@ export interface EmployerActiveMembership {
   durationDays?: number;
   activatedAt: number; // timestamp
   expiresAt: number; // timestamp
-  status: 'active' | 'expired' | 'exhausted';
+  status: 'active' | 'pending' | 'rejected' | 'expired' | 'exhausted';
   utrNumber?: string;
+  paymentId?: string;
+  adminNotes?: string;
 }
 
 export const EMPLOYER_MEMBERSHIP_PLANS: EmployerMembershipPlan[] = [

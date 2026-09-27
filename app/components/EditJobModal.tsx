@@ -51,20 +51,58 @@ export default function EditJobModal({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !company.trim() || !description.trim()) {
+    const trimmedTitle = title.trim();
+    const trimmedCompany = company.trim();
+    const trimmedDesc = description.trim();
+
+    if (!trimmedTitle || !trimmedCompany || !trimmedDesc) {
       alert('Please fill in required fields: Job Title, Company Name, and Description.');
+      return;
+    }
+
+    // Quality check: Title
+    if (trimmedTitle.length < 4) {
+      alert('Job Title must be at least 4 characters long.');
+      return;
+    }
+    if (/(.)\1{3,}/.test(trimmedTitle)) {
+      alert('Job Title contains excessive repeated characters. Please enter a genuine role name.');
+      return;
+    }
+    if (!/[aeiouy]/i.test(trimmedTitle) || !/[bcdfghjklmnpqrstvwxyz]/i.test(trimmedTitle)) {
+      alert('Please enter a realistic, recognizable job title.');
+      return;
+    }
+    const GIBBERISH = ['gfguy', 'bgugg', 'asdf', 'asdfgh', 'qwerty', 'test job', 'xyz123'];
+    if (GIBBERISH.some((w) => trimmedTitle.toLowerCase().replace(/\s+/g, '').includes(w))) {
+      alert('Please enter a genuine, professional job title instead of placeholder text.');
+      return;
+    }
+
+    // Quality check: Description
+    if (trimmedDesc.length < 30) {
+      alert('Job Description must be at least 30 characters long to provide clear role expectations for candidates.');
+      return;
+    }
+    const words = trimmedDesc.split(/\s+/).filter(Boolean);
+    if (words.length < 5) {
+      alert('Job Description must contain at least 5 words describing role responsibilities.');
+      return;
+    }
+    if (GIBBERISH.some((w) => trimmedDesc.toLowerCase().trim() === w)) {
+      alert('Please provide a genuine job description rather than placeholder text.');
       return;
     }
 
     const updated = {
       ...job,
-      title: title.trim(),
-      company: company.trim(),
+      title: trimmedTitle,
+      company: trimmedCompany,
       location: location.trim() || 'Remote (India/Global)',
       workMode,
       type: jobType,
       salary: salary.trim() || 'Competitive market compensation',
-      description: description.trim(),
+      description: trimmedDesc,
       url: portalUrl.trim(),
       status,
       updatedAt: Date.now(),

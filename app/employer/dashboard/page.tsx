@@ -8,6 +8,7 @@ import PostJobModal from '../../components/PostJobModal';
 import EmployerAuthModal from '../../components/EmployerAuthModal';
 import { supabase } from '../../supabase';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
@@ -254,21 +255,23 @@ export default function EmployerDashboardPage() {
             applicantCount: 0,
           }));
         } else {
-          // Check local storage for jobs posted during session
+          // Check local storage for jobs posted during session (filter out legacy gibberish tests)
           const storedPosts = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
-          loadedJobs = storedPosts.map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            company: p.company,
-            location: p.location,
-            workMode: p.workMode || 'Remote',
-            type: p.type || 'Full-Time',
-            salary: p.salary || 'Competitive',
-            description: p.description,
-            status: 'active',
-            postedAt: p.postedAt || Date.now(),
-            applicantCount: 0,
-          }));
+          loadedJobs = storedPosts
+            .filter((p: any) => p.title && p.title.trim().length >= 4 && !['gfguy', 'bgugg', 'asdf'].includes(p.title.toLowerCase().trim()) && p.description && p.description.trim().length >= 20)
+            .map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              company: p.company,
+              location: p.location,
+              workMode: p.workMode || 'Remote',
+              type: p.type || 'Full-Time',
+              salary: p.salary || 'Competitive',
+              description: p.description,
+              status: 'active',
+              postedAt: p.postedAt || Date.now(),
+              applicantCount: 0,
+            }));
         }
         setJobs(loadedJobs);
 
@@ -299,6 +302,39 @@ export default function EmployerDashboardPage() {
         } else {
           setApplicants([]);
         }
+
+        // 3. Hydrate authentic membership from Supabase employer_payments
+        const emailToQuery =
+          localStorage.getItem('nichehire_employer_email') ||
+          (await supabase.auth.getSession()).data.session?.user?.email;
+
+        if (emailToQuery) {
+          try {
+            const pRes = await fetch(`/api/employer/payment-proof?email=${encodeURIComponent(emailToQuery)}`);
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              if (pData.latestMembership) {
+                setActiveMembership(pData.latestMembership);
+                localStorage.setItem(`nichehire_employer_membership_${emailToQuery}`, JSON.stringify(pData.latestMembership));
+              } else {
+                const savedMem = localStorage.getItem(`nichehire_employer_membership_${emailToQuery}`);
+                if (savedMem) {
+                  try {
+                    const parsed = JSON.parse(savedMem);
+                    if (parsed.planId === 'free' && parsed.expiresAt > Date.now()) {
+                      setActiveMembership(parsed);
+                    }
+                  } catch {}
+                }
+              }
+              if (Array.isArray(pData.payments)) {
+                setMyPayments(pData.payments);
+              }
+            }
+          } catch (pErr) {
+            console.warn('Failed to load employer payment records:', pErr);
+          }
+        }
       } catch (err) {
         console.error('Failed to load employer records:', err);
       } finally {
@@ -327,8 +363,14 @@ export default function EmployerDashboardPage() {
       return;
     }
 
+    if (activeMembership?.status === 'pending') {
+      alert(`Your payment for ${activeMembership.planName} (UTR: ${activeMembership.utrNumber}) is currently pending admin verification. Once our founder verifies your UPI transfer, your job posting slots will unlock automatically.`);
+      return;
+    }
+
     if (
       !activeMembership ||
+      activeMembership.status !== 'active' ||
       activeMembership.usedJobs >= activeMembership.totalJobs ||
       activeMembership.expiresAt < Date.now()
     ) {
@@ -341,7 +383,9 @@ export default function EmployerDashboardPage() {
 
   const handlePlanActivated = (membership: EmployerActiveMembership) => {
     setActiveMembership(membership);
-    setPostJobModalOpen(true);
+    if (membership.status === 'active') {
+      setPostJobModalOpen(true);
+    }
   };
 
   const handleSaveJobOverride = async (updatedJob: any) => {
@@ -718,60 +762,142 @@ export default function EmployerDashboardPage() {
 
             {/* Membership & Expiry Alert Banner */}
             {activeMembership ? (
-              <div
-                className={`p-4 sm:p-5 rounded-3xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs ${
-                  activeMembership.expiresAt < Date.now()
-                    ? 'bg-rose-50 border-rose-200 text-rose-950'
-                    : Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000) <= 3
-                    ? 'bg-amber-50 border-amber-300 text-amber-950'
-                    : 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-emerald-50/60 border-blue-200 text-[#12172B]'
-                }`}
-              >
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                      activeMembership.expiresAt < Date.now()
-                        ? 'bg-rose-600 text-white'
-                        : 'bg-[#2B4EE6] text-white shadow-xs'
-                    }`}
-                  >
-                    <Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-black text-[#12172B]">
-                        Active Membership: {activeMembership.planName}
-                      </span>
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/90 border border-gray-200 text-[#12172B]">
-                        {activeMembership.usedJobs} / {activeMembership.totalJobs} Jobs Used
-                      </span>
-                      {activeMembership.expiresAt < Date.now() ? (
-                        <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
-                          Plan Expired
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-[#0E9F6E] bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
-                          <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} />
-                          <span>{Math.max(0, Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000))} Days Remaining</span>
-                        </span>
-                      )}
+              activeMembership.status === 'pending' ? (
+                <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/90 border border-amber-300 text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Clock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                     </div>
-                    <p className="text-xs text-[#5B6478] mt-1">
-                      {activeMembership.expiresAt < Date.now()
-                        ? 'Your listing period has ended. Renew your plan to re-activate your job openings and receive new candidates.'
-                        : `Access active until ${new Date(activeMembership.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. ${Math.max(0, activeMembership.totalJobs - activeMembership.usedJobs)} posting slot(s) remaining.`}
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-black text-amber-950">
+                          Plan: {activeMembership.planName}
+                        </span>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          ⏳ Verification Pending
+                        </span>
+                        {activeMembership.utrNumber && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-white text-gray-800 rounded border border-amber-200">
+                            UTR: {activeMembership.utrNumber}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-amber-900 mt-1">
+                        Your UPI payment is currently being verified against bank statements by Harshit Mishra (Founder) within 1–2 hours. Your {activeMembership.totalJobs} job posting slots will unlock automatically upon verification.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full md:w-auto">
+                    <button
+                      onClick={async () => {
+                        const email = employerUser?.email || workEmail;
+                        if (email) {
+                          try {
+                            const res = await fetch(`/api/employer/payment-proof?email=${encodeURIComponent(email)}`);
+                            const data = await res.json();
+                            if (data.latestMembership) {
+                              setActiveMembership(data.latestMembership);
+                              alert(`Verification Status: ${data.latestMembership.status.toUpperCase()}`);
+                            } else {
+                              alert('No payment records found.');
+                            }
+                          } catch {
+                            alert('Failed to check status. Please try again.');
+                          }
+                        }
+                      }}
+                      className="w-full md:w-auto px-4 py-2 bg-white hover:bg-amber-100 border border-amber-300 text-xs font-bold text-amber-950 rounded-xl transition-all shadow-xs shrink-0"
+                    >
+                      Check Status
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  onClick={() => setMembershipModalOpen(true)}
-                  className="w-full md:w-auto px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-xs font-bold text-[#12172B] rounded-xl transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5"
+              ) : activeMembership.status === 'rejected' ? (
+                <div className="p-4 sm:p-5 rounded-3xl bg-rose-50 border border-rose-300 text-rose-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <AlertTriangle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-black text-rose-950">
+                          Payment Rejected: {activeMembership.planName}
+                        </span>
+                        {activeMembership.utrNumber && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-white text-rose-900 rounded border border-rose-200">
+                            UTR: {activeMembership.utrNumber}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-rose-900 mt-1">
+                        Reason: {activeMembership.adminNotes || 'Invalid or unverified UPI transaction reference.'} Please re-submit with a valid UTR.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMembershipModalOpen(true)}
+                    className="w-full md:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0"
+                  >
+                    Re-Submit Payment
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`p-4 sm:p-5 rounded-3xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs ${
+                    activeMembership.expiresAt < Date.now()
+                      ? 'bg-rose-50 border-rose-200 text-rose-950'
+                      : Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000) <= 3
+                      ? 'bg-amber-50 border-amber-300 text-amber-950'
+                      : 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-emerald-50/60 border-blue-200 text-[#12172B]'
+                  }`}
                 >
-                  <CreditCard size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
-                  <span>{activeMembership.expiresAt < Date.now() ? 'Renew Membership' : 'Upgrade / Change Plan'}</span>
-                </button>
-              </div>
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                        activeMembership.expiresAt < Date.now()
+                          ? 'bg-rose-600 text-white'
+                          : 'bg-[#2B4EE6] text-white shadow-xs'
+                      }`}
+                    >
+                      <Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-black text-[#12172B]">
+                          Active Membership: {activeMembership.planName}
+                        </span>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/90 border border-gray-200 text-[#12172B]">
+                          {activeMembership.usedJobs} / {activeMembership.totalJobs} Jobs Used
+                        </span>
+                        {activeMembership.expiresAt < Date.now() ? (
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                            Plan Expired
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-[#0E9F6E] bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                            <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} />
+                            <span>{Math.max(0, Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000))} Days Remaining</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#5B6478] mt-1">
+                        {activeMembership.expiresAt < Date.now()
+                          ? 'Your listing period has ended. Renew your plan to re-activate your job openings and receive new candidates.'
+                          : `Access active until ${new Date(activeMembership.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. ${Math.max(0, activeMembership.totalJobs - activeMembership.usedJobs)} posting slot(s) remaining.`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setMembershipModalOpen(true)}
+                    className="w-full md:w-auto px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-xs font-bold text-[#12172B] rounded-xl transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5"
+                  >
+                    <CreditCard size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                    <span>{activeMembership.expiresAt < Date.now() ? 'Renew Membership' : 'Upgrade / Change Plan'}</span>
+                  </button>
+                </div>
+              )
             ) : (
               <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-50 via-orange-50/70 to-yellow-50/80 border border-amber-300 text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
                 <div className="flex items-center gap-3.5">

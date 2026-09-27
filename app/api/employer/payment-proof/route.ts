@@ -21,32 +21,29 @@ export async function POST(req: Request) {
     if (!companyName?.trim()) {
       return NextResponse.json({ error: 'Company Name is required.' }, { status: 400 });
     }
-    if (!contactEmail?.trim() || !contactEmail.includes('@')) {
-      return NextResponse.json({ error: 'A valid work email is required.' }, { status: 400 });
+    // Validation: Support personal emails (Gmail, Yahoo, Outlook) as well as corporate domains
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!contactEmail?.trim() || !emailRegex.test(contactEmail.trim())) {
+      return NextResponse.json({ error: 'A valid contact email (Gmail, Yahoo, or corporate) is required.' }, { status: 400 });
     }
-    if (!utrNumber?.trim() || utrNumber.trim().length < 8) {
+
+    const cleanUtr = (utrNumber || '').trim().toUpperCase().replace(/\s+/g, '');
+    const utrRegex = /^[0-9A-Z]{12}$/;
+    if (!cleanUtr || !utrRegex.test(cleanUtr)) {
       return NextResponse.json(
-        { error: 'Please enter a valid 12-digit UPI Transaction Reference (UTR) number.' },
-        { status: 400 }
-      );
-    }
-    if (!screenshotData) {
-      return NextResponse.json(
-        { error: 'Payment screenshot proof is required for manual founder verification.' },
+        { error: 'Please enter a valid 12-digit UPI Transaction Reference (UTR / UPI Ref No) from your payment receipt.' },
         { status: 400 }
       );
     }
 
-    const cleanUtr = utrNumber.trim().toUpperCase().replace(/\s+/g, '');
-
-    // 0. UTR Deduplication Check (Prevent duplicate or replayed submissions)
+    // 0. Strict UTR Deduplication Check across both In-Memory store and Supabase Database
     const inMemoryExisting = inMemoryPayments.find(
       (p) => p.utr_number?.toUpperCase() === cleanUtr
     );
     if (inMemoryExisting) {
       return NextResponse.json(
         {
-          error: `This UPI UTR reference (${cleanUtr}) has already been submitted (Status: ${inMemoryExisting.status.toUpperCase()}). Please allow 1–2 hours for manual verification or contact support.`,
+          error: `This UPI UTR reference (${cleanUtr}) has already been submitted in the system (Status: ${inMemoryExisting.status.toUpperCase()}). Duplicate or reused UTRs cannot be used to activate plans.`,
         },
         { status: 409 }
       );
@@ -55,14 +52,14 @@ export async function POST(req: Request) {
     try {
       const { data: dbExisting } = await supabase
         .from('employer_payments')
-        .select('id, status, utr_number')
+        .select('id, status, utr_number, plan_name')
         .eq('utr_number', cleanUtr)
         .maybeSingle();
 
       if (dbExisting) {
         return NextResponse.json(
           {
-            error: `This UPI UTR reference (${cleanUtr}) has already been submitted (Status: ${(dbExisting.status || 'pending').toUpperCase()}). Please allow 1–2 hours for manual verification or contact support.`,
+            error: `This UPI UTR reference (${cleanUtr}) has already been submitted in the database (Status: ${(dbExisting.status || 'pending').toUpperCase()} for ${dbExisting.plan_name || 'Membership'}). Duplicate UTR reuse across plans is strictly blocked.`,
           },
           { status: 409 }
         );
@@ -153,17 +150,63 @@ export async function GET(req: Request) {
       return NextResponse.json({ payments: [] });
     }
 
-    const { data: payments, error } = await supabase
-      .from('employer_payments')
-      .select('id, company_name, plan_amount, plan_name, utr_number, status, created_at, verified_at, admin_notes')
-      .eq('contact_email', email)
-      .order('created_at', { ascending: false });
+    let dbPayments: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('employer_payments')
+        .select('id, company_name, plan_amount, plan_name, utr_number, status, created_at, verified_at, admin_notes')
+        .eq('contact_email', email)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      return NextResponse.json({ payments: [] });
+      if (!error && data) dbPayments = data;
+    } catch {
+      // Supabase table query fallback
     }
 
-    return NextResponse.json({ payments: payments || [] });
+    // Merge DB payments with in-memory payments
+    const paymentMap = new Map<string, any>();
+    dbPayments.forEach((p) => paymentMap.set(p.id, p));
+    inMemoryPayments
+      .filter((p) => p.contact_email?.toLowerCase() === email)
+      .forEach((p) => {
+        if (!paymentMap.has(p.id)) paymentMap.set(p.id, p);
+      });
+
+    const combinedPayments = Array.from(paymentMap.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const latest = combinedPayments[0] || null;
+    let computedMembership = null;
+
+    if (latest) {
+      const amount = Number(latest.plan_amount) || 299;
+      const totalJobs = amount === 999 ? 20 : amount === 599 ? 5 : 2;
+      const durationDays = amount === 999 ? 30 : amount === 599 ? 21 : 14;
+      const planId = amount === 999 ? 'enterprise' : amount === 599 ? 'pro' : 'growth';
+      const createdMs = new Date(latest.created_at).getTime();
+      const expiresAt = createdMs + durationDays * 24 * 60 * 60 * 1000;
+
+      computedMembership = {
+        paymentId: latest.id,
+        planId,
+        planName: latest.plan_name || 'Growth Plan',
+        price: amount,
+        totalJobs,
+        usedJobs: 0,
+        durationDays,
+        activatedAt: createdMs,
+        expiresAt,
+        status: latest.status, // 'pending' | 'approved' | 'rejected'
+        utrNumber: latest.utr_number,
+        adminNotes: latest.admin_notes,
+      };
+    }
+
+    return NextResponse.json({
+      payments: combinedPayments,
+      latestMembership: computedMembership,
+    });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || 'Failed to fetch payment status.' },
