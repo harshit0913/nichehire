@@ -31,8 +31,19 @@ import {
   X,
   XCircle,
   Zap,
+  Phone,
+  ShieldCheck,
+  CheckCircle2,
 } from '../../components/icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../../lib/iconRules';
+import EditJobModal from '../../components/EditJobModal';
+import EmployerMembershipModal from '../../components/EmployerMembershipModal';
+import PhoneOtpVerification from '../../components/PhoneOtpVerification';
+import {
+  EmployerActiveMembership,
+  EmployerMembershipPlan,
+  EMPLOYER_MEMBERSHIP_PLANS,
+} from '../../types/employerMembership';
 
 interface EmployerJob {
   id: string;
@@ -45,7 +56,11 @@ interface EmployerJob {
   description: string;
   status: 'active' | 'paused' | 'closed';
   postedAt: number;
+  expiresAt?: number;
+  validityDays?: number;
   applicantCount: number;
+  url?: string;
+  portalUrl?: string;
 }
 
 interface CandidateApplicant {
@@ -90,6 +105,7 @@ export interface EmployerCompanyProfile {
   contactPerson: string;
   workEmail: string;
   phone: string;
+  isPhoneVerified?: boolean;
   description: string;
 }
 
@@ -119,6 +135,12 @@ export default function EmployerDashboardPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loadingData, setLoadingData] = useState(true);
 
+  // Active Membership & Edit/Override Modals State
+  const [activeMembership, setActiveMembership] = useState<EmployerActiveMembership | null>(null);
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
+  const [editJobModalOpen, setEditJobModalOpen] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState<EmployerJob | null>(null);
+
   // Employer Auth State
   const [employerAuthModalOpen, setEmployerAuthModalOpen] = useState(false);
   const [employerUser, setEmployerUser] = useState<any>(null);
@@ -131,7 +153,7 @@ export default function EmployerDashboardPage() {
   const [hubInput, setHubInput] = useState('');
 
   // Payment Verification State
-  const [selectedPlanAmount, setSelectedPlanAmount] = useState<number>(499);
+  const [selectedPlanAmount, setSelectedPlanAmount] = useState<number>(299);
   const [companyName, setCompanyName] = useState('');
   const [workEmail, setWorkEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -301,6 +323,111 @@ export default function EmployerDashboardPage() {
     } catch {}
   };
 
+  const handleOpenPostJob = () => {
+    if (!employerUser) {
+      setEmployerAuthModalOpen(true);
+      return;
+    }
+
+    if (
+      !activeMembership ||
+      activeMembership.usedJobs >= activeMembership.totalJobs ||
+      activeMembership.expiresAt < Date.now()
+    ) {
+      setMembershipModalOpen(true);
+      return;
+    }
+
+    setPostJobModalOpen(true);
+  };
+
+  const handlePlanActivated = (membership: EmployerActiveMembership) => {
+    setActiveMembership(membership);
+    setPostJobModalOpen(true);
+  };
+
+  const handleSaveJobOverride = async (updatedJob: any) => {
+    setJobs((prev) => prev.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
+      const updatedList = stored.map((p: any) => (p.id === updatedJob.id ? updatedJob : p));
+      localStorage.setItem('nichehire_employer_posts', JSON.stringify(updatedList));
+    } catch {}
+
+    try {
+      await supabase
+        .from('employer_postings')
+        .update({
+          title: updatedJob.title,
+          company: updatedJob.company,
+          location: updatedJob.location,
+          work_mode: updatedJob.workMode,
+          job_type: updatedJob.type,
+          salary: updatedJob.salary,
+          description: updatedJob.description,
+          status: updatedJob.status,
+        })
+        .eq('id', updatedJob.id);
+    } catch {}
+  };
+
+  const handleCancelJobListing = async (jobId: string) => {
+    setJobs((prev) =>
+      prev.map((j) => (j.id === jobId ? { ...j, status: 'closed' } : j))
+    );
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
+      const updatedList = stored.map((p: any) =>
+        p.id === jobId ? { ...p, status: 'closed' } : p
+      );
+      localStorage.setItem('nichehire_employer_posts', JSON.stringify(updatedList));
+    } catch {}
+
+    try {
+      await supabase
+        .from('employer_postings')
+        .update({ status: 'closed' })
+        .eq('id', jobId);
+    } catch {}
+  };
+
+  const handleDeleteJobListing = async (jobId: string) => {
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
+      const updatedList = stored.filter((p: any) => p.id !== jobId);
+      localStorage.setItem('nichehire_employer_posts', JSON.stringify(updatedList));
+    } catch {}
+
+    try {
+      await supabase.from('employer_postings').delete().eq('id', jobId);
+    } catch {}
+  };
+
+  const handleReactivateJobListing = async (jobId: string) => {
+    setJobs((prev) =>
+      prev.map((j) => (j.id === jobId ? { ...j, status: 'active' } : j))
+    );
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('nichehire_employer_posts') || '[]');
+      const updatedList = stored.map((p: any) =>
+        p.id === jobId ? { ...p, status: 'active' } : p
+      );
+      localStorage.setItem('nichehire_employer_posts', JSON.stringify(updatedList));
+    } catch {}
+
+    try {
+      await supabase
+        .from('employer_postings')
+        .update({ status: 'active' })
+        .eq('id', jobId);
+    } catch {}
+  };
+
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -452,13 +579,7 @@ export default function EmployerDashboardPage() {
             </Link>
 
             <button
-              onClick={() => {
-                if (!employerUser) {
-                  setEmployerAuthModalOpen(true);
-                } else {
-                  setPostJobModalOpen(true);
-                }
-              }}
+              onClick={handleOpenPostJob}
               className="px-3.5 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
             >
               <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Post a Job / Walk-in
@@ -602,6 +723,84 @@ export default function EmployerDashboardPage() {
                 </button>
               </div>
             </div>
+
+            {/* Membership & Expiry Alert Banner */}
+            {activeMembership ? (
+              <div
+                className={`p-4 sm:p-5 rounded-3xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs ${
+                  activeMembership.expiresAt < Date.now()
+                    ? 'bg-rose-50 border-rose-200 text-rose-950'
+                    : Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000) <= 3
+                    ? 'bg-amber-50 border-amber-300 text-amber-950'
+                    : 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-emerald-50/60 border-blue-200 text-[#12172B]'
+                }`}
+              >
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                      activeMembership.expiresAt < Date.now()
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-[#2B4EE6] text-white shadow-xs'
+                    }`}
+                  >
+                    <Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-black text-[#12172B]">
+                        Active Membership: {activeMembership.planName}
+                      </span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/90 border border-gray-200 text-[#12172B]">
+                        {activeMembership.usedJobs} / {activeMembership.totalJobs} Jobs Used
+                      </span>
+                      {activeMembership.expiresAt < Date.now() ? (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                          Plan Expired
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-[#0E9F6E] bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                          <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>{Math.max(0, Math.ceil((activeMembership.expiresAt - Date.now()) / 86400000))} Days Remaining</span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#5B6478] mt-1">
+                      {activeMembership.expiresAt < Date.now()
+                        ? 'Your listing period has ended. Renew your plan to re-activate your job openings and receive new candidates.'
+                        : `Access active until ${new Date(activeMembership.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. ${Math.max(0, activeMembership.totalJobs - activeMembership.usedJobs)} posting slot(s) remaining.`}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setMembershipModalOpen(true)}
+                  className="w-full md:w-auto px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-xs font-bold text-[#12172B] rounded-xl transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5"
+                >
+                  <CreditCard size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  <span>{activeMembership.expiresAt < Date.now() ? 'Renew Membership' : 'Upgrade / Change Plan'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-50 via-orange-50/70 to-yellow-50/80 border border-amber-300 text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Clock size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-amber-950">Select an Employer Membership to Post</h4>
+                    <p className="text-xs text-amber-900/90 mt-0.5 leading-relaxed">
+                      First job listing is <strong>100% Free for 10 days</strong>. Or choose Growth (₹299 for 2 jobs/14 days), Pro (₹599 for 5 jobs/21 days), or Enterprise (₹999 for 20 jobs/30 days).
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMembershipModalOpen(true)}
+                  className="w-full md:w-auto px-4 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 text-center"
+                >
+                  Choose Membership Plan &rarr;
+                </button>
+              </div>
+            )}
 
         {/* Real Metric Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -787,12 +986,12 @@ export default function EmployerDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Your Posted Openings & Walk-in Drives</h2>
+                <h2 className="text-base font-bold text-gray-900">Your Posted Openings &amp; Walk-in Drives</h2>
                 <p className="text-xs text-gray-500">Manage listings, monitor applicant activity, and pause or close roles.</p>
               </div>
               <button
-                onClick={() => setPostJobModalOpen(true)}
-                className="px-4 py-2 bg-[#2B4EE6] text-white text-xs font-semibold rounded-xl hover:bg-[#1E3BBD] transition-colors inline-flex items-center gap-1.5"
+                onClick={handleOpenPostJob}
+                className="px-4 py-2 bg-[#2B4EE6] text-white text-xs font-semibold rounded-xl hover:bg-[#1E3BBD] transition-colors inline-flex items-center gap-1.5 shadow-xs"
               >
                 <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>New Listing</span>
@@ -806,12 +1005,12 @@ export default function EmployerDashboardPage() {
                 </div>
                 <h3 className="text-base font-bold text-gray-900">No Job Openings Posted Yet</h3>
                 <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-                  You haven't posted any corporate job openings or walk-in drives yet. Create your first opening to reach verified candidates.
+                  You haven&apos;t posted any corporate job openings or walk-in drives yet. Create your first opening to reach verified candidates.
                 </p>
                 <div className="pt-2">
                   <button
-                    onClick={() => setPostJobModalOpen(true)}
-                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5"
+                    onClick={handleOpenPostJob}
+                    className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
                   >
                     <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                     <span>Post Your First Job</span>
@@ -820,38 +1019,122 @@ export default function EmployerDashboardPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {jobs.map((job) => (
-                  <div key={job.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {job.status}
+                {jobs.map((job) => {
+                  const validityDays = job.validityDays || 14;
+                  const expiresAt = job.expiresAt || (job.postedAt + validityDays * 86400000);
+                  const jobDaysLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / 86400000));
+                  const isExpired = jobDaysLeft <= 0;
+                  const isClosed = job.status === 'closed';
+
+                  return (
+                    <div
+                      key={job.id}
+                      className={`bg-white p-5 rounded-3xl border shadow-sm space-y-3 transition-all ${
+                        isClosed
+                          ? 'border-gray-200 bg-gray-50/60 opacity-80'
+                          : isExpired
+                          ? 'border-rose-200 bg-rose-50/20'
+                          : 'border-gray-100 hover:border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${
+                                isClosed
+                                  ? 'bg-gray-100 text-gray-700 border-gray-300'
+                                  : isExpired
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : job.status === 'active'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}
+                            >
+                              {isClosed ? 'CLOSED / CANCELLED' : isExpired ? 'EXPIRED' : job.status.toUpperCase()}
+                            </span>
+
+                            {/* Days Left Badge */}
+                            {!isClosed && (
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                                  isExpired
+                                    ? 'bg-rose-100/70 text-rose-800 border-rose-300'
+                                    : jobDaysLeft <= 3
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : 'bg-blue-50 text-[#2B4EE6] border-blue-200'
+                                }`}
+                              >
+                                <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} />
+                                <span>{isExpired ? 'Validity Ended' : `${jobDaysLeft} Days Left`}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-base font-bold text-gray-900 mt-1.5">{job.title}</h3>
+                          <p className="text-xs text-gray-500">{job.company} • {job.location}</p>
+                        </div>
+
+                        <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-xl shrink-0">
+                          {job.applicantCount} Applicants
                         </span>
-                        <h3 className="text-base font-bold text-gray-900 mt-1">{job.title}</h3>
-                        <p className="text-xs text-gray-500">{job.company} • {job.location}</p>
                       </div>
-                      <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-xl">
-                        {job.applicantCount} Applicants
-                      </span>
-                    </div>
 
-                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{job.description}</p>
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{job.description}</p>
 
-                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                      <span className="font-semibold text-gray-700">{job.salary}</span>
-                      <button
-                        onClick={() => {
-                          setFilterJobId(job.id);
-                          setActiveTab('applicants');
-                        }}
-                        className="text-[#2B4EE6] hover:underline font-semibold inline-flex items-center gap-1"
-                      >
-                        <span>View Candidates</span>
-                        <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-                      </button>
+                      <div className="pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="font-semibold text-gray-700">{job.salary}</span>
+
+                        <div className="flex items-center gap-2">
+                          {/* Edit / Override Button */}
+                          <button
+                            onClick={() => {
+                              setJobToEdit(job);
+                              setEditJobModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1"
+                            title="Edit / Override Listing"
+                          >
+                            <Edit3 size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                            <span>Edit / Override</span>
+                          </button>
+
+                          {/* Cancel / Close Button */}
+                          {!isClosed ? (
+                            <button
+                              onClick={() => handleCancelJobListing(job.id)}
+                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold rounded-lg border border-rose-200 transition-colors"
+                              title="Cancel / Close Listing"
+                            >
+                              Cancel Listing
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleReactivateJobListing(job.id)}
+                              disabled={isExpired}
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-semibold rounded-lg border border-emerald-200 transition-colors disabled:opacity-50"
+                              title="Re-activate Listing"
+                            >
+                              Re-activate
+                            </button>
+                          )}
+
+                          {/* View Candidates Button */}
+                          <button
+                            onClick={() => {
+                              setFilterJobId(job.id);
+                              setActiveTab('applicants');
+                            }}
+                            className="text-[#2B4EE6] hover:underline font-semibold inline-flex items-center gap-1 text-[11px]"
+                          >
+                            <span>View Candidates</span>
+                            <ArrowRight size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1127,14 +1410,19 @@ export default function EmployerDashboardPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Contact Phone</label>
-                    <input
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={companyProfile.phone}
-                      onChange={(e) => setCompanyProfile({ ...companyProfile, phone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                  <div className="sm:col-span-1">
+                    <PhoneOtpVerification
+                      phone={companyProfile.phone}
+                      onChangePhone={(p) => setCompanyProfile({ ...companyProfile, phone: p, isPhoneVerified: false })}
+                      isVerified={companyProfile.isPhoneVerified}
+                      onVerified={(verifiedPhone) => {
+                        setCompanyProfile((prev) => ({
+                          ...prev,
+                          phone: verifiedPhone,
+                          isPhoneVerified: true,
+                        }));
+                      }}
+                      label="Recruiter Mobile"
                     />
                   </div>
                 </div>
@@ -1193,7 +1481,7 @@ export default function EmployerDashboardPage() {
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-gray-500 font-medium">Select Plan:</span>
-                  {[499, 1999, 4999].map((amt) => (
+                  {[299, 599, 999].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => setSelectedPlanAmount(amt)}
@@ -1203,11 +1491,11 @@ export default function EmployerDashboardPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {amt === 499
-                        ? 'Featured (#1 Placement) - ₹499'
-                        : amt === 1999
-                        ? 'Growth (5 Posts) - ₹1,999'
-                        : 'Enterprise (30-Day) - ₹4,999'}
+                      {amt === 299
+                        ? 'Growth (2 Jobs • 14 Days) - ₹299'
+                        : amt === 599
+                        ? 'Pro (5 Jobs • 21 Days) - ₹599'
+                        : 'Enterprise (20 Jobs • 30 Days) - ₹999'}
                     </button>
                   ))}
                 </div>
@@ -1548,6 +1836,11 @@ export default function EmployerDashboardPage() {
       <PostJobModal
         isOpen={postJobModalOpen}
         onClose={() => setPostJobModalOpen(false)}
+        isLoggedIn={Boolean(employerUser)}
+        employerEmail={employerUser?.email || workEmail}
+        activeMembership={activeMembership}
+        onRequireAuth={() => setEmployerAuthModalOpen(true)}
+        onRequireMembership={() => setMembershipModalOpen(true)}
         onSuccess={(newJob) => {
           setJobs((prev) => [
             {
@@ -1560,12 +1853,43 @@ export default function EmployerDashboardPage() {
               salary: newJob.salary,
               description: newJob.description,
               status: 'active',
-              postedAt: Date.now(),
+              postedAt: newJob.postedAt || Date.now(),
+              expiresAt: newJob.expiresAt,
+              validityDays: newJob.validityDays,
               applicantCount: 0,
             },
             ...prev,
           ]);
+
+          if (activeMembership) {
+            setActiveMembership((prev) =>
+              prev ? { ...prev, usedJobs: prev.usedJobs + 1 } : null
+            );
+          }
         }}
+      />
+
+      {/* Edit / Override Job Listing Modal */}
+      <EditJobModal
+        isOpen={editJobModalOpen}
+        onClose={() => {
+          setEditJobModalOpen(false);
+          setJobToEdit(null);
+        }}
+        job={jobToEdit}
+        onSaveJob={handleSaveJobOverride}
+        onCancelListing={handleCancelJobListing}
+        onDeleteListing={handleDeleteJobListing}
+        onReactivateListing={handleReactivateJobListing}
+      />
+
+      {/* Employer Membership Plan Selection & UPI Activation Modal */}
+      <EmployerMembershipModal
+        isOpen={membershipModalOpen}
+        onClose={() => setMembershipModalOpen(false)}
+        employerEmail={employerUser?.email || workEmail}
+        companyName={employerCompany || companyProfile.companyName || 'Corporate Recruiter'}
+        onPlanActivated={handlePlanActivated}
       />
 
       {/* Employer Authentication & Registration Modal */}
@@ -1580,6 +1904,8 @@ export default function EmployerDashboardPage() {
           }
           if (compInfo?.email) {
             setWorkEmail(compInfo.email);
+            const savedMem = localStorage.getItem(`nichehire_employer_membership_${compInfo.email}`);
+            if (savedMem) setActiveMembership(JSON.parse(savedMem));
           }
         }}
       />

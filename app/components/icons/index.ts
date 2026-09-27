@@ -61,4 +61,5 @@ export {
   X,
   XCircle,
   Zap,
+  Phone,
 } from 'lucide-react';

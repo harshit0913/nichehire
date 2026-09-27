@@ -16,12 +16,14 @@ import {
   CheckCircle2,
 } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
+import PhoneOtpVerification from './PhoneOtpVerification';
 
 export interface CandidateProfileData {
   fullName: string;
   headline: string;
   email: string;
   phone: string;
+  isPhoneVerified?: boolean;
   city: string;
   state: string;
   pincode: string;
@@ -434,14 +436,19 @@ export default function ProfileEditModal({
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-[#5B6478] mb-1">Contact Phone</label>
-                <input
-                  type="tel"
-                  placeholder="+91 98765 43210"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-[#E4E7EC] rounded-lg text-xs text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
+              <div className="sm:col-span-1">
+                <PhoneOtpVerification
+                  phone={profile.phone}
+                  onChangePhone={(p) => setProfile((prev) => ({ ...prev, phone: p, isPhoneVerified: false }))}
+                  isVerified={profile.isPhoneVerified}
+                  onVerified={(verifiedPhone) => {
+                    setProfile((prev) => ({
+                      ...prev,
+                      phone: verifiedPhone,
+                      isPhoneVerified: true,
+                    }));
+                  }}
+                  label="Contact Phone"
                 />
               </div>
 

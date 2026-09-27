@@ -2577,6 +2577,14 @@ export default function JobDashboard() {
       <PostJobModal
         isOpen={postJobOpen}
         onClose={() => setPostJobOpen(false)}
+        isLoggedIn={typeof window !== 'undefined' ? Boolean(localStorage.getItem('nichehire_employer_email')) : false}
+        employerEmail={typeof window !== 'undefined' ? (localStorage.getItem('nichehire_employer_email') || '') : ''}
+        onRequireAuth={() => {
+          window.location.href = '/employer/dashboard';
+        }}
+        onRequireMembership={() => {
+          window.location.href = '/pricing';
+        }}
         onSuccess={(newListing) => {
           setAllLiveJobs((prev) => [newListing, ...prev]);
         }}

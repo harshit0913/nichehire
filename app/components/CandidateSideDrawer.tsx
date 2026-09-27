@@ -22,6 +22,10 @@ import {
   SlidersHorizontal,
   Upload,
   Download,
+  ShieldCheck,
+  AlertTriangle,
+  Phone,
+  Zap,
 } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 import UserTierBadge from './UserTierBadge';
@@ -260,6 +264,21 @@ export default function CandidateSideDrawer({
   const completeness = calculateCompleteness();
   const displayName = candidateProfile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Candidate';
 
+  // Calculate days left in active 30-day candidate allotment cycle
+  const getCandidateCycleDaysLeft = () => {
+    if (accessStatus?.subscriptionRenewsAt) {
+      try {
+        const renews = new Date(accessStatus.subscriptionRenewsAt).getTime();
+        return Math.max(0, Math.ceil((renews - Date.now()) / (1000 * 60 * 60 * 24)));
+      } catch {}
+    }
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    return Math.max(1, Math.ceil((nextMonth - Date.now()) / (1000 * 60 * 60 * 24)));
+  };
+
+  const candidateDaysLeft = getCandidateCycleDaysLeft();
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
@@ -324,6 +343,58 @@ export default function CandidateSideDrawer({
                   <Edit3 size={11} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>Edit Profile</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Candidate Membership & Quota Expiry Alert Card */}
+            <div className="mt-3 p-3 rounded-xl border border-indigo-100 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-white text-xs space-y-2 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-gray-900">
+                  <Clock size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  <span>Membership Cycle Status</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                  ⏱️ {candidateDaysLeft} {candidateDaysLeft === 1 ? 'day' : 'days'} left
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-gray-600 pt-0.5 border-t border-indigo-100/70">
+                <span>Monthly AI Resume Tailoring:</span>
+                <span className="font-semibold text-gray-900">
+                  {accessStatus?.quotaBypass ? 'Unlimited' : `${accessStatus?.remainingQuotas?.tailoredResumes ?? 5} / 11 left`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-gray-600">
+                <span>HR Direct Outreach:</span>
+                <span className="font-semibold text-gray-900">
+                  {accessStatus?.quotaBypass ? 'Unlimited' : `${accessStatus?.remainingQuotas?.hrEmailDrafts ?? 5} / 20 left`}
+                </span>
+              </div>
+
+              {/* Mobile OTP Verification Alert */}
+              <div className="pt-2 border-t border-indigo-100/70 flex items-center justify-between text-[11px]">
+                {candidateProfile?.isPhoneVerified ? (
+                  <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                    <ShieldCheck size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-emerald-600 shrink-0" />
+                    <span>Mobile Verified {candidateProfile.phone ? `(${candidateProfile.phone.slice(-4).padStart(candidateProfile.phone.length, '•')})` : ''}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="text-amber-800 font-medium flex items-center gap-1">
+                      <AlertTriangle size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-600 shrink-0" />
+                      <span>Mobile unverified</span>
+                    </span>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenEditProfile();
+                      }}
+                      className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] shadow-2xs"
+                    >
+                      Verify with OTP
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -822,6 +893,17 @@ export default function CandidateSideDrawer({
                 <div className="pb-1 border-b border-[#E4E7EC]">
                   <h4 className="text-xs font-bold text-[#12172B]">Membership Privileges &amp; Quotas</h4>
                   <span className="text-[11px] text-[#5B6478]">Your active monthly allotment</span>
+                </div>
+
+                {/* Quota Cycle Countdown Alert */}
+                <div className="p-3 bg-indigo-50/80 border border-indigo-200 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                    <span className="font-semibold text-gray-900">Monthly Allotment Cycle</span>
+                  </div>
+                  <span className="font-bold text-[#2B4EE6] bg-white px-2.5 py-0.5 rounded-full border border-indigo-200 text-[11px]">
+                    ⏱️ {candidateDaysLeft} {candidateDaysLeft === 1 ? 'day' : 'days'} remaining
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
