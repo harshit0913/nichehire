@@ -154,32 +154,87 @@ export default function JobDashboard() {
   const [isDetectingLoc, setIsDetectingLoc] = useState(false);
   const [locationToast, setLocationToast] = useState('');
 
-  const detectCurrentLocation = () => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      setLocationToast('Geolocation is not supported by your browser.');
-      setTimeout(() => setLocationToast(''), 4000);
-      return;
-    }
+  const detectCurrentLocation = async () => {
     setIsDetectingLoc(true);
     setLocationToast('');
+
+    const applyDetectedLocation = (name: string, matchObj?: LocationMatch | null) => {
+      if (matchObj) {
+        setUserLocationMatch(matchObj);
+      }
+      setLocationQuery(name);
+      setLocationToast(`✓ Location detected: ${name}`);
+      setTimeout(() => setLocationToast(''), 5000);
+      // Immediately search jobs in this location for maximum responsiveness
+      fetchJobs(undefined, name);
+    };
+
+    const fallbackToIpGeo = async () => {
+      try {
+        const res = await fetch('/api/geo/detect');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.state && data.state !== 'All India') {
+            const locName = data.city
+              ? (data.state && data.city !== data.state ? `${data.city}, ${data.state}` : data.city)
+              : (data.district && data.district !== 'All Districts' ? `${data.district}, ${data.state}` : data.state);
+            applyDetectedLocation(locName, {
+              state: data.state,
+              district: data.district || data.city || 'All Districts',
+              isBorderZone: false,
+              confidence: 'provisional',
+            });
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn('IP geo fallback error:', e);
+      }
+      return false;
+    };
+
+    // If browser does not have geolocation at all
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      const ok = await fallbackToIpGeo();
+      setIsDetectingLoc(false);
+      if (!ok) {
+        setLocationToast('Could not detect location. Please type your city or choose below.');
+        setTimeout(() => setLocationToast(''), 4000);
+      }
+      return;
+    }
+
+    // Try HTML5 browser geolocation first
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsDetectingLoc(false);
+      async (pos) => {
         const match = matchCoordinatesToRegion(pos.coords.latitude, pos.coords.longitude);
-        setUserLocationMatch(match);
-        const detectedName = match.district && match.district !== 'All Districts'
-          ? `${match.district}, ${match.state}`
-          : match.state;
-        setLocationQuery(detectedName);
-        setLocationToast(`Location detected: ${detectedName}`);
-        setTimeout(() => setLocationToast(''), 4000);
+        if (match && match.state && match.state !== 'All India') {
+          setIsDetectingLoc(false);
+          const detectedName = match.district && match.district !== 'All Districts'
+            ? `${match.district}, ${match.state}`
+            : match.state;
+          applyDetectedLocation(detectedName, match);
+        } else {
+          // Centroid match defaulted to All India, fall back to IP lookup
+          const ok = await fallbackToIpGeo();
+          setIsDetectingLoc(false);
+          if (!ok) {
+            setLocationToast('Could not pinpoint exact region. Please type your city.');
+            setTimeout(() => setLocationToast(''), 4000);
+          }
+        }
       },
-      () => {
+      async () => {
+        // HTML5 Geolocation failed (e.g. desktop LAN, permission dismissed, timeout)
+        // Silently fallback to IP Geolocation without showing an error to user
+        const ok = await fallbackToIpGeo();
         setIsDetectingLoc(false);
-        setLocationToast('Could not auto-detect location. Please type your city or choose below.');
-        setTimeout(() => setLocationToast(''), 4000);
+        if (!ok) {
+          setLocationToast('Could not auto-detect location. Please type your city or choose below.');
+          setTimeout(() => setLocationToast(''), 4000);
+        }
       },
-      { enableHighAccuracy: false, timeout: 8000 }
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
     );
   };
 

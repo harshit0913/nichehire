@@ -130,6 +130,18 @@ const REGIONAL_CENTROIDS: RegionCentroid[] = [
 
   // Assam / North East
   { state: 'Assam', district: 'Guwahati', lat: 26.1445, lon: 91.7362, radiusKm: 35 },
+  { state: 'Himachal Pradesh', district: 'Shimla', lat: 31.1048, lon: 77.1734, radiusKm: 30 },
+  { state: 'Jammu & Kashmir', district: 'Srinagar', lat: 34.0837, lon: 74.7973, radiusKm: 35 },
+  { state: 'Jammu & Kashmir', district: 'Jammu', lat: 32.7266, lon: 74.8570, radiusKm: 30 },
+  { state: 'Goa', district: 'Panaji', lat: 15.4909, lon: 73.8278, radiusKm: 30 },
+  { state: 'Tripura', district: 'Agartala', lat: 23.8315, lon: 91.2868, radiusKm: 30 },
+  { state: 'Meghalaya', district: 'Shillong', lat: 25.5788, lon: 91.8933, radiusKm: 30 },
+  { state: 'Sikkim', district: 'Gangtok', lat: 27.3314, lon: 88.6138, radiusKm: 25 },
+  { state: 'Manipur', district: 'Imphal', lat: 24.8170, lon: 93.9368, radiusKm: 30 },
+  { state: 'Nagaland', district: 'Kohima', lat: 25.6751, lon: 94.1086, radiusKm: 30 },
+  { state: 'Mizoram', district: 'Aizawl', lat: 23.7271, lon: 92.7176, radiusKm: 30 },
+  { state: 'Arunachal Pradesh', district: 'Itanagar', lat: 27.0844, lon: 93.6053, radiusKm: 30 },
+  { state: 'Puducherry', district: 'Puducherry', lat: 11.9416, lon: 79.8083, radiusKm: 25 },
 ];
 
 // Broad state bounding boxes for fallback when outside city radii
@@ -152,16 +164,30 @@ const STATE_BOUNDS: StateBoundingBox[] = [
   { state: 'Rajasthan', minLat: 23.0, maxLat: 30.2, minLon: 69.5, maxLon: 78.3, defaultDistrict: 'Jaipur' },
   { state: 'Tamil Nadu', minLat: 8.0, maxLat: 13.5, minLon: 76.2, maxLon: 80.3, defaultDistrict: 'Chennai' },
   { state: 'Telangana', minLat: 15.8, maxLat: 19.9, minLon: 77.2, maxLon: 81.8, defaultDistrict: 'Hyderabad' },
+  { state: 'Andhra Pradesh', minLat: 12.6, maxLat: 19.9, minLon: 76.7, maxLon: 84.8, defaultDistrict: 'Visakhapatnam' },
   { state: 'West Bengal', minLat: 21.5, maxLat: 27.3, minLon: 85.8, maxLon: 89.9, defaultDistrict: 'Kolkata' },
   { state: 'Gujarat', minLat: 20.0, maxLat: 24.7, minLon: 68.1, maxLon: 74.5, defaultDistrict: 'Ahmedabad' },
   { state: 'Punjab', minLat: 29.5, maxLat: 32.5, minLon: 73.8, maxLon: 77.0, defaultDistrict: 'Ludhiana' },
   { state: 'Haryana', minLat: 27.6, maxLat: 30.9, minLon: 74.4, maxLon: 77.6, defaultDistrict: 'Gurugram' },
+  { state: 'Himachal Pradesh', minLat: 30.3, maxLat: 33.3, minLon: 75.7, maxLon: 79.1, defaultDistrict: 'Shimla' },
+  { state: 'Jammu & Kashmir', minLat: 32.2, maxLat: 37.1, minLon: 73.4, maxLon: 80.3, defaultDistrict: 'Srinagar' },
+  { state: 'Ladakh', minLat: 32.0, maxLat: 36.0, minLon: 75.5, maxLon: 80.5, defaultDistrict: 'Leh' },
+  { state: 'Goa', minLat: 14.8, maxLat: 15.8, minLon: 73.6, maxLon: 74.4, defaultDistrict: 'Panaji' },
+  { state: 'Chandigarh', minLat: 30.6, maxLat: 30.8, minLon: 76.6, maxLon: 76.9, defaultDistrict: 'Chandigarh' },
+  { state: 'Puducherry', minLat: 11.8, maxLat: 12.1, minLon: 79.7, maxLon: 79.9, defaultDistrict: 'Puducherry' },
   { state: 'Kerala', minLat: 8.3, maxLat: 12.8, minLon: 74.8, maxLon: 77.4, defaultDistrict: 'Kochi' },
   { state: 'Odisha', minLat: 17.8, maxLat: 22.5, minLon: 81.3, maxLon: 87.5, defaultDistrict: 'Bhubaneswar' },
   { state: 'Jharkhand', minLat: 21.9, maxLat: 25.3, minLon: 83.3, maxLon: 87.9, defaultDistrict: 'Ranchi' },
   { state: 'Chhattisgarh', minLat: 17.7, maxLat: 24.1, minLon: 80.2, maxLon: 84.4, defaultDistrict: 'Raipur' },
   { state: 'Uttarakhand', minLat: 28.7, maxLat: 31.5, minLon: 77.5, maxLon: 81.0, defaultDistrict: 'Dehradun' },
   { state: 'Assam', minLat: 24.1, maxLat: 28.2, minLon: 89.7, maxLon: 96.0, defaultDistrict: 'Guwahati' },
+  { state: 'Tripura', minLat: 22.9, maxLat: 24.6, minLon: 91.1, maxLon: 92.4, defaultDistrict: 'Agartala' },
+  { state: 'Meghalaya', minLat: 25.0, maxLat: 26.1, minLon: 89.8, maxLon: 92.8, defaultDistrict: 'Shillong' },
+  { state: 'Sikkim', minLat: 27.0, maxLat: 28.2, minLon: 88.0, maxLon: 88.9, defaultDistrict: 'Gangtok' },
+  { state: 'Manipur', minLat: 23.8, maxLat: 25.7, minLon: 93.0, maxLon: 94.8, defaultDistrict: 'Imphal' },
+  { state: 'Nagaland', minLat: 25.1, maxLat: 27.0, minLon: 93.3, maxLon: 95.3, defaultDistrict: 'Kohima' },
+  { state: 'Mizoram', minLat: 21.9, maxLat: 24.5, minLon: 92.2, maxLon: 93.5, defaultDistrict: 'Aizawl' },
+  { state: 'Arunachal Pradesh', minLat: 26.4, maxLat: 29.5, minLon: 91.5, maxLon: 97.4, defaultDistrict: 'Itanagar' },
 ];
 
 // Haversine distance in kilometers
@@ -214,6 +240,17 @@ export function matchCoordinatesToRegion(lat: number, lon: number): LocationMatc
         confidence: 'provisional',
       };
     }
+  }
+
+  // Fallback: If inside greater India subcontinental envelope (lat 6.0 - 37.5, lon 68.0 - 97.5)
+  // Map to the closest regional centroid hub rather than giving up to "All India"
+  if (lat >= 6.0 && lat <= 37.5 && lon >= 68.0 && lon <= 97.5 && closestHub) {
+    return {
+      state: closestHub.state,
+      district: closestHub.district,
+      isBorderZone: false,
+      confidence: 'provisional',
+    };
   }
 
   // Fallback if coordinates are outside mainland India envelope

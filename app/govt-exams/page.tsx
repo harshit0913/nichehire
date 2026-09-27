@@ -124,31 +124,81 @@ export default function GovtExamsPage() {
   };
 
   // ─── Offline Coordinate Geolocation ───────────────────────────────────────
-  const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationToast('Geolocation is not supported by your browser. Please select your state below.');
-      return;
-    }
+  const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     setLocationToast('');
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsDetectingLocation(false);
-        const match = matchCoordinatesToRegion(pos.coords.latitude, pos.coords.longitude);
-        setDetectedLocation(match);
-        setLocationNoticeDismissed(false);
-        setSelectedState(match.state);
-        if (match.district !== 'All Districts') {
-          setSelectedDistrict(match.district);
+    const applyDetectedStateAndDistrict = (state: string, district?: string, isBorderZone?: boolean, borderNote?: string) => {
+      const matchObj: LocationMatch = {
+        state,
+        district: district && district !== 'All Districts' ? district : 'All Districts',
+        isBorderZone: !!isBorderZone,
+        borderNote,
+        confidence: isBorderZone ? 'provisional' : 'high',
+      };
+      setDetectedLocation(matchObj);
+      setLocationNoticeDismissed(false);
+      setSelectedState(state);
+      if (district && district !== 'All Districts') {
+        setSelectedDistrict(district);
+      }
+      saveProfileLocally({ domicileState: state });
+      const displayLoc = district && district !== 'All Districts' ? `${district}, ${state}` : state;
+      setLocationToast(`✓ Location detected: ${displayLoc}`);
+      setTimeout(() => setLocationToast(''), 5000);
+    };
+
+    const fallbackToIpGeo = async () => {
+      try {
+        const res = await fetch('/api/geo/detect');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.state && data.state !== 'All India') {
+            applyDetectedStateAndDistrict(data.state, data.district || data.city);
+            return true;
+          }
         }
-        saveProfileLocally({ domicileState: match.state });
+      } catch (e) {
+        console.warn('Govt exams IP geo fallback error:', e);
+      }
+      return false;
+    };
+
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      const ok = await fallbackToIpGeo();
+      setIsDetectingLocation(false);
+      if (!ok) {
+        setLocationToast('Could not detect location. Please choose your state from the dropdown.');
+        setTimeout(() => setLocationToast(''), 4000);
+      }
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const match = matchCoordinatesToRegion(pos.coords.latitude, pos.coords.longitude);
+        if (match && match.state && match.state !== 'All India') {
+          setIsDetectingLocation(false);
+          applyDetectedStateAndDistrict(match.state, match.district, match.isBorderZone, match.borderNote);
+        } else {
+          const ok = await fallbackToIpGeo();
+          setIsDetectingLocation(false);
+          if (!ok) {
+            setLocationToast('Could not pinpoint exact region. Please choose your state below.');
+            setTimeout(() => setLocationToast(''), 4000);
+          }
+        }
       },
-      (err) => {
+      async () => {
+        // Fallback to IP geolocation
+        const ok = await fallbackToIpGeo();
         setIsDetectingLocation(false);
-        setLocationToast(`Could not auto-detect location (${err.message}). Please choose your state from the dropdown.`);
+        if (!ok) {
+          setLocationToast('Could not auto-detect location. Please choose your state from the dropdown.');
+          setTimeout(() => setLocationToast(''), 4000);
+        }
       },
-      { timeout: 8000, maximumAge: 600000 }
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
     );
   };
 
