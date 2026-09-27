@@ -61,14 +61,14 @@ export default function TermsOfServicePage() {
               <li>Must post using an authentic, verifiable corporate email domain (no generic @gmail.com or @yahoo.com addresses for paid featured postings).</li>
               <li>Every vacancy must link directly to an active ATS or official company career portal.</li>
               <li>Job listings must be genuine and active; multi-level marketing (MLM), pyramid schemes, or unverified work-from-home data entry schemes are strictly prohibited.</li>
-              <li>Positions older than 7 calendar days or filled roles must be promptly updated or closed.</li>
+              <li>Positions that exceed their membership listing validity (10 days on Free, 14 days on Growth, 21 days on Pro, 30 days on Enterprise) or filled roles must be promptly updated or closed.</li>
             </ul>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-[#12172B]">4. Direct UPI Payments &amp; Verification Policy</h2>
             <p>
-              Employer listing fees (e.g. ₹499 Featured #1 Placement or ₹1,999 Growth Bundle) are paid directly via bank UPI with zero gateway surcharge. Activation of featured placement occurs following manual verification of the 12-digit UTR against official bank statements by our founder (Harshit Mishra).
+              Employer listing memberships (Free 10-day pilot for 1 job, ₹299 Growth Plan for 2 jobs / 14 days, ₹599 Pro Recruiter for 5 jobs / 21 days, or ₹999 Enterprise for 20 jobs / 30 days) are paid directly via bank UPI with zero gateway surcharge. Activation of listings occurs following verification of the 12-digit UPI UTR against bank records by our founder (Harshit Mishra).
             </p>
           </section>
 

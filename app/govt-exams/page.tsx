@@ -252,6 +252,7 @@ export default function GovtExamsPage() {
   // ─── Computed Exam Evaluations & Telemetry ─────────────────────────────────
   const evaluatedExams = useMemo(() => {
     const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
     return VERIFIED_GOVT_EXAMS.map((exam) => {
       const eligibilityResult = calculateGovtEligibility(candidateProfile, {
@@ -260,18 +261,23 @@ export default function GovtExamsPage() {
         state: exam.state,
       });
 
-      // Check dates
-      const endDate = new Date(exam.importantDates.applyEndDate);
-      const diffMs = endDate.getTime() - now.getTime();
-      const isPastDeadline = diffMs < 0;
+      // Calendar-normalized date metrics (zero timezone / off-by-one errors)
+      const parts = exam.importantDates.applyEndDate.split('-').map(Number);
+      let isPastDeadline = false;
+      let daysLeft = 99;
+
+      if (parts.length === 3 && !isNaN(parts[0])) {
+        const [year, month, day] = parts;
+        const targetMidnight = new Date(year, month - 1, day).getTime();
+        const diffDays = Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+        isPastDeadline = diffDays < 0;
+        daysLeft = diffDays;
+      }
 
       // Verification age check (14 days stale threshold)
       const verifiedDate = new Date(exam.lastVerifiedDate);
       const diffDays = Math.floor((now.getTime() - verifiedDate.getTime()) / (1000 * 60 * 60 * 24));
       const isVerificationPending = diffDays > 14;
-
-      // Exact day calculation: if within 24h of deadline, daysLeft is 0 (closing today)
-      const daysLeft = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       return {
         ...exam,
@@ -283,15 +289,16 @@ export default function GovtExamsPage() {
     });
   }, [candidateProfile]);
 
-  // ─── Real-Time Telemetry Counters (Zero Hardcoding) ────────────────────────
+  // ─── Real-Time Telemetry Counters (Separating Open vs Closed/Calendar) ─────
   const telemetry = useMemo(() => {
     const totalExams = evaluatedExams.length;
-    const activeExams = evaluatedExams.filter((e) => !e.isPastDeadline).length;
+    const openApplications = evaluatedExams.filter((e) => !e.isPastDeadline).length;
+    const closedNotifications = evaluatedExams.filter((e) => e.isPastDeadline).length;
     const totalVacancies = evaluatedExams.reduce((acc, e) => acc + e.vacancies, 0);
     const uniqueBodies = new Set(evaluatedExams.map((e) => e.conductingBody)).size;
     const eligibleCount = evaluatedExams.filter((e) => e.eligibilityResult.status === 'eligible').length;
 
-    return { totalExams, activeExams, totalVacancies, uniqueBodies, eligibleCount };
+    return { totalExams, openApplications, closedNotifications, activeExams: openApplications, totalVacancies, uniqueBodies, eligibleCount };
   }, [evaluatedExams]);
 
   // ─── Filtered Exams ───────────────────────────────────────────────────────
@@ -503,10 +510,14 @@ export default function GovtExamsPage() {
 
           {/* Dynamic Telemetry Strip */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-[#5B6478]">
-            <div className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white border border-[#E4E7EC] shadow-2xs">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white border border-[#E4E7EC] shadow-2xs">
               <span className="flex items-center gap-1.5 font-semibold text-[#12172B]">
                 <span className="w-2 h-2 rounded-full bg-[#0E9F6E] animate-pulse"></span>
-                {telemetry.activeExams} Active Government Openings
+                {telemetry.openApplications} Open Applications
+              </span>
+              <span className="text-[#E4E7EC]">•</span>
+              <span className="text-[#5B6478]">
+                {telemetry.closedNotifications} Closed / Upcoming Notifications
               </span>
               <span className="text-[#E4E7EC]">•</span>
               <span className="font-semibold text-amber-900">{telemetry.totalVacancies.toLocaleString('en-IN')} Total Vacancies</span>
@@ -1409,11 +1420,13 @@ export default function GovtExamsPage() {
       <footer className="bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478] mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
           <p>© 2026 NicheHire. Verified government jobs directory &amp; genuine public sector notifications.</p>
-          <div className="flex justify-center gap-4 text-xs font-medium text-[#12172B]">
+          <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-[#12172B]">
             <Link href="/" className="hover:text-[#2B4EE6]">Candidate Search</Link>
             <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; Verification</Link>
             <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer Pricing</Link>
             <Link href="/govt-exams" className="text-amber-800 font-semibold">Govt Jobs Portal</Link>
+            <Link href="/privacy" className="hover:text-[#2B4EE6]">Privacy Policy (DPDP Act)</Link>
+            <Link href="/terms" className="hover:text-[#2B4EE6]">Terms of Service</Link>
           </div>
         </div>
       </footer>
@@ -1456,16 +1469,32 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
             <div className="flex items-center gap-2 flex-wrap text-xs text-[#5B6478]">
               <span className="font-semibold text-[#12172B]">{exam.conductingBody}</span>
 
-              {/* Tier badge */}
-              <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
-                {exam.category === 'regional'
-                  ? `District (${exam.district || exam.state})`
-                  : exam.category === 'state'
-                  ? `State PSC (${exam.state})`
-                  : exam.category === 'central'
-                  ? 'Central Government'
-                  : 'Maharatna PSU'}
-              </span>
+              {/* Entity Type / Tier Badge */}
+              {exam.entityType === 'ArticleshipOpportunity' ? (
+                <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">
+                  Articleship Training (ICAI)
+                </span>
+              ) : exam.entityType === 'ProfessionalExam' ? (
+                <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                  Professional Qualification Exam
+                </span>
+              ) : exam.entityType === 'PSURecruitment' || exam.category === 'psu' ? (
+                <span className="text-[11px] font-medium text-cyan-800 bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 rounded">
+                  PSU Recruitment
+                </span>
+              ) : exam.category === 'regional' ? (
+                <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                  District ({exam.district || exam.state})
+                </span>
+              ) : exam.category === 'state' ? (
+                <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                  State PSC ({exam.state})
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                  Central Commission
+                </span>
+              )}
 
               {/* Traffic-Light Eligibility Badge */}
               <span
@@ -1495,16 +1524,16 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
                 <span className="text-[11px] text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
                   Registration Closed
                 </span>
-              ) : daysLeft <= 0 ? (
+              ) : daysLeft === 0 ? (
                 <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded animate-pulse">
-                  Closes Today! (Final Hours)
+                  Closes Today! (Last Day to Apply)
                 </span>
               ) : daysLeft === 1 ? (
                 <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">
                   1 day left (Closes Tomorrow)
                 </span>
               ) : daysLeft <= 7 ? (
-                <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded animate-pulse">
+                <span className="text-[11px] font-bold text-[#D97B0A] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded">
                   {daysLeft} days left
                 </span>
               ) : (

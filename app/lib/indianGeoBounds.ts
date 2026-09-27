@@ -70,6 +70,7 @@ const REGIONAL_CENTROIDS: RegionCentroid[] = [
   { state: 'Maharashtra', district: 'Nagpur', lat: 21.1458, lon: 79.0882, radiusKm: 35 },
 
   // Karnataka
+  { state: 'Karnataka', district: 'Bengaluru', lat: 12.9716, lon: 77.5946, radiusKm: 50 },
   { state: 'Karnataka', district: 'Bangalore', lat: 12.9716, lon: 77.5946, radiusKm: 50 },
   { state: 'Karnataka', district: 'Mysore', lat: 12.2958, lon: 76.6394, radiusKm: 30 },
 

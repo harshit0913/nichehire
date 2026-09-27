@@ -173,14 +173,14 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* AI Apply Chances & Recruiter Outreach */}
+        {/* AI Match Scoring & Recruiter Outreach */}
         <section className="bg-white rounded-md border border-[#E4E7EC] p-6 sm:p-8 space-y-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <span className="text-xs font-medium text-[#5B6478]">Candidate decision support</span>
               <h2 className="text-xl font-semibold text-[#12172B]">AI-powered application guidance</h2>
               <p className="text-xs text-[#5B6478] mt-1">
-                Drop your resume once, and our AI analyzes matching skills, experience gaps, and your chance rating.
+                Drop your resume once, and our AI analyzes matching skills, experience gaps, and your match alignment rating.
               </p>
             </div>
             <Link
@@ -194,8 +194,8 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div className="p-4 bg-[#F7F8FA] rounded border border-[#E4E7EC] space-y-1">
-              <h4 className="text-xs font-semibold text-[#12172B]">High / Med / Low chances</h4>
-              <p className="text-xs text-[#5B6478] leading-relaxed">Know your competitive edge before investing time into a lengthy application form.</p>
+              <h4 className="text-xs font-semibold text-[#12172B]">High / Med / Low AI Match</h4>
+              <p className="text-xs text-[#5B6478] leading-relaxed">Know your skill alignment and missing competencies before submitting your application.</p>
             </div>
             <div className="p-4 bg-[#F7F8FA] rounded border border-[#E4E7EC] space-y-1">
               <h4 className="text-xs font-semibold text-[#12172B]">Direct recruiter outreach</h4>

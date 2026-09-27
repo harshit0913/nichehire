@@ -24,6 +24,10 @@ export type Job = {
   description: string;
   url: string;
   source: string;
+  sourceType?: 'official_ats' | 'career_portal' | 'direct_employer' | 'gazette';
+  applyUrl?: string;
+  lastVerifiedAt?: string;
+  verificationStatus?: 'email_verified' | 'phone_otp_verified' | 'domain_verified' | 'admin_verified';
   isStartup?: boolean;
   isVerified?: boolean;
   directPortal?: boolean;
@@ -109,7 +113,7 @@ export default function JobCardItem({
               {job.isVerified && (
                 <span
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] px-1.5 py-0.5 rounded"
-                  title="Verified genuine direct corporate opening under 7 days old"
+                  title="Verified genuine corporate opening indexed directly from official company career portal / ATS"
                 >
                   <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
                   Verified

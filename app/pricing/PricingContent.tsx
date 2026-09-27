@@ -226,21 +226,28 @@ export default function PricingContent() {
         {/* Enterprise Callout Banner */}
         <section className="bg-[#12172B] rounded-2xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 border border-[#12172B] shadow-lg">
           <div className="space-y-1.5 text-center md:text-left">
-            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-              Need high-volume campus hiring or ATS sync?
-            </span>
+            <div className="flex items-center gap-2 justify-center md:justify-start">
+              <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
+                High-Volume Hiring &amp; Integrations
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                Coming Soon / Private Beta
+              </span>
+            </div>
             <h3 className="text-xl font-bold">Enterprise ATS Webhook Sync (Greenhouse, Lever, Workday)</h3>
             <p className="text-xs text-gray-300 max-w-xl leading-relaxed">
-              Sync all open roles automatically from your ATS with dedicated employer branding, multi-city placement, custom walk-in drives, and SLA candidate guarantees.
+              Connect your corporate ATS to automatically sync verified openings, employer branding, and multi-city placement. Contact our engineering team for early beta onboarding or activate the 20-Job Enterprise tier directly.
             </p>
           </div>
-          <button
-            onClick={() => handleSelectTier('enterprise')}
-            className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-bold text-xs rounded-xl whitespace-nowrap transition-colors inline-flex items-center gap-1.5 shadow-xs shrink-0"
-          >
-            <span>Activate 20-Job Enterprise</span>
-            <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <button
+              onClick={() => handleSelectTier('enterprise')}
+              className="px-5 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] font-bold text-xs rounded-xl whitespace-nowrap transition-colors inline-flex items-center justify-center gap-1.5 shadow-xs"
+            >
+              <span>Activate 20-Job Enterprise (₹999)</span>
+              <ArrowRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+            </button>
+          </div>
         </section>
 
         {/* Why Post on NicheHire? */}
@@ -345,11 +352,13 @@ export default function PricingContent() {
       <footer className="bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
           <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
-          <div className="flex justify-center gap-4 text-xs font-medium text-[#12172B]">
+          <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-[#12172B]">
             <Link href="/" className="hover:text-[#2B4EE6]">Candidate search</Link>
             <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; trust</Link>
             <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer pricing</Link>
             <Link href="/employer/dashboard" className="hover:text-[#2B4EE6]">Employer Workspace</Link>
+            <Link href="/privacy" className="hover:text-[#2B4EE6]">Privacy Policy (DPDP Act)</Link>
+            <Link href="/terms" className="hover:text-[#2B4EE6]">Terms of Service</Link>
           </div>
         </div>
       </footer>

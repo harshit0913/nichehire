@@ -311,7 +311,7 @@ export default function JobDashboard() {
         missingSkills: [],
         educationMatch: null,
         experienceMatch: null,
-        reason: 'Upload your resume to see your custom chance of getting hired.',
+        reason: 'Upload your resume to calculate your AI Match & Alignment Score.',
       };
     }
 
@@ -1466,7 +1466,7 @@ export default function JobDashboard() {
                       {isParsing ? 'Analyzing your skills & experience with AI…' : 'Drop your resume (PDF or DOCX)'}
                     </h3>
                     <p className="text-xs text-[#5B6478] max-w-md mx-auto mt-1 leading-relaxed">
-                      Our system extracts your skills and experience to calculate instant <strong className="text-[#12172B]">High / Medium / Low Apply Chances</strong> against active verified openings.
+                      Our system extracts your skills and experience to calculate instant <strong className="text-[#12172B]">High / Medium / Low AI Match Scores</strong> against active verified openings.
                     </p>
 
                     <div className="pt-4 flex flex-wrap justify-center gap-2">
@@ -1513,7 +1513,7 @@ export default function JobDashboard() {
                   <div className="p-3 bg-white border border-[#E4E7EC] rounded flex items-start gap-2.5 text-xs text-[#5B6478]">
                     <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-[#12172B]">How Apply Chances scoring works:</strong> We evaluate skill overlap (50%), experience alignment (25%), education (20%), and role relevance (5%):
+                      <strong className="text-[#12172B]">How AI Match Score evaluation works:</strong> We evaluate skill overlap (50%), experience alignment (25%), education (20%), and role relevance (5%):
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span> High Match (65%+)
@@ -2331,20 +2331,20 @@ export default function JobDashboard() {
             <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
               <div className="space-y-3">
                 <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#0E9F6E] border border-emerald-200">
-                  Employer Pilot
+                  Free Starter (10 Days)
                 </span>
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-black text-[#12172B]">₹0</span>
                     <span className="text-xs text-[#5B6478]">/ 1st post</span>
                   </div>
-                  <span className="text-xs text-[#5B6478]">Test applicant response</span>
+                  <span className="text-xs text-[#5B6478]">10 Days active validity</span>
                 </div>
                 <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
                   <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 1 verified live opening</li>
                   <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct company careers redirect</li>
                   <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Indexed for Google for Jobs</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Basic candidate submissions</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Standard candidate applications</li>
                 </ul>
               </div>
               <button
@@ -2355,64 +2355,80 @@ export default function JobDashboard() {
               </button>
             </div>
 
-            {/* Featured Direct Role */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-[#2B4EE6] flex flex-col justify-between shadow-md relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#2B4EE6] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Most Popular
-              </div>
+            {/* Growth Tier */}
+            <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
               <div className="space-y-3">
                 <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#2B4EE6] border border-blue-100">
-                  Featured Single Role
+                  Growth Plan (Popular)
                 </span>
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-[#12172B]">₹499</span>
-                    <span className="text-xs text-[#5B6478]">/ role</span>
+                    <span className="text-3xl font-black text-[#12172B]">₹299</span>
+                    <span className="text-xs text-[#5B6478]">/ 2 jobs</span>
                   </div>
-                  <span className="text-xs text-[#2B4EE6] font-medium">Introductory Bank UPI</span>
+                  <span className="text-xs text-[#2B4EE6] font-medium">14 Days active validity</span>
                 </div>
                 <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Featured placement for 30 days</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct candidate AI fit matching</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Priority applicant routing</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct UPI QR verification</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 2 active job listings</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 14 days listing validity</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct candidate CVs unlocked</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Verified corporate badge</li>
+                </ul>
+              </div>
+              <Link
+                href="/employer/dashboard"
+                className="w-full mt-6 py-2.5 bg-white hover:bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC] text-xs font-bold rounded-xl transition-colors shadow-2xs text-center block"
+              >
+                Unlock Growth (₹299) &rarr;
+              </Link>
+            </div>
+
+            {/* Pro Recruiter */}
+            <div className="bg-white rounded-2xl p-6 border-2 border-[#2B4EE6] flex flex-col justify-between shadow-md relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#2B4EE6] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+                Recommended • Best Value
+              </div>
+              <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#2B4EE6]/10 text-[#2B4EE6] border border-[#2B4EE6]/20">
+                  Pro Recruiter (5 Jobs)
+                </span>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-[#12172B]">₹599</span>
+                    <span className="text-xs text-[#5B6478]">/ 5 jobs</span>
+                  </div>
+                  <span className="text-xs text-[#2B4EE6] font-medium">21 Days active validity</span>
+                </div>
+                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 5 active job listings</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 21 days listing validity</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Priority AI candidate ranking</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Walk-in drives &amp; HR outreach</li>
                 </ul>
               </div>
               <Link
                 href="/employer/dashboard"
                 className="w-full mt-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs text-center block"
               >
-                Unlock Featured Post &rarr;
+                Get Pro Recruiter (₹599) &rarr;
               </Link>
             </div>
+          </div>
 
-            {/* Growth Bundle */}
-            <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
-              <div className="space-y-3">
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                  Growth Bundle
-                </span>
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-[#12172B]">₹1,999</span>
-                    <span className="text-xs text-[#5B6478]">/ 5 roles</span>
-                  </div>
-                  <span className="text-xs text-purple-700 font-medium">₹399 per role</span>
-                </div>
-                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 5 Featured live roles</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Valid for 90 days</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> AI candidate ranking matrix</li>
-                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Dedicated recruiter priority</li>
-                </ul>
-              </div>
-              <Link
-                href="/employer/dashboard"
-                className="w-full mt-6 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors shadow-2xs text-center block"
-              >
-                Employer Workspace &rarr;
-              </Link>
+          {/* Enterprise 20-Job Callout */}
+          <div className="mt-6 p-4 bg-white border border-[#E4E7EC] rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 rounded bg-[#12172B] text-white font-bold text-[11px]">Enterprise</span>
+              <span className="text-[#5B6478]">
+                Need high-volume hiring? Scale with <strong className="text-[#12172B]">Enterprise / Volume Plan (₹999 for 20 jobs • 30 days)</strong> with zero platform cut.
+              </span>
             </div>
+            <Link
+              href="/pricing"
+              className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl whitespace-nowrap transition-colors"
+            >
+              Compare All 4 Plans &rarr;
+            </Link>
           </div>
         </div>
       </section>

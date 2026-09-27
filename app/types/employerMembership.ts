@@ -92,3 +92,5 @@ export const EMPLOYER_MEMBERSHIP_PLANS: EmployerMembershipPlan[] = [
     ],
   },
 ];
+
+export const PLANS = EMPLOYER_MEMBERSHIP_PLANS;

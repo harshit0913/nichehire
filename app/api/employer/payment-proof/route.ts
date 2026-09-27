@@ -37,7 +37,48 @@ export async function POST(req: Request) {
       );
     }
 
-    const cleanUtr = utrNumber.trim().replace(/\s+/g, '');
+    const cleanUtr = utrNumber.trim().toUpperCase().replace(/\s+/g, '');
+
+    // 0. UTR Deduplication Check (Prevent duplicate or replayed submissions)
+    const inMemoryExisting = inMemoryPayments.find(
+      (p) => p.utr_number?.toUpperCase() === cleanUtr
+    );
+    if (inMemoryExisting) {
+      return NextResponse.json(
+        {
+          error: `This UPI UTR reference (${cleanUtr}) has already been submitted (Status: ${inMemoryExisting.status.toUpperCase()}). Please allow 1–2 hours for manual verification or contact support.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    try {
+      const { data: dbExisting } = await supabase
+        .from('employer_payments')
+        .select('id, status, utr_number')
+        .eq('utr_number', cleanUtr)
+        .maybeSingle();
+
+      if (dbExisting) {
+        return NextResponse.json(
+          {
+            error: `This UPI UTR reference (${cleanUtr}) has already been submitted (Status: ${(dbExisting.status || 'pending').toUpperCase()}). Please allow 1–2 hours for manual verification or contact support.`,
+          },
+          { status: 409 }
+        );
+      }
+    } catch {
+      // Ignore if table not created
+    }
+
+    const numericAmount = Number(planAmount) || 299;
+    const resolvedPlanName =
+      planName ||
+      (numericAmount === 999
+        ? 'Enterprise / Volume (20 Jobs • 30 Days)'
+        : numericAmount === 599
+        ? 'Pro Recruiter (5 Jobs • 21 Days)'
+        : 'Growth Plan (2 Jobs • 14 Days)');
 
     // 1. Insert into Supabase employer_payments table
     const paymentRecord = {
@@ -45,8 +86,8 @@ export async function POST(req: Request) {
       company_name: companyName.trim(),
       contact_email: contactEmail.trim().toLowerCase(),
       contact_phone: (contactPhone || '').trim(),
-      plan_amount: Number(planAmount) || 499,
-      plan_name: planName || (planAmount === 1999 ? 'Growth Bundle' : 'Featured Placement'),
+      plan_amount: numericAmount,
+      plan_name: resolvedPlanName,
       utr_number: cleanUtr,
       screenshot_data: screenshotData,
       status: 'pending' as const,

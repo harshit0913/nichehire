@@ -492,11 +492,11 @@ export default function EmployerDashboardPage() {
           contactPhone: phone.trim(),
           planAmount: selectedPlanAmount,
           planName:
-            selectedPlanAmount === 4999
-              ? 'Enterprise 30-Day Campaign'
-              : selectedPlanAmount === 1999
-              ? 'Growth Bundle (5 Posts)'
-              : 'Featured #1 Placement',
+            selectedPlanAmount === 999
+              ? 'Enterprise / Volume (20 Jobs • 30 Days)'
+              : selectedPlanAmount === 599
+              ? 'Pro Recruiter (5 Jobs • 21 Days)'
+              : 'Growth Plan (2 Jobs • 14 Days)',
           utrNumber: utrNumber.trim(),
           screenshotData,
         }),
@@ -517,11 +517,11 @@ export default function EmployerDashboardPage() {
           company_name: companyName,
           plan_amount: selectedPlanAmount,
           plan_name:
-            selectedPlanAmount === 4999
-              ? 'Enterprise Campaign'
-              : selectedPlanAmount === 1999
-              ? 'Growth Bundle'
-              : 'Featured Placement',
+            selectedPlanAmount === 999
+              ? 'Enterprise / Volume (20 Jobs • 30 Days)'
+              : selectedPlanAmount === 599
+              ? 'Pro Recruiter (5 Jobs • 21 Days)'
+              : 'Growth Plan (2 Jobs • 14 Days)',
           utr_number: utrNumber.trim(),
           status: 'pending',
           created_at: new Date().toISOString(),
@@ -667,9 +667,9 @@ export default function EmployerDashboardPage() {
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <Check size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
                 </div>
-                <h3 className="text-base font-bold text-gray-900">Zero Fake Applicants</h3>
+                <h3 className="text-base font-bold text-gray-900">Multi-Signal Verified Applicants</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Every candidate application includes structured contact info, verified education details, and parsed resumes. Zero spam bot submissions.
+                  Every application is verified through multi-signal candidate screening: phone OTP verification, authenticated email accounts, parsed resumes, and anti-duplicate filtering.
                 </p>
               </div>
 
@@ -703,7 +703,7 @@ export default function EmployerDashboardPage() {
                   Recruiter &amp; Employer Control Center
                 </h1>
                 <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
-                  Publish genuine corporate openings, review real candidate applications, inspect structured resumes, and verify hiring transactions with 100% zero fake data guarantee.
+                  Publish genuine corporate openings, review real candidate applications, inspect structured resumes, and verify hiring transactions with our multi-signal candidate verification pipeline.
                 </p>
               </div>
               <div className="flex items-center gap-2 w-full md:w-auto">
@@ -877,7 +877,7 @@ export default function EmployerDashboardPage() {
           </button>
         </div>
 
-        {/* TAB 1: REAL APPLICANTS (ZERO FAKE DATA) */}
+        {/* TAB 1: MULTI-SIGNAL VERIFIED APPLICANTS */}
         {activeTab === 'applicants' && (
           <div className="space-y-4">
             {applicants.length === 0 ? (
@@ -887,7 +887,7 @@ export default function EmployerDashboardPage() {
                 </div>
                 <h3 className="text-base font-bold text-gray-900">No Applicants Received Yet</h3>
                 <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-                  There are no fake applicants on NicheHire. Once genuine candidates review and apply to your job listings, their parsed resumes and calculated AI fit percentages will appear here in real-time.
+                  Every applicant on NicheHire is verified through multi-signal candidate screening. Once candidates review and apply to your job listings, their parsed resumes and calculated AI fit percentages will appear here in real-time.
                 </p>
                 <div className="pt-2">
                   <button
@@ -1710,6 +1710,20 @@ export default function EmployerDashboardPage() {
           </>
         )}
       </main>
+
+      {/* Platform Legal & Navigation Footer */}
+      <footer className="mt-12 bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+          <p>© {new Date().getFullYear()} NicheHire. Verified employer workspace. Direct career portal applications with zero intermediary cut.</p>
+          <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-[#12172B]">
+            <Link href="/" className="hover:text-[#2B4EE6]">Candidate Search</Link>
+            <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer Pricing</Link>
+            <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; Verification</Link>
+            <Link href="/privacy" className="hover:text-[#2B4EE6]">Privacy Policy (DPDP Act)</Link>
+            <Link href="/terms" className="hover:text-[#2B4EE6]">Terms of Service</Link>
+          </div>
+        </div>
+      </footer>
 
       {/* Modal: Full Resume Viewer */}
       {selectedApplicant && (

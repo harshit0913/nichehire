@@ -1,10 +1,18 @@
 import { DomicilePolicy, QualificationLevel, AgeRelaxation } from '../lib/govtEligibility';
 
+export type GovtEntityType =
+  | 'GovernmentRecruitment'
+  | 'CompetitiveExam'
+  | 'PSURecruitment'
+  | 'ProfessionalExam'
+  | 'ArticleshipOpportunity';
+
 export interface GovtExam {
   id: string;
   title: string;
   conductingBody: string;
   category: 'regional' | 'state' | 'central' | 'psu';
+  entityType?: GovtEntityType;
   state?: string;
   district?: string;
   vacancies: number;
@@ -1103,13 +1111,15 @@ export const VERIFIED_GOVT_EXAMS: GovtExam[] = [
       notificationPdfUrl: 'https://www.aai.aero/sites/default/files/recruitment/Detailed_Advt_03_2026_JE_ATC.pdf',
       applyPortalUrl: 'https://www.aai.aero/en/careers/recruitment',
     },
-    description: 'En-route radar radar control and aerodrome traffic coordination across all Indian international and domestic airports.',
+    description: 'En-route radar control and aerodrome traffic coordination across all Indian international and domestic airports.',
+    entityType: 'PSURecruitment',
   },
   {
     id: 'icai-ca-intermediate-2026',
     title: 'ICAI Chartered Accountancy (CA Intermediate) & Articleship Eligibility',
     conductingBody: 'Institute of Chartered Accountants of India (ICAI)',
     category: 'central',
+    entityType: 'ArticleshipOpportunity',
     state: 'All India',
     vacancies: 25000,
     salaryScale: 'ICAI Articleship Stipend (₹3,000 - ₹15,000/mo) / Post-Qualification ₹9 - ₹25 LPA',
@@ -1146,6 +1156,7 @@ export const VERIFIED_GOVT_EXAMS: GovtExam[] = [
     title: 'ICAI Chartered Accountancy (CA Foundation Entrance)',
     conductingBody: 'Institute of Chartered Accountants of India (ICAI)',
     category: 'central',
+    entityType: 'ProfessionalExam',
     state: 'All India',
     vacancies: 50000,
     salaryScale: 'Academic Gateway / Statutory Certification',

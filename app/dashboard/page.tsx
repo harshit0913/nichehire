@@ -116,11 +116,28 @@ export default function CandidateDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-[#2B4EE6] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs text-gray-500 font-medium">Loading your candidate dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-[#F7F8FA] text-gray-900 font-sans">
+        <header className="border-b border-gray-200/80 bg-white h-16 flex items-center px-4 sm:px-8">
+          <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gray-200 animate-pulse"></div>
+              <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="w-20 h-7 bg-gray-200 rounded-xl animate-pulse"></div>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <div className="h-32 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse space-y-3">
+            <div className="w-1/3 h-5 bg-gray-200 rounded"></div>
+            <div className="w-2/3 h-4 bg-gray-100 rounded"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="h-28 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse"></div>
+            <div className="h-28 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse"></div>
+            <div className="h-28 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse"></div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -200,9 +217,6 @@ export default function CandidateDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-gray-900 font-sans selection:bg-[#2B4EE6]/15">
-      <head>
-        <meta name="robots" content="noindex, nofollow" />
-      </head>
       {/* Top Navbar */}
       <header className="border-b border-gray-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
