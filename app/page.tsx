@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import AuthModal from './components/AuthModal';
@@ -16,6 +16,9 @@ import CareerGuidanceModal from './components/CareerGuidanceModal';
 import ResumeBuilderModal from './components/ResumeBuilderModal';
 import UsageMeterPill from './components/UsageMeterPill';
 import JobCardItem, { Job, FitRecommendation, TailorState } from './components/JobCardItem';
+import CandidateSideDrawer from './components/CandidateSideDrawer';
+import ProfileEditModal, { CandidateProfileData } from './components/ProfileEditModal';
+import WebsiteTour from './components/WebsiteTour';
 import { INITIAL_VERIFIED_JOBS } from './data/initialVerifiedJobs';
 import { supabase } from './supabase';
 import type { WalkInJob } from './api/walkins/route';
@@ -25,16 +28,21 @@ import { suggestRelevantMissingSkills, evaluateDegreeAlignment } from './lib/ski
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   Bookmark,
+  Briefcase,
   Building2,
   Check,
   Compass,
   Copy,
   Crown,
+  Edit3,
+  ExternalLink,
   FileText,
   Footprints,
+  HelpCircle,
   Info,
   Landmark,
   LocateFixed,
@@ -47,6 +55,8 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
+  User,
   Users,
   X,
 } from './components/icons';
@@ -85,6 +95,13 @@ export default function JobDashboard() {
   const [careerGuidanceOpen, setCareerGuidanceOpen] = useState(false);
   const [resumeBuilderOpen, setResumeBuilderOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Candidate Side Drawer, Profile & Website Tour States
+  const [isSideDrawerOpen, setIsSideDrawerOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [candidateProfile, setCandidateProfile] = useState<CandidateProfileData | null>(null);
+  const [isWalkInsInSearchOpen, setIsWalkInsInSearchOpen] = useState(false);
 
   // Access & Quota Status
   const [accessStatus, setAccessStatus] = useState<any>({
@@ -216,6 +233,7 @@ export default function JobDashboard() {
       if (session?.access_token) {
         fetchAccessStatus(session.access_token);
       }
+      loadCandidateData(session?.user?.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -223,14 +241,8 @@ export default function JobDashboard() {
       if (session?.access_token) {
         fetchAccessStatus(session.access_token);
       }
+      loadCandidateData(session?.user?.id);
     });
-
-    try {
-      const saved = localStorage.getItem('nichehire_saved_jobs');
-      if (saved) setSavedJobIds(JSON.parse(saved));
-    } catch {
-      // Ignore
-    }
 
     // Load walk-ins count silently in background
     fetchWalkins();
@@ -238,15 +250,38 @@ export default function JobDashboard() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const loadCandidateData = (userId?: string) => {
+    try {
+      const savedKey = userId ? `nichehire_saved_jobs_${userId}` : 'nichehire_saved_jobs_guest';
+      const saved = localStorage.getItem(savedKey) || localStorage.getItem('nichehire_saved_jobs');
+      if (saved) setSavedJobIds(JSON.parse(saved));
+      else setSavedJobIds([]);
+
+      const profKey = userId ? `nichehire_candidate_profile_${userId}` : 'nichehire_candidate_profile_guest';
+      const profData = localStorage.getItem(profKey);
+      if (profData) setCandidateProfile(JSON.parse(profData));
+
+      // Tour check for new user
+      const tourKey = `nichehire_tour_completed_${userId || 'guest'}`;
+      if (!localStorage.getItem(tourKey)) {
+        setTimeout(() => setIsTourOpen(true), 1200);
+      }
+    } catch {}
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    loadCandidateData();
   };
 
   const toggleSaveJob = (id: string) => {
     setSavedJobIds((prev) => {
       const updated = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
       try {
+        const savedKey = user?.id ? `nichehire_saved_jobs_${user.id}` : 'nichehire_saved_jobs_guest';
+        localStorage.setItem(savedKey, JSON.stringify(updated));
+        // Backwards compatibility
         localStorage.setItem('nichehire_saved_jobs', JSON.stringify(updated));
       } catch {
         // Ignore
@@ -254,6 +289,14 @@ export default function JobDashboard() {
       return updated;
     });
   };
+
+  // Saved Jobs details computed for candidate private dashboard drawer
+  const savedJobsDetails = useMemo(() => {
+    const combined = [...allLiveJobs, ...INITIAL_VERIFIED_JOBS];
+    const uniqueMap = new Map<string, Job>();
+    combined.forEach((j) => uniqueMap.set(j.id, j));
+    return savedJobIds.map((id) => uniqueMap.get(id)).filter(Boolean) as Job[];
+  }, [savedJobIds, allLiveJobs]);
 
   // ─── Smart Recommendation / Fit Analysis ───────────────────────────────────
 
@@ -784,200 +827,129 @@ export default function JobDashboard() {
       {/* ── Top Navigation Bar ── */}
       <header className="sticky top-0 z-40 bg-white border-b border-[#E4E7EC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Left: Full Brand Logo */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setHasSearched(false)}>
-              <div className="w-8 h-8 rounded bg-[#12172B] flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-8 h-8 rounded-lg bg-[#12172B] flex items-center justify-center text-white font-black text-sm tracking-tight shadow-2xs">
                 NH
               </div>
-              <span className="text-base font-bold text-[#12172B] tracking-tight">
-                NicheHire
-              </span>
-              <span className="ml-1 px-2 py-0.5 text-[11px] font-medium text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] rounded">
-                Verified Direct
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-[#12172B] tracking-tight">
+                  NicheHire
+                </span>
+                <span className="px-2 py-0.5 text-[11px] font-semibold text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] rounded-full">
+                  Verified Direct
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={() => {
-                setActiveTab('all');
-                setHasSearched(false);
-              }}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                activeTab === 'all' && !hasSearched
-                  ? 'bg-[#F7F8FA] text-[#12172B] border border-[#E4E7EC]'
-                  : 'text-[#5B6478] hover:text-[#12172B]'
-              }`}
-            >
-              All Jobs
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('saved');
-                setHasSearched(true);
-              }}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                activeTab === 'saved'
-                  ? 'bg-[#FFFBEB] text-[#D97B0A] border border-[#FDE68A]'
-                  : 'text-[#5B6478] hover:text-[#12172B]'
-              }`}
-            >
-              <Bookmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-              <span>Saved</span>
-              {savedJobIds.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#FFFBEB] text-[#D97B0A] rounded border border-[#FDE68A]">
-                  {savedJobIds.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('walkins');
-                setHasSearched(true);
-              }}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                activeTab === 'walkins'
-                  ? 'bg-[#12172B] text-white'
-                  : 'text-[#5B6478] hover:text-[#12172B]'
-              }`}
-            >
-              <Footprints size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-              <span>Walk-Ins</span>
-              {walkins.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-semibold bg-[#F7F8FA] text-[#12172B] rounded border border-[#E4E7EC]">
-                  {walkins.length}
-                </span>
-              )}
-            </button>
-
-            <a
-              href="#how-it-works"
-              onClick={() => {
-                if (hasSearched) setHasSearched(false);
-              }}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden lg:inline"
-            >
-              How It Works
-            </a>
-
-            <Link
-              href="/pricing"
-              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden md:inline"
-            >
-              Pricing
-            </Link>
-
+          {/* Right: Clean, Uncluttered Navigation */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Classy & Premium Govt Jobs */}
             <Link
               href="/govt-exams"
-              className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
             >
-              <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-              <span>Govt Exams</span>
+              <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-amber-700" />
+              <span>Govt Jobs</span>
             </Link>
 
             <button
               onClick={() => setResumeBuilderOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden md:flex items-center gap-1.5"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded-lg transition-colors hidden md:flex items-center gap-1.5"
             >
-              <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-[#2B4EE6]" />
               <span>Resume Builder</span>
             </button>
 
             <button
               onClick={() => setCareerGuidanceOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden lg:flex items-center gap-1.5"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded-lg transition-colors hidden lg:flex items-center gap-1.5"
             >
-              <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-purple-600" />
               <span>Guidance</span>
             </button>
 
             <Link
               href="/employer/dashboard"
-              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded transition-colors hidden sm:flex items-center gap-1.5"
+              className="px-2.5 py-1.5 text-xs font-medium text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-[#E4E7EC] rounded-lg transition-colors hidden sm:flex items-center gap-1.5"
             >
-              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+              <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-[#5B6478]" />
               <span>Employers</span>
             </Link>
-
-            <button
-              onClick={() => {
-                if (!user) {
-                  setAuthModalOpen(true);
-                } else {
-                  setPostWalkInOpen(true);
-                }
-              }}
-              className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/20 rounded transition-colors flex items-center gap-1"
-            >
-              <Plus size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-              <span>Walk-In</span>
-            </button>
-
-            <button
-              onClick={() => setFeedbackModalOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] rounded transition-colors hidden xl:inline"
-            >
-              Feedback
-            </button>
 
             {/* Founder Admin Direct Link if user is identified as founder */}
             {accessStatus?.isFounder && (
               <Link
                 href="/admin"
-                className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded shadow-xs transition-colors flex items-center gap-1.5"
+                className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
               >
                 <Crown size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-amber-900" />
                 <span>Admin</span>
               </Link>
             )}
 
-            {/* Candidate Dashboard Link */}
-            {user && (
-              <Link
-                href="/dashboard"
-                className="px-2.5 py-1.5 text-xs font-semibold text-[#2B4EE6] bg-[#2B4EE6]/10 hover:bg-[#2B4EE6]/20 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1.5"
-              >
-                <Users size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-                <span>Dashboard</span>
-              </Link>
-            )}
-
-            {/* User Tier Badge (Founder / Unlimited / Premium / Rising / Member) - Only for Authenticated Users */}
-            {user && (
-              <UserTierBadge
-                access={accessStatus}
-                onClick={() => setPremiumModalOpen(true)}
-                compact={true}
-              />
-            )}
-
+            {/* Authenticated User Minimalist State */}
             {user ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#5B6478] hidden md:inline truncate max-w-[140px]">{user.email}</span>
+              <div className="flex items-center gap-2 pl-2 border-l border-[#E4E7EC]">
+                <div className="hidden sm:flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#12172B]">
+                    Hi, {candidateProfile?.fullName?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
+                  </span>
+                  <UserTierBadge
+                    access={accessStatus}
+                    onClick={() => setPremiumModalOpen(true)}
+                    compact={true}
+                  />
+                </div>
+
+                {/* Side Toggle: My Dashboard */}
+                <button
+                  onClick={() => setIsSideDrawerOpen(true)}
+                  className="px-3 py-1.5 text-xs font-bold text-[#2B4EE6] bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+                  title="Open private candidate dashboard"
+                >
+                  <Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>My Dashboard</span>
+                  {savedJobIds.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-[#2B4EE6] text-white rounded-full">
+                      {savedJobIds.length}
+                    </span>
+                  )}
+                </button>
+
                 <button
                   onClick={handleSignOut}
-                  className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-[#F7F8FA] hover:bg-[#E4E7EC] border border-[#E4E7EC] rounded transition-colors"
+                  className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded-lg transition-colors hidden md:inline"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="px-3.5 py-1.5 text-xs font-medium text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors"
-              >
-                Sign In
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsTourOpen(true)}
+                  className="p-1.5 text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded-lg transition-colors hidden sm:flex items-center gap-1 text-xs"
+                  title="Platform Guide & Features"
+                >
+                  <HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Tour</span>
+                </button>
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg transition-colors shadow-2xs"
+                >
+                  Sign In
+                </button>
+              </div>
             )}
 
             {/* Mobile Hamburger Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle mobile menu"
-              className="p-1.5 text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded border border-[#E4E7EC] lg:hidden transition-colors flex items-center justify-center"
+              className="p-1.5 text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded-lg border border-[#E4E7EC] lg:hidden transition-colors flex items-center justify-center"
             >
               {mobileMenuOpen ? (
                 <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
@@ -988,36 +960,42 @@ export default function JobDashboard() {
           </div>
         </div>
 
-        {/* Mobile Navigation Dropdown Menu */}
+        {/* Clean Mobile Navigation Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-[#E4E7EC] bg-white px-4 py-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150 shadow-md">
+            {user && (
+              <div className="pb-2 border-b border-[#E4E7EC] flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#12172B]">
+                  Hi, {candidateProfile?.fullName?.split(' ')[0] || user.email?.split('@')[0]}
+                </span>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsSideDrawerOpen(true);
+                  }}
+                  className="px-2.5 py-1 bg-blue-50 text-[#2B4EE6] font-bold text-xs rounded border border-blue-200"
+                >
+                  Open Dashboard
+                </button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 text-xs font-medium">
-              <button
-                onClick={() => {
-                  setActiveTab('all');
-                  setHasSearched(false);
-                  setMobileMenuOpen(false);
-                }}
-                className="p-2.5 rounded text-left bg-[#F7F8FA] hover:bg-[#E4E7EC] text-[#12172B] transition-colors"
-              >
-                All Jobs
-              </button>
               <Link
                 href="/govt-exams"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded text-left bg-[#2B4EE6]/5 text-[#2B4EE6] hover:bg-[#2B4EE6]/10 transition-colors flex items-center gap-1.5 font-semibold"
+                className="p-2.5 rounded-lg text-left bg-amber-50 text-amber-900 border border-amber-200 font-semibold flex items-center gap-1.5"
               >
-                <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-                <span>Govt &amp; CA Exams</span>
+                <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Govt Jobs</span>
               </Link>
               <button
                 onClick={() => {
                   setResumeBuilderOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+                className="p-2.5 rounded-lg text-left bg-white border border-[#E4E7EC] text-[#12172B] flex items-center gap-1.5"
               >
-                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>Resume Builder</span>
               </button>
               <button
@@ -1025,44 +1003,45 @@ export default function JobDashboard() {
                   setCareerGuidanceOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+                className="p-2.5 rounded-lg text-left bg-white border border-[#E4E7EC] text-[#12172B] flex items-center gap-1.5"
               >
-                <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
+                <Compass size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>Guidance</span>
               </button>
               <Link
                 href="/employer/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors flex items-center gap-1.5"
+                className="p-2.5 rounded-lg text-left bg-white border border-[#E4E7EC] text-[#12172B] flex items-center gap-1.5"
               >
-                <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
-                <span>Employer Portal</span>
-              </Link>
-              <Link
-                href="/pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded text-left bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] text-[#12172B] transition-colors"
-              >
-                Employer Pricing
+                <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Employers</span>
               </Link>
             </div>
             <div className="pt-2 border-t border-[#E4E7EC] flex items-center justify-between text-xs text-[#5B6478]">
-              <Link
-                href="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-[#12172B]"
-              >
-                4-Pillar Verification
-              </Link>
               <button
                 onClick={() => {
-                  setFeedbackModalOpen(true);
                   setMobileMenuOpen(false);
+                  setIsTourOpen(true);
                 }}
                 className="hover:text-[#12172B]"
               >
-                Feedback &amp; Bug Bounty
+                Platform Tour
               </button>
+              {user ? (
+                <button onClick={handleSignOut} className="text-red-600 font-semibold">
+                  Sign Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthModalOpen(true);
+                  }}
+                  className="text-[#2B4EE6] font-semibold"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1330,6 +1309,123 @@ export default function JobDashboard() {
                       </button>
                     ))}
                   </div>
+
+                  {/* ── Walk-In Section inside Search Area ── */}
+                  <div className="pt-3 border-t border-[#E4E7EC] mt-3">
+                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                          <Footprints size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-[#12172B]">
+                              Local Walk-In Hiring Drives
+                            </span>
+                            <span className="px-2 py-0.2 text-[10px] font-bold bg-amber-200/60 text-amber-900 rounded-full">
+                              {walkins.length} Active in {locationQuery || 'India'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#5B6478]">
+                            Direct in-person interview drives with venue addresses &amp; timings.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setIsWalkInsInSearchOpen(!isWalkInsInSearchOpen)}
+                          className="px-3 py-1.5 text-xs font-semibold text-[#12172B] bg-white hover:bg-[#F7F8FA] border border-amber-300 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                        >
+                          <Footprints size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>{isWalkInsInSearchOpen ? 'Hide Drives' : `View Drives (${walkins.length})`}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!user) {
+                              setAuthModalOpen(true);
+                            } else {
+                              setPostWalkInOpen(true);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                          title="Know a walk-in? Help candidates attend"
+                        >
+                          <Plus size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>+ Post a Walk-In</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expandable Walk-In Drives List & Community Prompt */}
+                    {isWalkInsInSearchOpen && (
+                      <div className="mt-3 p-3.5 bg-white border border-amber-200 rounded-xl space-y-3 animate-in fade-in duration-150">
+                        {/* Prompt to post walk-in if they know one */}
+                        <div className="p-3 bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-300/80 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                          <div className="text-xs">
+                            <span className="font-bold text-amber-950 block">
+                              Know an offline or campus walk-in hiring drive?
+                            </span>
+                            <span className="text-[11px] text-amber-800">
+                              Help candidates in {locationQuery || 'your region'} find verified physical interview opportunities!
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!user) {
+                                setAuthModalOpen(true);
+                              } else {
+                                setPostWalkInOpen(true);
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors shrink-0"
+                          >
+                            + Post Walk-In Details
+                          </button>
+                        </div>
+
+                        {walkins.length === 0 ? (
+                          <div className="text-center py-6 text-xs text-[#5B6478]">
+                            No active walk-in drives listed for this location yet. Be the first to post one!
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {walkins.map((w) => (
+                              <div
+                                key={w.id}
+                                className="p-3 bg-[#F7F8FA] border border-[#E4E7EC] rounded-lg space-y-1.5 text-xs text-[#12172B]"
+                              >
+                                <div className="flex items-start justify-between gap-1">
+                                  <h5 className="font-bold text-sm text-[#12172B] line-clamp-1">{w.title}</h5>
+                                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded">
+                                    {w.role_type || 'Walk-In'}
+                                  </span>
+                                </div>
+                                <div className="font-medium text-[#2B4EE6]">{w.company}</div>
+                                <div className="text-[11px] text-[#5B6478]">
+                                  📍 <strong>Venue:</strong> {w.location}
+                                </div>
+                                {w.timings && (
+                                  <div className="text-[11px] text-[#5B6478]">
+                                    🕒 <strong>Date &amp; Time:</strong> {w.timings}
+                                  </div>
+                                )}
+                                {w.contact_info && (
+                                  <div className="text-[11px] text-[#5B6478]">
+                                    📞 <strong>Contact:</strong> {w.contact_info}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1433,49 +1529,6 @@ export default function JobDashboard() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* ── How It Works / Why NicheHire Section ── */}
-            <div id="how-it-works" className="pt-8 pb-2 text-left w-full space-y-4">
-              <div className="text-center max-w-xl mx-auto space-y-1">
-                <span className="text-xs font-medium text-[#5B6478]">Why NicheHire</span>
-                <h2 className="text-2xl font-semibold text-[#12172B]">Direct connection to verified career portals</h2>
-                <p className="text-xs text-[#5B6478]">
-                  Many job seekers encounter expired, duplicate, or stale aggregator postings. Here is how NicheHire connects you directly to authentic corporate opportunities.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
-                  <div className="w-7 h-7 rounded bg-[#F7F8FA] border border-[#E4E7EC] text-[#12172B] flex items-center justify-center font-bold text-xs">
-                    1
-                  </div>
-                  <h3 className="text-sm font-semibold text-[#12172B]">Direct career portal scraping</h3>
-                  <p className="text-xs text-[#5B6478] leading-relaxed">
-                    We crawl official company career pages and verified enterprise ATS systems (Greenhouse, Lever, SAP, Workday). Every apply link routes straight to the employer&apos;s verified domain.
-                  </p>
-                </div>
-
-                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
-                  <div className="w-7 h-7 rounded bg-[#ECFDF5] border border-[#A7F3D0] text-[#0E9F6E] flex items-center justify-center font-bold text-xs">
-                    2
-                  </div>
-                  <h3 className="text-sm font-semibold text-[#12172B]">Strict &le; 7-day purge policy</h3>
-                  <p className="text-xs text-[#5B6478] leading-relaxed">
-                    Positions older than 7 calendar days are automatically pruned from our index. You will never waste time applying to positions that were closed or filled weeks ago.
-                  </p>
-                </div>
-
-                <div className="p-5 bg-white rounded-md border border-[#E4E7EC] space-y-2">
-                  <div className="w-7 h-7 rounded bg-[#F7F8FA] border border-[#E4E7EC] text-[#2B4EE6] flex items-center justify-center font-bold text-xs">
-                    3
-                  </div>
-                  <h3 className="text-sm font-semibold text-[#12172B]">AI fit scoring &amp; direct outreach</h3>
-                  <p className="text-xs text-[#5B6478] leading-relaxed">
-                    Know your competitive edge with objective High / Medium / Low Apply Chances, uncover skill gaps, and access pre-filled corporate HR emails for direct outreach.
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* ── Featured Live Verified Jobs Section (Rendered Server-Side for Instant Browse & SEO) ── */}
@@ -2178,6 +2231,192 @@ export default function JobDashboard() {
         </div>
       )}
 
+      {/* ── Relocated How It Works Section ── */}
+      <section id="how-it-works" className="py-16 bg-white border-t border-[#E4E7EC]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold text-[#2B4EE6] tracking-wider uppercase bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+              Why NicheHire
+            </span>
+            <h2 className="text-3xl font-bold text-[#12172B] tracking-tight">
+              Direct connection to verified career portals
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5B6478] leading-relaxed">
+              Job seekers shouldn&apos;t have to navigate expired, duplicate, or ghost listings on scrapers and aggregators. Here is how NicheHire connects you directly to authentic corporate opportunities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="p-6 bg-[#F7F8FA] rounded-2xl border border-[#E4E7EC] space-y-3 hover:border-[#12172B]/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-white border border-[#E4E7EC] text-[#12172B] flex items-center justify-center font-bold text-sm shadow-2xs">
+                1
+              </div>
+              <h3 className="text-sm font-bold text-[#12172B]">Direct career portal verification</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
+                We crawl official company career pages and enterprise ATS systems (Greenhouse, Lever, SAP, Workday). Every apply button routes straight to the employer&apos;s verified domain.
+              </p>
+            </div>
+
+            <div className="p-6 bg-[#F7F8FA] rounded-2xl border border-[#E4E7EC] space-y-3 hover:border-[#12172B]/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#0E9F6E] flex items-center justify-center font-bold text-sm shadow-2xs">
+                2
+              </div>
+              <h3 className="text-sm font-bold text-[#12172B]">Strict &le; 7-day cutoff policy</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
+                Positions older than 7 calendar days (and up to 21 days for regional hubs) are pruned automatically. You will never waste time applying to positions that were closed weeks ago.
+              </p>
+            </div>
+
+            <div className="p-6 bg-[#F7F8FA] rounded-2xl border border-[#E4E7EC] space-y-3 hover:border-[#12172B]/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-[#2B4EE6] flex items-center justify-center font-bold text-sm shadow-2xs">
+                3
+              </div>
+              <h3 className="text-sm font-bold text-[#12172B]">All disciplines &amp; pan-India radius</h3>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
+                Equal priority for non-tech disciplines: B.Com, MBA, Arts, Law, and Medicine alongside Engineering, with hyper-local to pan-India geo radius expansion.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Relocated Pricing Section ── */}
+      <section id="pricing" className="py-16 bg-[#F7F8FA] border-t border-[#E4E7EC]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold text-[#0E9F6E] tracking-wider uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              Clear &amp; Honest Pricing
+            </span>
+            <h2 className="text-3xl font-bold text-[#12172B] tracking-tight">
+              100% Free for Candidates. Transparent for Employers.
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5B6478] leading-relaxed">
+              Job seekers never pay for applications. Employers hire with zero lock-in subscriptions via direct bank UPI.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
+            {/* Candidate Plan */}
+            <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
+              <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#2B4EE6] border border-blue-100">
+                  Job Seekers &amp; Students
+                </span>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-[#12172B]">₹0</span>
+                    <span className="text-xs text-[#5B6478]">/ forever</span>
+                  </div>
+                  <span className="text-xs text-[#0E9F6E] font-medium">100% Free Access</span>
+                </div>
+                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct company portal links</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Pan-India &amp; local district search</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Private saved jobs dashboard</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> ATS Resume builder &amp; export</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  if (!user) setAuthModalOpen(true);
+                  else setIsSideDrawerOpen(true);
+                }}
+                className="w-full mt-6 py-2.5 bg-[#F7F8FA] hover:bg-[#E4E7EC] text-[#12172B] text-xs font-bold rounded-xl transition-colors border border-[#E4E7EC]"
+              >
+                {user ? 'Open My Dashboard' : 'Create Free Account'}
+              </button>
+            </div>
+
+            {/* Employer Launch Pilot */}
+            <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
+              <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#0E9F6E] border border-emerald-200">
+                  Employer Pilot
+                </span>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-[#12172B]">₹0</span>
+                    <span className="text-xs text-[#5B6478]">/ 1st post</span>
+                  </div>
+                  <span className="text-xs text-[#5B6478]">Test applicant response</span>
+                </div>
+                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 1 verified live opening</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct company careers redirect</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Indexed for Google for Jobs</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Basic candidate submissions</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => setPostJobOpen(true)}
+                className="w-full mt-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-2xs"
+              >
+                Post 1st Role Free
+              </button>
+            </div>
+
+            {/* Featured Direct Role */}
+            <div className="bg-white rounded-2xl p-6 border-2 border-[#2B4EE6] flex flex-col justify-between shadow-md relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#2B4EE6] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+                Most Popular
+              </div>
+              <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#2B4EE6] border border-blue-100">
+                  Featured Single Role
+                </span>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-[#12172B]">₹499</span>
+                    <span className="text-xs text-[#5B6478]">/ role</span>
+                  </div>
+                  <span className="text-xs text-[#2B4EE6] font-medium">Introductory Bank UPI</span>
+                </div>
+                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Featured placement for 30 days</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct candidate AI fit matching</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Priority applicant routing</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Direct UPI QR verification</li>
+                </ul>
+              </div>
+              <Link
+                href="/employer/dashboard"
+                className="w-full mt-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs text-center block"
+              >
+                Unlock Featured Post &rarr;
+              </Link>
+            </div>
+
+            {/* Growth Bundle */}
+            <div className="bg-white rounded-2xl p-6 border border-[#E4E7EC] flex flex-col justify-between shadow-2xs">
+              <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                  Growth Bundle
+                </span>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-[#12172B]">₹1,999</span>
+                    <span className="text-xs text-[#5B6478]">/ 5 roles</span>
+                  </div>
+                  <span className="text-xs text-purple-700 font-medium">₹399 per role</span>
+                </div>
+                <ul className="space-y-2 text-xs text-[#5B6478] pt-2 border-t border-[#E4E7EC]">
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> 5 Featured live roles</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Valid for 90 days</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> AI candidate ranking matrix</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" /> Dedicated recruiter priority</li>
+                </ul>
+              </div>
+              <Link
+                href="/employer/dashboard"
+                className="w-full mt-6 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors shadow-2xs text-center block"
+              >
+                Employer Workspace &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Comprehensive Platform Footer ── */}
       <footer className="mt-16 bg-white border-t border-[#E4E7EC] py-12 text-xs text-[#5B6478]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2202,10 +2441,12 @@ export default function JobDashboard() {
               <h4 className="font-semibold text-[#12172B] text-xs">For job seekers</h4>
               <ul className="space-y-1.5 text-[#5B6478]">
                 <li><button onClick={() => { setHasSearched(false); setActiveTab('all'); }} className="hover:text-[#2B4EE6]">Browse verified jobs</button></li>
-                <li><Link href="/govt-exams" className="hover:text-[#2B4EE6] font-medium text-[#2B4EE6] flex items-center gap-1"><Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>Govt Exams Calendar</span></Link></li>
-                <li><button onClick={() => { setHasSearched(true); setActiveTab('walkins'); }} className="hover:text-[#2B4EE6]">Offline &amp; walk-in openings</button></li>
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#2B4EE6]">AI resume matcher</button></li>
-                <li><button onClick={() => setHelpModalOpen(true)} className="hover:text-[#2B4EE6]">How to apply direct</button></li>
+                <li><Link href="/govt-exams" className="hover:text-amber-800 font-medium text-amber-700 flex items-center gap-1"><Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>Govt Jobs &amp; Public Sector</span></Link></li>
+                <li><button onClick={() => { setIsWalkInsInSearchOpen(true); window.scrollTo({ top: 300, behavior: 'smooth' }); }} className="hover:text-[#2B4EE6]">Offline &amp; walk-in openings</button></li>
+                <li><button onClick={() => setIsTourOpen(true)} className="hover:text-[#2B4EE6] flex items-center gap-1"><HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>Platform Guide &amp; Tour</span></button></li>
+                {user && (
+                  <li><button onClick={() => setIsSideDrawerOpen(true)} className="hover:text-[#2B4EE6] font-semibold text-[#2B4EE6] flex items-center gap-1"><Briefcase size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> <span>My Private Dashboard</span></button></li>
+                )}
               </ul>
             </div>
 
@@ -2252,6 +2493,15 @@ export default function JobDashboard() {
         onSuccess={(u) => {
           setUser(u);
           setAuthModalOpen(false);
+          if (u?.id) {
+            loadCandidateData(u.id);
+            try {
+              const tourKey = `nichehire_tour_completed_${u.id}`;
+              if (!localStorage.getItem(tourKey)) {
+                setTimeout(() => setIsTourOpen(true), 600);
+              }
+            } catch {}
+          }
         }}
       />
 
@@ -2329,6 +2579,39 @@ export default function JobDashboard() {
         onSuccess={(newListing) => {
           setAllLiveJobs((prev) => [newListing, ...prev]);
         }}
+      />
+
+      {/* Candidate Private Side Drawer */}
+      <CandidateSideDrawer
+        isOpen={isSideDrawerOpen}
+        onClose={() => setIsSideDrawerOpen(false)}
+        user={user}
+        accessStatus={accessStatus}
+        candidateProfile={candidateProfile}
+        savedJobIds={savedJobIds}
+        savedJobsDetails={savedJobsDetails}
+        onToggleSaveJob={toggleSaveJob}
+        onOpenResumeBuilder={() => setResumeBuilderOpen(true)}
+        onOpenCareerGuidance={() => setCareerGuidanceOpen(true)}
+        onOpenEditProfile={() => setIsProfileModalOpen(true)}
+        onOpenTour={() => setIsTourOpen(true)}
+        onSignOut={handleSignOut}
+      />
+
+      {/* Candidate Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userId={user?.id}
+        userEmail={user?.email}
+        onSaved={(updated) => setCandidateProfile(updated)}
+      />
+
+      {/* Website Tour / Onboarding Guide */}
+      <WebsiteTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        userId={user?.id}
       />
     </div>
   );

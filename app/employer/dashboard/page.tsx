@@ -18,12 +18,15 @@ import {
   Clock,
   Copy,
   CreditCard,
+  Edit3,
+  ExternalLink,
   Globe,
   GraduationCap,
   Landmark,
   Plus,
   Sparkles,
   Target,
+  User,
   Users,
   X,
   XCircle,
@@ -74,8 +77,40 @@ interface PaymentSubmission {
   admin_notes?: string;
 }
 
+export interface EmployerCompanyProfile {
+  companyName: string;
+  legalName: string;
+  gstCin: string;
+  website: string;
+  industry: string;
+  companySize: string;
+  hqCity: string;
+  hqState: string;
+  hiringHubs: string[];
+  contactPerson: string;
+  workEmail: string;
+  phone: string;
+  description: string;
+}
+
+const DEFAULT_COMPANY_PROFILE: EmployerCompanyProfile = {
+  companyName: '',
+  legalName: '',
+  gstCin: '',
+  website: '',
+  industry: 'Banking & Financial Services',
+  companySize: '51-200 employees',
+  hqCity: '',
+  hqState: '',
+  hiringHubs: [],
+  contactPerson: '',
+  workEmail: '',
+  phone: '',
+  description: '',
+};
+
 export default function EmployerDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'applicants' | 'jobs' | 'payments' | 'domains'>('applicants');
+  const [activeTab, setActiveTab] = useState<'applicants' | 'jobs' | 'profile' | 'payments' | 'domains'>('applicants');
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [applicants, setApplicants] = useState<CandidateApplicant[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateApplicant | null>(null);
@@ -88,6 +123,12 @@ export default function EmployerDashboardPage() {
   const [employerAuthModalOpen, setEmployerAuthModalOpen] = useState(false);
   const [employerUser, setEmployerUser] = useState<any>(null);
   const [employerCompany, setEmployerCompany] = useState<string>('');
+
+  // Employer Company Profile State
+  const [companyProfile, setCompanyProfile] = useState<EmployerCompanyProfile>(DEFAULT_COMPANY_PROFILE);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSavedMsg, setProfileSavedMsg] = useState(false);
+  const [hubInput, setHubInput] = useState('');
 
   // Payment Verification State
   const [selectedPlanAmount, setSelectedPlanAmount] = useState<number>(499);
@@ -106,7 +147,7 @@ export default function EmployerDashboardPage() {
   const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
 
   useEffect(() => {
-    // 1. Hydrate employer info from localStorage
+    // 1. Hydrate employer info & profile from localStorage
     try {
       const storedComp = localStorage.getItem('nichehire_employer_company') || '';
       const storedEmail = localStorage.getItem('nichehire_employer_email') || '';
@@ -116,6 +157,24 @@ export default function EmployerDashboardPage() {
       }
       if (storedEmail) {
         setWorkEmail(storedEmail);
+      }
+
+      const storedProfile = localStorage.getItem('nichehire_employer_profile');
+      if (storedProfile) {
+        const parsed = JSON.parse(storedProfile);
+        setCompanyProfile(parsed);
+        if (parsed.companyName) {
+          setEmployerCompany(parsed.companyName);
+          setCompanyName(parsed.companyName);
+        }
+        if (parsed.workEmail) setWorkEmail(parsed.workEmail);
+        if (parsed.phone) setPhone(parsed.phone);
+      } else if (storedComp) {
+        setCompanyProfile((prev) => ({
+          ...prev,
+          companyName: storedComp,
+          workEmail: storedEmail,
+        }));
       }
     } catch {}
 
@@ -416,6 +475,14 @@ export default function EmployerDashboardPage() {
                   </span>
                 </div>
                 <button
+                  onClick={() => setActiveTab('profile')}
+                  className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1 shadow-2xs"
+                  title="Edit Company Profile & Hubs"
+                >
+                  <Building2 size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Edit Profile</span>
+                </button>
+                <button
                   onClick={handleEmployerSignOut}
                   className="px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 font-medium rounded-xl transition-colors"
                 >
@@ -596,6 +663,16 @@ export default function EmployerDashboardPage() {
             }`}
           >
             <ClipboardList size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Active Postings ({jobs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
+              activeTab === 'profile'
+                ? 'border-[#2B4EE6] text-[#2B4EE6]'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Company Profile &amp; Hubs
           </button>
           <button
             onClick={() => setActiveTab('payments')}
@@ -780,7 +857,326 @@ export default function EmployerDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: PAYMENT VERIFICATION & PROOF */}
+        {/* TAB 3: COMPANY PROFILE & HIRING HUBS */}
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-xs font-bold mb-1">
+                  <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Company Profile &amp; Recruiter Presence
+                </div>
+                <h2 className="text-lg font-black text-gray-900">Manage Employer Entity &amp; Hiring Hubs</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Update your official company credentials, legal name, GST/CIN, and active hiring hubs across India.
+                </p>
+              </div>
+
+              {profileSavedMsg && (
+                <div className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 animate-fadeIn">
+                  <Check size={14} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Company profile updated!</span>
+                </div>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setIsSavingProfile(true);
+                try {
+                  localStorage.setItem('nichehire_employer_profile', JSON.stringify(companyProfile));
+                  localStorage.setItem('nichehire_employer_company', companyProfile.companyName);
+                  setEmployerCompany(companyProfile.companyName);
+                  setCompanyName(companyProfile.companyName);
+                  setProfileSavedMsg(true);
+                  setTimeout(() => setProfileSavedMsg(false), 3000);
+                } catch (err) {
+                  console.error(err);
+                } finally {
+                  setIsSavingProfile(false);
+                }
+              }}
+              className="space-y-6"
+            >
+              {/* Entity & Brand Information */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  <span>Corporate Entity &amp; Brand</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Display / Brand Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Tata Technologies, Razorpay, ICICI Securities"
+                      value={companyProfile.companyName}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, companyName: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Registered Legal Entity Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Tata Technologies Limited (ROC Registered)"
+                      value={companyProfile.legalName}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, legalName: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      GSTIN / CIN Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 27AAAAA0000A1Z5 or L72200PN1994PLC013313"
+                      value={companyProfile.gstCin}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, gstCin: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Official Careers Website / ATS URL
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://company.com/careers"
+                      value={companyProfile.website}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, website: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Industry Sector
+                    </label>
+                    <select
+                      value={companyProfile.industry}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, industry: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    >
+                      <option value="Banking & Financial Services">Banking &amp; Financial Services (BFSI)</option>
+                      <option value="Accounting & Audit Services">Accounting, Taxation &amp; Audit</option>
+                      <option value="Logistics & Supply Chain">Logistics, Transportation &amp; Supply Chain</option>
+                      <option value="Legal & Corporate Compliance">Legal, IP &amp; Corporate Compliance</option>
+                      <option value="IT, SaaS & Technology">IT, Software &amp; Technology</option>
+                      <option value="Retail, FMCG & E-Commerce">Retail, FMCG &amp; E-Commerce</option>
+                      <option value="Healthcare & Pharmaceuticals">Healthcare &amp; Pharmaceuticals</option>
+                      <option value="Manufacturing & Industrial">Manufacturing, Auto &amp; Industrial</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Company Size
+                    </label>
+                    <select
+                      value={companyProfile.companySize}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, companySize: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    >
+                      <option value="1-10 employees (Startup / Boutique)">1–10 employees (Startup / Boutique Firm)</option>
+                      <option value="11-50 employees (Growing)">11–50 employees (Growing Enterprise)</option>
+                      <option value="51-200 employees (Mid-Sized)">51–200 employees (Mid-Sized)</option>
+                      <option value="201-500 employees (Large)">201–500 employees (Large)</option>
+                      <option value="500+ employees (Enterprise / MNC)">500+ employees (Enterprise / MNC)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Headquarters & Pan-India Hiring Hubs */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Target size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                  <span>Headquarters &amp; Pan-India Hiring Hubs</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">HQ City</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mumbai, Bangalore, Pune"
+                      value={companyProfile.hqCity}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, hqCity: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">HQ State</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Maharashtra, Karnataka"
+                      value={companyProfile.hqState}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, hqState: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Active Hiring Hubs / Branch Offices Across India
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Add hiring hub (e.g. Jaipur, Nainital, Gangtok, Kolkata, Remote)..."
+                      value={hubInput}
+                      onChange={(e) => setHubInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (hubInput.trim() && !companyProfile.hiringHubs.includes(hubInput.trim())) {
+                            setCompanyProfile({
+                              ...companyProfile,
+                              hiringHubs: [...companyProfile.hiringHubs, hubInput.trim()],
+                            });
+                            setHubInput('');
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (hubInput.trim() && !companyProfile.hiringHubs.includes(hubInput.trim())) {
+                          setCompanyProfile({
+                            ...companyProfile,
+                            hiringHubs: [...companyProfile.hiringHubs, hubInput.trim()],
+                          });
+                          setHubInput('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition-colors"
+                    >
+                      + Add Hub
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {companyProfile.hiringHubs.map((hub) => (
+                      <span
+                        key={hub}
+                        className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-medium inline-flex items-center gap-1.5"
+                      >
+                        <span>{hub}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCompanyProfile({
+                              ...companyProfile,
+                              hiringHubs: companyProfile.hiringHubs.filter((h) => h !== hub),
+                            });
+                          }}
+                          className="hover:text-red-600 text-emerald-600"
+                        >
+                          <X size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Recruiter & HR Contact */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <User size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" />
+                  <span>Talent Acquisition &amp; Recruiter Contact</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Contact Person Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Priya Nair (Head of Talent)"
+                      value={companyProfile.contactPerson}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, contactPerson: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Official Work Email</label>
+                    <input
+                      type="email"
+                      placeholder="recruitment@company.com"
+                      value={companyProfile.workEmail}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, workEmail: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Contact Phone</label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={companyProfile.phone}
+                      onChange={(e) => setCompanyProfile({ ...companyProfile, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">About Company &amp; Culture</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe your organization, mission, hiring culture, and employee benefits..."
+                    value={companyProfile.description}
+                    onChange={(e) => setCompanyProfile({ ...companyProfile, description: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-[#2B4EE6]"
+                  />
+                </div>
+              </div>
+
+              {/* Form Action */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <span className="text-[11px] text-gray-500">
+                  Profile is verified and showcased directly to verified candidates on NicheHire.
+                </span>
+
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-6 py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white rounded-xl text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"
+                >
+                  {isSavingProfile ? (
+                    <span>Saving...</span>
+                  ) : (
+                    <>
+                      <Check size={14} strokeWidth={ICON_STROKE_WIDTH} />
+                      <span>Save Company Profile</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 4: PAYMENT VERIFICATION & PROOF */}
         {activeTab === 'payments' && (
           <div className="space-y-6">
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">

@@ -441,9 +441,9 @@ export default function GovtExamsPage() {
               </div>
               <div className="flex items-baseline">
                 <span className="font-bold text-base text-[#12172B] tracking-tight">NicheHire</span>
-                <span className="ml-2 px-1.5 py-0.5 text-[11px] font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 rounded border border-[#2B4EE6]/20 inline-flex items-center gap-1">
-                  <Landmark size={12} strokeWidth={ICON_STROKE_WIDTH} />
-                  <span>Govt Exams Hub</span>
+                <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold text-amber-900 bg-amber-50 rounded border border-amber-200/90 inline-flex items-center gap-1 shadow-2xs">
+                  <Landmark size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-700" />
+                  <span>Govt Jobs &amp; Public Sector</span>
                 </span>
               </div>
             </Link>
@@ -451,20 +451,20 @@ export default function GovtExamsPage() {
 
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-medium">
             <Link href="/" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors hidden sm:inline">
-              All Careers
+              Verified Private Jobs
             </Link>
             <Link href="/about" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors hidden md:inline">
-              About & Trust
+              About &amp; Trust
             </Link>
             <Link href="/pricing" className="text-[#5B6478] hover:text-[#12172B] px-2.5 py-1.5 rounded transition-colors hidden md:inline">
               Employer Pricing
             </Link>
             <button
               onClick={() => setProfileDrawerOpen(!profileDrawerOpen)}
-              className={`px-3.5 py-1.5 border rounded flex items-center gap-1.5 transition-colors ${
+              className={`px-3.5 py-1.5 border rounded-lg flex items-center gap-1.5 transition-colors ${
                 hasConfiguredProfile
                   ? 'bg-white text-[#12172B] border-[#E4E7EC] hover:border-[#2B4EE6]'
-                  : 'bg-[#2B4EE6] text-white border-[#2B4EE6] hover:bg-[#1E3BBD] shadow-xs'
+                  : 'bg-[#12172B] text-white border-[#12172B] hover:bg-black shadow-xs'
               }`}
             >
               <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
@@ -484,36 +484,36 @@ export default function GovtExamsPage() {
         </div>
       </header>
 
-      {/* ─── Hero & Live Telemetry Strip ─────────────────────────────────────── */}
-      <section className="bg-white border-b border-[#E4E7EC] py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
+      {/* ─── Hero & Live Telemetry Strip ─── */}
+      <section className="bg-gradient-to-b from-amber-50/40 via-white to-white border-b border-[#E4E7EC] py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F7F8FA] border border-[#E4E7EC] text-xs text-[#5B6478]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0E9F6E]"></span>
-            <span>Curated against official state gazettes and .gov.in portals</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-200/80 text-xs text-amber-900 shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+            <span>Curated against official gazette notifications and verified .gov.in portals</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-normal text-[#12172B] tracking-tight leading-tight">
-            Government Exams Calendar. <br />
-            <span className="font-serif italic text-[#12172B]">Regionally prioritised with CV eligibility matching.</span>
+            Government Jobs &amp; Public Sector Openings. <br />
+            <span className="font-serif italic text-amber-900">Official gazette alerts with automated eligibility matching.</span>
           </h1>
 
           <p className="text-sm sm:text-base text-[#5B6478] max-w-2xl mx-auto leading-relaxed">
-            Eliminating aggregator spam and expired circulars. Track deadlines from municipal departments to UPSC and Maharatna PSUs with automated age relaxation calculations.
+            Eliminating aggregator spam and expired circulars. Track authentic opportunities across UPSC, State PSCs, Staff Selection (SSC), Banking (IBPS/SBI), Railways (RRB), High Courts &amp; Maharatna PSUs with automated age relaxation calculations.
           </p>
 
           {/* Dynamic Telemetry Strip */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-[#5B6478]">
-            <div className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-[#F7F8FA] border border-[#E4E7EC]">
-              <span className="flex items-center gap-1.5 font-medium text-[#12172B]">
+            <div className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white border border-[#E4E7EC] shadow-2xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[#12172B]">
                 <span className="w-2 h-2 rounded-full bg-[#0E9F6E] animate-pulse"></span>
-                {telemetry.activeExams} Active Commission Exams
+                {telemetry.activeExams} Active Government Openings
               </span>
               <span className="text-[#E4E7EC]">•</span>
-              <span className="font-medium text-[#12172B]">{telemetry.totalVacancies.toLocaleString('en-IN')} Total Vacancies</span>
+              <span className="font-semibold text-amber-900">{telemetry.totalVacancies.toLocaleString('en-IN')} Total Vacancies</span>
               <span className="text-[#E4E7EC] hidden sm:inline">•</span>
               <span className="hidden sm:inline">{telemetry.uniqueBodies} Official Commissions</span>
               <span className="text-[#E4E7EC] hidden md:inline">•</span>
-              <span className="hidden md:inline text-[#0E9F6E] font-medium">100% Direct Portal Links</span>
+              <span className="hidden md:inline text-[#0E9F6E] font-semibold">100% Direct Gazette Links</span>
             </div>
           </div>
         </div>
@@ -528,7 +528,7 @@ export default function GovtExamsPage() {
               <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
               <div>
                 <div className="font-semibold text-sm text-[#12172B]">
-                  Personalize Your Government Exam Matches &amp; Age Relaxations
+                  Personalize Your Government Job &amp; Public Sector Matches
                 </div>
                 <div className="text-[#5B6478] text-xs mt-0.5 leading-relaxed">
                   Select your academic degree (e.g. <strong>BBA, MBA, B.Tech, B.Com, LLB</strong>), reservation category, and state domicile to calculate accurate commission eligibility. 100% private in-browser matching.
@@ -1072,7 +1072,7 @@ export default function GovtExamsPage() {
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#12172B]"></span>
                       <h2 className="text-base font-semibold text-[#12172B]">
-                        Tier 3: Central Government Examinations
+                        Tier 3: Central Government Jobs &amp; Examinations
                       </h2>
                       <span className="px-2 py-0.5 text-[10px] font-bold bg-[#F7F8FA] text-[#12172B] rounded border border-[#E4E7EC]">
                         All India Cadre
@@ -1408,12 +1408,12 @@ export default function GovtExamsPage() {
       {/* ─── Footer ──────────────────────────────────────────────────────────── */}
       <footer className="bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478] mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
-          <p>© 2026 NicheHire. Verified government exams directory & genuine public sector notifications.</p>
+          <p>© 2026 NicheHire. Verified government jobs directory &amp; genuine public sector notifications.</p>
           <div className="flex justify-center gap-4 text-xs font-medium text-[#12172B]">
             <Link href="/" className="hover:text-[#2B4EE6]">Candidate Search</Link>
-            <Link href="/about" className="hover:text-[#2B4EE6]">About & Verification</Link>
+            <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; Verification</Link>
             <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer Pricing</Link>
-            <Link href="/govt-exams" className="text-[#2B4EE6]">Govt Exams Calendar</Link>
+            <Link href="/govt-exams" className="text-amber-800 font-semibold">Govt Jobs Portal</Link>
           </div>
         </div>
       </footer>
