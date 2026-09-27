@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '../supabase';
 import { X, Building2, Check } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
+import { saveEmployerSession } from '../lib/authSession';
+
 
 interface EmployerAuthModalProps {
   isOpen: boolean;
@@ -80,9 +82,8 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
             console.warn('Could not record employer profile row:', profileErr);
           }
 
-          // Save company info to localStorage for instant hydration
-          localStorage.setItem('nichehire_employer_company', companyName.trim());
-          localStorage.setItem('nichehire_employer_email', email.trim());
+          // Save company info with 2.5-hour auto-logout expiry tracking
+          saveEmployerSession(email.trim(), companyName.trim());
 
           setSuccessMsg('Employer account created successfully! Signing you in...');
           onSuccess(data.user, { companyName: companyName.trim(), email: email.trim() });
@@ -98,10 +99,8 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
         if (error) throw error;
         if (data.user) {
           const comp = data.user.user_metadata?.company_name || '';
-          if (comp) {
-            localStorage.setItem('nichehire_employer_company', comp);
-          }
-          localStorage.setItem('nichehire_employer_email', data.user.email || email.trim());
+          saveEmployerSession(data.user.email || email.trim(), comp);
+
 
           // Guarantee referral code is active
           try {

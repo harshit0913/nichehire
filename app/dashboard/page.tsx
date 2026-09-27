@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../supabase';
+import { getCandidateSession, enforceSessionExpiry } from '../lib/authSession';
 import FeedbackModal from '../components/FeedbackModal';
+
 import {
   BadgeCheck,
   Briefcase,
@@ -69,15 +71,13 @@ export default function CandidateDashboardPage() {
       let activeUserId = session?.user?.id;
 
       if (!activeToken) {
-        try {
-          const saved = localStorage.getItem('nichehire_auth_session');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            activeToken = parsed.sessionToken;
-            activeUserId = parsed.user?.id;
-          }
-        } catch {}
+        const candidateSession = getCandidateSession();
+        if (candidateSession) {
+          activeToken = candidateSession.sessionToken;
+          activeUserId = candidateSession.user?.id;
+        }
       }
+
 
       if (!activeToken || !activeUserId) {
         setLoading(false);

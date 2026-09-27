@@ -264,15 +264,16 @@ export function matchCoordinatesToRegion(lat: number, lon: number): LocationMatc
 
 import { PAN_INDIA_REGIONS } from './panIndiaGeo';
 
-// All 28 States & 8 Union Territories dynamically sourced from Pan-India Geographic Engine
+// All 28 States & 8 Union Territories dynamically sourced from Pan-India Geographic Engine, strictly sorted alphabetically
 export const ALL_INDIAN_STATES = [
   'All India',
-  ...Object.keys(PAN_INDIA_REGIONS),
+  ...Object.keys(PAN_INDIA_REGIONS).sort((a, b) => a.localeCompare(b)),
 ] as const;
 
 export const POPULAR_DISTRICTS_BY_STATE: Record<string, string[]> = Object.fromEntries(
   Object.entries(PAN_INDIA_REGIONS).map(([state, info]) => [
     state,
-    [...info.districts, 'All Districts'],
+    ['All Districts', ...Array.from(new Set(info.districts)).sort((a, b) => a.localeCompare(b))],
   ])
 );
+

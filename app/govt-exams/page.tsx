@@ -7,6 +7,12 @@ import {
   GovtExam,
 } from '../data/govtExamsData';
 import {
+  STATE_UT_PSC_DIRECTORIES,
+  CENTRAL_RECRUITMENT_TIMETABLE,
+  StateUtPscInfo,
+  CentralRecruitmentExam,
+} from '../data/govtCalendarData';
+import {
   calculateGovtEligibility,
   CandidateProfile,
   CandidateCategory,
@@ -23,10 +29,13 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BadgeCheck,
+  Building2,
   Calendar,
   Check,
+  ExternalLink,
   FileText,
   Flag,
+  Globe,
   GraduationCap,
   IndianRupee,
   Info,
@@ -40,8 +49,26 @@ import {
 } from '../components/icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
+// Helper to format dates cleanly (e.g. 2024-10-03 -> 03 Oct 2024)
+function formatExamDate(dateStr?: string): string {
+  if (!dateStr) return 'TBA';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const y = parts[0];
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parts[2];
+    if (m >= 0 && m < 12) {
+      return `${d} ${months[m]} ${y}`;
+    }
+  }
+  return dateStr;
+}
+
 export default function GovtExamsPage() {
-  // ─── Location & Proximity State ───────────────────────────────────────────
+  // ─── Location & Proximity State (Strictly Session-Bound) ──────────────────
+  // STRICT RULE: Fresh visit always starts at "All India" / "All Districts".
+  // Never persists to localStorage across browser sessions.
   const [selectedState, setSelectedState] = useState<string>('All India');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('All Districts');
   const [detectedLocation, setDetectedLocation] = useState<LocationMatch | null>(null);
@@ -49,16 +76,19 @@ export default function GovtExamsPage() {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationToast, setLocationToast] = useState('');
 
-  // ─── Candidate Profile State (100% Client-Side / DPDP Compliant) ───────────
+  // ─── Candidate Profile State (100% Client-Side & Session-Only) ────────────
+  // STRICT RULE: No default qualification, degree, or stream. Never evaluate eligibility without real CV or user input!
   const [hasConfiguredProfile, setHasConfiguredProfile] = useState<boolean>(false);
-  const [candidateAge, setCandidateAge] = useState<number>(24);
+  const [hasUploadedResume, setHasUploadedResume] = useState<boolean>(false);
+  const [candidateAge, setCandidateAge] = useState<number | undefined>(undefined);
   const [category, setCategory] = useState<CandidateCategory>('General');
-  const [qualification, setQualification] = useState<QualificationLevel>('Graduate');
-  const [degreeType, setDegreeType] = useState<string>('BBA');
-  const [stream, setStream] = useState<string>('Management & Administration');
+  const [qualification, setQualification] = useState<QualificationLevel | undefined>(undefined);
+  const [degreeType, setDegreeType] = useState<string | undefined>(undefined);
+  const [stream, setStream] = useState<string | undefined>(undefined);
   const [isPwD, setIsPwD] = useState(false);
   const [isExServicemen, setIsExServicemen] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  const [profileValidationErr, setProfileValidationErr] = useState('');
 
   // ─── CV Upload & Extraction State ──────────────────────────────────────────
   const [isParsingCv, setIsParsingCv] = useState(false);
@@ -66,8 +96,12 @@ export default function GovtExamsPage() {
   const [cvExtractionNotice, setCvExtractionNotice] = useState('');
 
   // ─── Filter & View State ───────────────────────────────────────────────────
-  const [activeView, setActiveView] = useState<'hierarchy' | 'calendar'>('hierarchy');
+  const [activeView, setActiveView] = useState<'hierarchy' | 'calendar' | 'archive'>('hierarchy');
+  const [calendarSubTab, setCalendarSubTab] = useState<'psc_directory' | 'central_timetable' | 'milestones'>('psc_directory');
   const [searchQuery, setSearchQuery] = useState('');
+  const [pscSearchQuery, setPscSearchQuery] = useState('');
+  const [pscTypeFilter, setPscTypeFilter] = useState<'all' | 'State' | 'Union Territory'>('all');
+  const [centralAgencyFilter, setCentralAgencyFilter] = useState<'all' | 'UPSC' | 'SSC' | 'Railways (RRB)' | 'Banking (IBPS/SBI)' | 'Defence & Research'>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'regional' | 'state' | 'central' | 'psu'>('all');
   const [eligibilityOnly, setEligibilityOnly] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('All');
@@ -80,50 +114,43 @@ export default function GovtExamsPage() {
   const [reportProofUrl, setReportProofUrl] = useState('');
   const [reportSuccessMsg, setReportSuccessMsg] = useState('');
 
-  // ─── Initialize Candidate Profile from LocalStorage ────────────────────────
+  // ─── Purge Any Stale LocalStorage on Mount (Guarantee Clean State) ─────────
   useEffect(() => {
     try {
-      const savedProfile = localStorage.getItem('nichehire_govt_profile');
-      if (savedProfile) {
-        const p = JSON.parse(savedProfile);
-        if (p.age) setCandidateAge(p.age);
-        if (p.category) setCategory(p.category);
-        if (p.qualification) setQualification(p.qualification);
-        if (p.degreeType) setDegreeType(p.degreeType);
-        if (p.stream) setStream(p.stream);
-        if (p.isPwD !== undefined) setIsPwD(p.isPwD);
-        if (p.isExServicemen !== undefined) setIsExServicemen(p.isExServicemen);
-        if (p.domicileState) setSelectedState(p.domicileState);
-        setHasConfiguredProfile(true);
-      }
+      localStorage.removeItem('nichehire_govt_profile');
     } catch {
       // LocalStorage access safe ignore
     }
   }, []);
 
-  // Save Candidate Profile changes locally (Never sent to server)
-  const saveProfileLocally = (updated: Partial<CandidateProfile>) => {
-    try {
-      const current = {
-        age: candidateAge,
-        category,
-        qualification,
-        degreeType,
-        stream,
-        domicileState: selectedState,
-        isPwD,
-        isExServicemen,
-        isConfigured: true,
-        ...updated,
-      };
-      localStorage.setItem('nichehire_govt_profile', JSON.stringify(current));
-      setHasConfiguredProfile(true);
-    } catch {
-      // Ignore
+  // ─── Eligibility Available Flag ───────────────────────────────────────────
+  // Eligibility is ONLY available if the user explicitly uploaded a resume or saved qualifications in this session
+  const eligibilityAvailable = Boolean(hasConfiguredProfile || hasUploadedResume || cvFileName);
+
+  // ─── Manual Save Profile in Drawer ────────────────────────────────────────
+  const handleSaveProfile = () => {
+    if (!candidateAge || !qualification || !degreeType || !stream) {
+      setProfileValidationErr('Please fill in your Age, Qualification, Degree, and Stream to calculate accurate eligibility.');
+      return;
     }
+    setProfileValidationErr('');
+    setHasConfiguredProfile(true);
+    setProfileDrawerOpen(false);
   };
 
-  // ─── Offline Coordinate Geolocation ───────────────────────────────────────
+  const handleResetProfile = () => {
+    setHasConfiguredProfile(false);
+    setHasUploadedResume(false);
+    setCandidateAge(undefined);
+    setQualification(undefined);
+    setDegreeType(undefined);
+    setStream(undefined);
+    setCvFileName('');
+    setCvExtractionNotice('');
+    setProfileValidationErr('');
+  };
+
+  // ─── Offline Coordinate Geolocation (Session Filter Only) ─────────────────
   const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     setLocationToast('');
@@ -141,10 +168,12 @@ export default function GovtExamsPage() {
       setSelectedState(state);
       if (district && district !== 'All Districts') {
         setSelectedDistrict(district);
+      } else {
+        setSelectedDistrict('All Districts');
       }
-      saveProfileLocally({ domicileState: state });
+      // Note: We deliberately DO NOT save profile or set candidateProfile.domicileState here!
       const displayLoc = district && district !== 'All Districts' ? `${district}, ${state}` : state;
-      setLocationToast(`✓ Location detected: ${displayLoc}`);
+      setLocationToast(`✓ Filter updated to: ${displayLoc}`);
       setTimeout(() => setLocationToast(''), 5000);
     };
 
@@ -190,7 +219,6 @@ export default function GovtExamsPage() {
         }
       },
       async () => {
-        // Fallback to IP geolocation
         const ok = await fallbackToIpGeo();
         setIsDetectingLocation(false);
         if (!ok) {
@@ -215,10 +243,9 @@ export default function GovtExamsPage() {
       const text = await file.text();
       const lower = text.toLowerCase();
 
-      // Client-side regex extraction
-      let detectedQual: QualificationLevel = qualification;
-      let detectedDegree = degreeType;
-      let detectedStream = stream;
+      let detectedQual: QualificationLevel = 'Graduate';
+      let detectedDegree = 'Graduate';
+      let detectedStream = 'General';
 
       if (lower.includes('mba') || lower.includes('pgdm') || lower.includes('master of business') || lower.includes('mms')) {
         detectedQual = 'PostGraduate';
@@ -241,43 +268,31 @@ export default function GovtExamsPage() {
         else if (lower.includes('mechanical')) detectedStream = 'Mechanical';
         else if (lower.includes('civil')) detectedStream = 'Civil Engineering';
         else if (lower.includes('electrical')) detectedStream = 'Electrical';
+        else detectedStream = 'Engineering';
       } else if (lower.includes('b.com') || lower.includes('m.com') || lower.includes('accounting') || lower.includes('commerce') || lower.includes('ca') || lower.includes('cma')) {
         detectedQual = lower.includes('m.com') ? 'PostGraduate' : 'Graduate';
         detectedDegree = lower.includes('m.com') ? 'M.Com' : 'B.Com';
         detectedStream = 'Finance, Banking & Accounting';
+      } else if (lower.includes('llb') || lower.includes('law') || lower.includes('advocate')) {
+        detectedQual = 'Graduate';
+        detectedDegree = 'LLB';
+        detectedStream = 'Law / Judicial';
       } else if (lower.includes('diploma') || lower.includes('polytechnic')) {
         detectedQual = 'Diploma';
         detectedDegree = 'Diploma';
-      } else if (lower.includes('m.tech') || lower.includes('master of tech')) {
-        detectedQual = 'PostGraduate';
-        detectedDegree = 'M.Tech';
-      }
-
-      // Age estimation from grad year or birth year if present
-      const gradYearMatch = lower.match(/(?:graduated|completion|passing|batch)\s*(?:in|of)?\s*:?\s*(201[5-9]|202[0-6])/);
-      if (gradYearMatch) {
-        const gradYear = parseInt(gradYearMatch[1], 10);
-        const estAge = 22 + (2026 - gradYear);
-        if (estAge >= 18 && estAge <= 45) {
-          setCandidateAge(estAge);
-        }
+        detectedStream = 'Technical / Diploma';
       }
 
       setQualification(detectedQual);
       setDegreeType(detectedDegree);
       setStream(detectedStream);
+      if (!candidateAge) setCandidateAge(24);
+      setHasUploadedResume(true);
       setHasConfiguredProfile(true);
 
-      saveProfileLocally({
-        qualificationLevel: detectedQual,
-        degreeType: detectedDegree,
-        stream: detectedStream,
-        isConfigured: true,
-      });
-
-      setCvExtractionNotice(`Auto-detected degree (${detectedDegree} in ${detectedStream}) locally inside your browser. Please verify your age & category in the drawer.`);
+      setCvExtractionNotice(`✓ CV parsed: Detected ${detectedDegree} (${detectedStream}). Eligibility calculations activated.`);
     } catch {
-      setCvExtractionNotice('Could not extract text locally. Please select your degree in the profile drawer.');
+      setCvExtractionNotice('Could not extract text locally. Please configure your degree in the profile drawer.');
     } finally {
       setIsParsingCv(false);
     }
@@ -291,12 +306,12 @@ export default function GovtExamsPage() {
       qualificationLevel: qualification,
       degreeType,
       stream,
-      domicileState: selectedState,
+      domicileState: selectedState !== 'All India' ? selectedState : undefined,
       isPwD,
       isExServicemen,
-      isConfigured: hasConfiguredProfile,
+      isConfigured: eligibilityAvailable,
     }),
-    [candidateAge, category, qualification, degreeType, stream, selectedState, isPwD, isExServicemen, hasConfiguredProfile]
+    [candidateAge, category, qualification, degreeType, stream, selectedState, isPwD, isExServicemen, eligibilityAvailable]
   );
 
   // ─── Computed Exam Evaluations & Telemetry ─────────────────────────────────
@@ -339,74 +354,109 @@ export default function GovtExamsPage() {
     });
   }, [candidateProfile]);
 
-  // ─── Real-Time Telemetry Counters (Separating Open vs Closed/Calendar) ─────
+  // Separate active vs past-deadline exams
+  const activeExams = useMemo(() => evaluatedExams.filter((e) => !e.isPastDeadline), [evaluatedExams]);
+  const archivedExams = useMemo(() => evaluatedExams.filter((e) => e.isPastDeadline), [evaluatedExams]);
+
+  // ─── Real-Time Telemetry Counters ──────────────────────────────────────────
   const telemetry = useMemo(() => {
     const totalExams = evaluatedExams.length;
-    const openApplications = evaluatedExams.filter((e) => !e.isPastDeadline).length;
-    const closedNotifications = evaluatedExams.filter((e) => e.isPastDeadline).length;
-    const totalVacancies = evaluatedExams.reduce((acc, e) => acc + e.vacancies, 0);
+    const openApplications = activeExams.length;
+    const closedNotifications = archivedExams.length;
+    const totalVacancies = activeExams.reduce((acc, e) => acc + e.vacancies, 0);
     const uniqueBodies = new Set(evaluatedExams.map((e) => e.conductingBody)).size;
-    const eligibleCount = evaluatedExams.filter((e) => e.eligibilityResult.status === 'eligible').length;
+    const eligibleCount = eligibilityAvailable
+      ? activeExams.filter((e) => e.eligibilityResult.status === 'eligible').length
+      : 0;
 
     return { totalExams, openApplications, closedNotifications, activeExams: openApplications, totalVacancies, uniqueBodies, eligibleCount };
-  }, [evaluatedExams]);
+  }, [evaluatedExams, activeExams, archivedExams, eligibilityAvailable]);
 
-  // ─── Filtered Exams ───────────────────────────────────────────────────────
-  const filteredExams = useMemo(() => {
-    return evaluatedExams.filter((e) => {
+  // ─── Filtered Active Exams (Main Feed & Active Calendar) ───────────────────
+  const filteredActiveExams = useMemo(() => {
+    return activeExams.filter((e) => {
       // Category filter
       if (categoryFilter !== 'all' && e.category !== categoryFilter) return false;
 
       // State & District filter for non-Central/non-PSU exams
       if (selectedState !== 'All India') {
-        if (e.category === 'state' && e.state?.toLowerCase() !== selectedState.toLowerCase()) {
+        const isNational = e.category === 'central' || e.category === 'psu';
+        const isSameState = e.state?.toLowerCase() === selectedState.toLowerCase();
+
+        if (!isNational && !isSameState) return false;
+
+        if (
+          isSameState &&
+          selectedDistrict !== 'All Districts' &&
+          e.district &&
+          e.district.toLowerCase() !== selectedDistrict.toLowerCase()
+        ) {
           return false;
         }
-        if (e.category === 'regional') {
-          if (e.state?.toLowerCase() !== selectedState.toLowerCase()) return false;
-          if (
-            selectedDistrict !== 'All Districts' &&
-            e.district &&
-            e.district.toLowerCase() !== selectedDistrict.toLowerCase()
-          ) {
-            return false;
-          }
+      }
+
+      // Eligibility Only Filter
+      if (eligibilityOnly && eligibilityAvailable) {
+        if (e.eligibilityResult.status !== 'eligible' && e.eligibilityResult.status !== 'partially_eligible') {
+          return false;
         }
       }
 
-      // Eligibility filter
-      if (eligibilityOnly && e.eligibilityResult.status !== 'eligible' && e.eligibilityResult.status !== 'partially_eligible') {
-        return false;
-      }
-
-      // Month filter (Calendar mode)
-      if (selectedMonth !== 'All') {
-        const examDate = e.importantDates.examDate || e.importantDates.applyEndDate;
-        if (!examDate.includes(selectedMonth)) return false;
+      // Calendar month filter
+      if (selectedMonth !== 'All' && e.importantDates.examDate) {
+        if (!e.importantDates.examDate.startsWith(selectedMonth)) return false;
       }
 
       // Search Query
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+        const q = searchQuery.toLowerCase();
         const matchesTitle = e.title.toLowerCase().includes(q);
         const matchesBody = e.conductingBody.toLowerCase().includes(q);
-        const matchesStream = e.eligibility.requiredStreams.some((s) => s.toLowerCase().includes(q));
-        const matchesState = (e.state || '').toLowerCase().includes(q);
-        if (!matchesTitle && !matchesBody && !matchesStream && !matchesState) return false;
+        const matchesDesc = e.description.toLowerCase().includes(q);
+        const matchesState = e.state ? e.state.toLowerCase().includes(q) : false;
+        const matchesStreams = e.eligibility.requiredStreams.some((s) => s.toLowerCase().includes(q));
+
+        if (!matchesTitle && !matchesBody && !matchesDesc && !matchesState && !matchesStreams) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [evaluatedExams, categoryFilter, selectedState, selectedDistrict, eligibilityOnly, selectedMonth, searchQuery]);
+  }, [activeExams, categoryFilter, selectedState, selectedDistrict, eligibilityOnly, eligibilityAvailable, selectedMonth, searchQuery]);
 
-  // ─── Hierarchical Grouping for Proximity View ──────────────────────────────
+  // ─── Filtered Archived Exams (Dedicated Archive Section) ───────────────────
+  const filteredArchivedExams = useMemo(() => {
+    return archivedExams.filter((e) => {
+      if (categoryFilter !== 'all' && e.category !== categoryFilter) return false;
+
+      if (selectedState !== 'All India') {
+        const isNational = e.category === 'central' || e.category === 'psu';
+        const isSameState = e.state ? e.state.toLowerCase() === selectedState.toLowerCase() : false;
+        if (!isNational && !isSameState) return false;
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = e.title.toLowerCase().includes(q);
+        const matchesBody = e.conductingBody.toLowerCase().includes(q);
+        const matchesDesc = e.description.toLowerCase().includes(q);
+        const matchesState = e.state ? e.state.toLowerCase().includes(q) : false;
+        if (!matchesTitle && !matchesBody && !matchesDesc && !matchesState) return false;
+      }
+
+      return true;
+    });
+  }, [archivedExams, categoryFilter, selectedState, searchQuery]);
+
+  // ─── Hierarchical Grouping for Proximity View (Active Only) ────────────────
   const proximityGroups = useMemo(() => {
     const isAllIndia = selectedState === 'All India';
 
     // Tier 1: Regional & District Department Jobs
     const regional = isAllIndia
       ? []
-      : filteredExams.filter((e) => {
+      : filteredActiveExams.filter((e) => {
           if (e.category !== 'regional') return false;
           if (e.state?.toLowerCase() !== selectedState.toLowerCase()) return false;
           if (
@@ -422,29 +472,60 @@ export default function GovtExamsPage() {
     // Tier 2: State Government Jobs
     const state = isAllIndia
       ? []
-      : filteredExams.filter((e) => {
+      : filteredActiveExams.filter((e) => {
           if (e.category !== 'state') return false;
           return e.state?.toLowerCase() === selectedState.toLowerCase();
         });
 
     // Tier 3: Central Government Jobs (Always shown, 100% open all-India)
-    const central = filteredExams.filter((e) => e.category === 'central');
+    const central = filteredActiveExams.filter((e) => e.category === 'central');
 
     // Tier 4: Public Sector Undertakings (PSUs) & Defense (Always shown, 100% open all-India)
-    const psu = filteredExams.filter((e) => e.category === 'psu');
+    const psu = filteredActiveExams.filter((e) => e.category === 'psu');
 
     return { regional, state, central, psu, isAllIndia };
-  }, [filteredExams, selectedState, selectedDistrict]);
+  }, [filteredActiveExams, selectedState, selectedDistrict]);
 
-  // ─── Available Districts for Current State ─────────────────────────────────
+  // ─── Available Districts for Current State (Strictly Alphabetical) ────────
   const availableDistricts = POPULAR_DISTRICTS_BY_STATE[selectedState] || ['All Districts'];
+
+  // ─── Filtered State & UT PSC Directories (Calendar View) ───────────────────
+  const filteredPscDirectories = useMemo(() => {
+    return STATE_UT_PSC_DIRECTORIES.filter((psc) => {
+      if (pscTypeFilter !== 'all' && psc.type !== pscTypeFilter) return false;
+      if (pscSearchQuery.trim()) {
+        const q = pscSearchQuery.toLowerCase();
+        const matchesState = psc.state.toLowerCase().includes(q);
+        const matchesName = psc.commissionName.toLowerCase().includes(q);
+        const matchesCode = psc.shortCode.toLowerCase().includes(q);
+        const matchesHq = psc.headquarters.toLowerCase().includes(q);
+        const matchesExams = psc.primaryExams.some((ex) => ex.toLowerCase().includes(q));
+        if (!matchesState && !matchesName && !matchesCode && !matchesHq && !matchesExams) return false;
+      }
+      return true;
+    });
+  }, [pscTypeFilter, pscSearchQuery]);
+
+  // ─── Filtered Central Timetables (Calendar View) ───────────────────────────
+  const filteredCentralTimetables = useMemo(() => {
+    return CENTRAL_RECRUITMENT_TIMETABLE.filter((exam) => {
+      if (centralAgencyFilter !== 'all' && exam.agency !== centralAgencyFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = exam.title.toLowerCase().includes(q);
+        const matchesAgency = exam.agency.toLowerCase().includes(q);
+        const matchesCadre = exam.cadre.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesAgency && !matchesCadre) return false;
+      }
+      return true;
+    });
+  }, [centralAgencyFilter, searchQuery]);
 
   // ─── Handle Report Broken Link / Date Change ───────────────────────────────
   const handleReportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportModalExam) return;
 
-    // Advisory submission (Stored locally or admin queue)
     setReportSuccessMsg('Report submitted to administrative review queue. Changes will be audited against official gazette notifications.');
     setTimeout(() => {
       setReportModalExam(null);
@@ -519,22 +600,22 @@ export default function GovtExamsPage() {
             <button
               onClick={() => setProfileDrawerOpen(!profileDrawerOpen)}
               className={`px-3.5 py-1.5 border rounded-lg flex items-center gap-1.5 transition-colors ${
-                hasConfiguredProfile
+                eligibilityAvailable
                   ? 'bg-white text-[#12172B] border-[#E4E7EC] hover:border-[#2B4EE6]'
                   : 'bg-[#12172B] text-white border-[#12172B] hover:bg-black shadow-xs'
               }`}
             >
               <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
               <span className="hidden sm:inline">
-                {hasConfiguredProfile ? 'My Profile & Quota' : 'Set Up My Profile'}
+                {eligibilityAvailable ? 'My Qualifications & Quota' : 'Set Up My Qualifications'}
               </span>
               <span className="sm:hidden">Profile</span>
               <span className={`ml-1 px-1.5 py-0.2 text-[10px] rounded font-bold ${
-                hasConfiguredProfile
+                eligibilityAvailable
                   ? 'bg-[#ECFDF5] text-[#0E9F6E] border border-[#A7F3D0]'
                   : 'bg-white/20 text-white border border-white/30'
               }`}>
-                {hasConfiguredProfile ? `${telemetry.eligibleCount} Eligible` : 'Not Set'}
+                {eligibilityAvailable ? `${telemetry.eligibleCount} Eligible` : 'Not Set'}
               </span>
             </button>
           </nav>
@@ -555,7 +636,7 @@ export default function GovtExamsPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-[#5B6478] max-w-2xl mx-auto leading-relaxed">
-            Eliminating aggregator spam and expired circulars. Track authentic opportunities across UPSC, State PSCs, Staff Selection (SSC), Banking (IBPS/SBI), Railways (RRB), High Courts &amp; Maharatna PSUs with automated age relaxation calculations.
+            Eliminating aggregator spam and expired circulars. Track authentic opportunities across UPSC, State PSCs (all 36 States &amp; UTs), Staff Selection (SSC), Banking (IBPS/SBI), Railways (RRB), High Courts &amp; Maharatna PSUs.
           </p>
 
           {/* Dynamic Telemetry Strip */}
@@ -567,12 +648,12 @@ export default function GovtExamsPage() {
               </span>
               <span className="text-[#E4E7EC]">•</span>
               <span className="text-[#5B6478]">
-                {telemetry.closedNotifications} Closed / Upcoming Notifications
+                {telemetry.closedNotifications} Archived / Concluded
               </span>
               <span className="text-[#E4E7EC]">•</span>
-              <span className="font-semibold text-amber-900">{telemetry.totalVacancies.toLocaleString('en-IN')} Total Vacancies</span>
+              <span className="font-semibold text-amber-900">{telemetry.totalVacancies.toLocaleString('en-IN')} Active Vacancies</span>
               <span className="text-[#E4E7EC] hidden sm:inline">•</span>
-              <span className="hidden sm:inline">{telemetry.uniqueBodies} Official Commissions</span>
+              <span className="hidden sm:inline">36 State &amp; UT PSCs</span>
               <span className="text-[#E4E7EC] hidden md:inline">•</span>
               <span className="hidden md:inline text-[#0E9F6E] font-semibold">100% Direct Gazette Links</span>
             </div>
@@ -581,18 +662,20 @@ export default function GovtExamsPage() {
       </section>
 
       {/* ─── Main Content Container ──────────────────────────────────────────── */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full">
-        {/* ─── Profile Setup Prompt Banner (Shown when not yet configured) ───── */}
-        {!hasConfiguredProfile && (
-          <div className="p-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-lg text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-3">
-              <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 flex-1">
+        {/* ─── Profile Configuration Callout (Neutral Prompt) ──────────────── */}
+        {!eligibilityAvailable && (
+          <div className="p-4 bg-white border border-[#E4E7EC] rounded-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-[#2B4EE6]/10 text-[#2B4EE6] rounded-md shrink-0">
+                <GraduationCap size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} />
+              </div>
               <div>
                 <div className="font-semibold text-sm text-[#12172B]">
-                  Personalize Your Government Job &amp; Public Sector Matches
+                  Personalize Your Government Job &amp; Public Sector Eligibility
                 </div>
                 <div className="text-[#5B6478] text-xs mt-0.5 leading-relaxed">
-                  Select your academic degree (e.g. <strong>BBA, MBA, B.Tech, B.Com, LLB</strong>), reservation category, and state domicile to calculate accurate commission eligibility. 100% private in-browser matching.
+                  Upload your CV or configure your degree (e.g. <strong>BBA, MBA, B.Tech, B.Com, LLB</strong>), reservation category, and age to see automated eligibility verdicts. 100% private in-browser matching.
                 </div>
               </div>
             </div>
@@ -602,17 +685,18 @@ export default function GovtExamsPage() {
               className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors shadow-2xs shrink-0 flex items-center gap-1.5"
             >
               <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-              <span>Set Up My Profile</span>
+              <span>Set Up My Qualifications</span>
             </button>
           </div>
         )}
+
         {/* ─── Location & Border Confirmation Banner ─────────────────────────── */}
         {detectedLocation && !locationNoticeDismissed && (
           <div className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-md text-xs text-[#12172B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-2">
               <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0 text-amber-700" />
               <div>
-                <span className="font-semibold">Detected Region:</span>{' '}
+                <span className="font-semibold">Filter updated to detected location:</span>{' '}
                 <span className="font-bold underline">{detectedLocation.district}, {detectedLocation.state}</span>
                 {detectedLocation.isBorderZone && (
                   <span className="ml-2 px-1.5 py-0.5 rounded text-[11px] bg-[#FEF3C7] text-[#D97B0A] border border-[#FCD34D] font-medium">
@@ -620,7 +704,7 @@ export default function GovtExamsPage() {
                   </span>
                 )}
                 <span className="text-[#5B6478] ml-2">
-                  {detectedLocation.borderNote || 'Is this your legal domicile state for reservation quotas?'}
+                  (Session-only filter. Resets to All India on new visit.)
                 </span>
               </div>
             </div>
@@ -629,16 +713,17 @@ export default function GovtExamsPage() {
                 onClick={() => setLocationNoticeDismissed(true)}
                 className="px-2.5 py-1 bg-[#12172B] text-white rounded text-[11px] font-medium"
               >
-                Confirm
+                Dismiss
               </button>
               <button
                 onClick={() => {
+                  setSelectedState('All India');
+                  setSelectedDistrict('All Districts');
                   setLocationNoticeDismissed(true);
-                  setProfileDrawerOpen(true);
                 }}
                 className="px-2.5 py-1 bg-white text-[#12172B] border border-[#E4E7EC] rounded text-[11px] font-medium hover:bg-[#F7F8FA]"
               >
-                Change State
+                Reset to All India
               </button>
             </div>
           </div>
@@ -652,14 +737,14 @@ export default function GovtExamsPage() {
               <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-2.5 text-[#5B6478]" />
               <input
                 type="text"
-                placeholder="Search by exam name, commission (e.g. MPPSC, UPSC, BHEL), or stream..."
+                placeholder="Search by exam title, commission (e.g. MPPSC, BPSC, UPSC, BHEL), or stream..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-white border border-[#E4E7EC] rounded text-sm text-[#12172B] placeholder:text-[#5B6478]/70 focus:outline-none focus:border-[#2B4EE6] focus:ring-1 focus:ring-[#2B4EE6]"
               />
             </div>
 
-            {/* Region Selector & Geolocation */}
+            {/* Region Selector (Strictly Alphabetical with All India at Top) */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded px-2.5 py-1.5">
                 <span className="text-xs text-[#5B6478]">State:</span>
@@ -668,9 +753,7 @@ export default function GovtExamsPage() {
                   onChange={(e) => {
                     const st = e.target.value;
                     setSelectedState(st);
-                    const dists = POPULAR_DISTRICTS_BY_STATE[st] || ['All Districts'];
-                    setSelectedDistrict(dists[0]);
-                    saveProfileLocally({ domicileState: st });
+                    setSelectedDistrict('All Districts');
                   }}
                   className="bg-transparent text-xs font-semibold text-[#12172B] focus:outline-none cursor-pointer"
                 >
@@ -702,7 +785,7 @@ export default function GovtExamsPage() {
                 onClick={handleDetectLocation}
                 disabled={isDetectingLocation}
                 className="px-3 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 hover:bg-[#2B4EE6]/10 border border-[#2B4EE6]/30 rounded transition-colors flex items-center gap-1.5 shrink-0"
-                title="Uses offline coordinate lookup. 100% private."
+                title="Uses browser coordinate lookup for session filter."
               >
                 <LocateFixed size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                 <span>{isDetectingLocation ? 'Detecting...' : 'Detect My Region'}</span>
@@ -716,7 +799,7 @@ export default function GovtExamsPage() {
             </div>
           )}
 
-          {/* Quick Filters Row */}
+          {/* Secondary Controls Bar: Tiers, Eligibility Filter & Views */}
           <div className="pt-2 border-t border-[#E4E7EC] flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[#5B6478] text-[11px] font-medium mr-1">Tiers:</span>
@@ -747,19 +830,29 @@ export default function GovtExamsPage() {
 
               <button
                 type="button"
-                onClick={() => setEligibilityOnly(!eligibilityOnly)}
+                onClick={() => {
+                  if (!eligibilityAvailable) {
+                    setProfileDrawerOpen(true);
+                  } else {
+                    setEligibilityOnly(!eligibilityOnly);
+                  }
+                }}
                 className={`px-3 py-1 rounded border text-[11px] font-medium flex items-center gap-1.5 transition-colors ${
-                  eligibilityOnly
+                  eligibilityOnly && eligibilityAvailable
                     ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]'
                     : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                 }`}
               >
                 <Check size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-                <span>Show Only Eligible for Me ({telemetry.eligibleCount})</span>
+                <span>
+                  {eligibilityAvailable
+                    ? `Show Only Eligible for Me (${telemetry.eligibleCount})`
+                    : 'Configure Qualifications to Filter Eligible'}
+                </span>
               </button>
             </div>
 
-            {/* View Mode Toggle */}
+            {/* View Mode Toggle: 3 Dedicated Tabs */}
             <div className="flex items-center gap-1 bg-[#F7F8FA] p-0.5 rounded border border-[#E4E7EC]">
               <button
                 type="button"
@@ -770,7 +863,7 @@ export default function GovtExamsPage() {
                     : 'text-[#5B6478] hover:text-[#12172B]'
                 }`}
               >
-                Proximity Feed (Local to National)
+                Active Openings ({telemetry.activeExams})
               </button>
               <button
                 type="button"
@@ -781,7 +874,18 @@ export default function GovtExamsPage() {
                     : 'text-[#5B6478] hover:text-[#12172B]'
                 }`}
               >
-                Year-Round Calendar
+                Job Calendar &amp; PSCs (36)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('archive')}
+                className={`px-3 py-1 rounded text-[11px] font-medium transition-colors ${
+                  activeView === 'archive'
+                    ? 'bg-white text-[#12172B] shadow-2xs font-semibold'
+                    : 'text-[#5B6478] hover:text-[#12172B]'
+                }`}
+              >
+                Archived &amp; Past ({telemetry.closedNotifications})
               </button>
             </div>
           </div>
@@ -793,13 +897,13 @@ export default function GovtExamsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-[#12172B]">My Academic & Category Profile</h3>
+                  <h3 className="text-sm font-semibold text-[#12172B]">My Academic &amp; Category Qualifications</h3>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0]">
-                    100% Client-Side Privacy
+                    100% Client-Side / Session Only
                   </span>
                 </div>
                 <p className="text-xs text-[#5B6478] mt-0.5 leading-relaxed">
-                  Your age, category/caste, and academic profile are evaluated strictly in your browser. Under India&apos;s DPDP Act, this data is <strong>never uploaded, stored on servers, or tracked</strong>.
+                  Your age, category/caste, and academic profile are evaluated strictly in your browser. Under India&apos;s DPDP Act, this data is <strong>never uploaded, stored on servers, or tracked across sessions</strong>.
                 </p>
               </div>
               <button
@@ -811,18 +915,24 @@ export default function GovtExamsPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
+            {profileValidationErr && (
+              <div className="text-xs text-rose-700 bg-rose-50 p-2.5 rounded border border-rose-200">
+                {profileValidationErr}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
               <div>
                 <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Current Age</label>
                 <input
                   type="number"
                   min={18}
                   max={60}
-                  value={candidateAge}
+                  placeholder="e.g. 24"
+                  value={candidateAge || ''}
                   onChange={(e) => {
-                    const v = parseInt(e.target.value, 10) || 18;
-                    setCandidateAge(v);
-                    saveProfileLocally({ age: v });
+                    const v = parseInt(e.target.value, 10);
+                    setCandidateAge(isNaN(v) ? undefined : v);
                   }}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 />
@@ -832,11 +942,7 @@ export default function GovtExamsPage() {
                 <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Reservation Category</label>
                 <select
                   value={category}
-                  onChange={(e) => {
-                    const cat = e.target.value as CandidateCategory;
-                    setCategory(cat);
-                    saveProfileLocally({ category: cat });
-                  }}
+                  onChange={(e) => setCategory(e.target.value as CandidateCategory)}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
                   <option value="General">General / UR</option>
@@ -850,14 +956,14 @@ export default function GovtExamsPage() {
               <div>
                 <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Highest Qualification</label>
                 <select
-                  value={qualification}
+                  value={qualification || ''}
                   onChange={(e) => {
                     const q = e.target.value as QualificationLevel;
-                    setQualification(q);
-                    saveProfileLocally({ qualificationLevel: q });
+                    setQualification(q || undefined);
                   }}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
+                  <option value="">Select Qualification</option>
                   <option value="10th">10th Pass</option>
                   <option value="12th">12th Pass (10+2)</option>
                   <option value="Diploma">Diploma (Polytechnic)</option>
@@ -869,29 +975,27 @@ export default function GovtExamsPage() {
               <div>
                 <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Degree Type</label>
                 <select
-                  value={degreeType}
+                  value={degreeType || ''}
                   onChange={(e) => {
                     const dt = e.target.value;
-                    setDegreeType(dt);
+                    setDegreeType(dt || undefined);
                     if (dt === 'MBA' || dt === 'PGDM' || dt === 'M.Com' || dt === 'M.Tech' || dt === 'Other PostGraduate') {
                       setQualification('PostGraduate');
-                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'PostGraduate' });
                     } else if (dt === 'Diploma') {
                       setQualification('Diploma');
-                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'Diploma' });
-                    } else {
+                    } else if (dt) {
                       setQualification('Graduate');
-                      saveProfileLocally({ degreeType: dt, qualificationLevel: 'Graduate' });
                     }
                   }}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
+                  <option value="">Select Degree Type</option>
                   <option value="BBA">BBA (Bachelor of Business Administration)</option>
                   <option value="MBA">MBA (Master of Business Administration)</option>
                   <option value="BMS">BMS / BBS (Management Studies)</option>
                   <option value="PGDM">PGDM (Post Graduate Diploma in Management)</option>
-                  <option value="B.Com">B.Com (Commerce & Finance)</option>
-                  <option value="M.Com">M.Com (Commerce & Accounts)</option>
+                  <option value="B.Com">B.Com (Commerce &amp; Finance)</option>
+                  <option value="M.Com">M.Com (Commerce &amp; Accounts)</option>
                   <option value="CA / CS">CA / CS / CMA (Finance Specialist)</option>
                   <option value="B.Tech">B.Tech / B.E. (Engineering)</option>
                   <option value="M.Tech">M.Tech / M.E.</option>
@@ -907,57 +1011,32 @@ export default function GovtExamsPage() {
               <div>
                 <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Academic Stream</label>
                 <select
-                  value={stream}
-                  onChange={(e) => {
-                    setStream(e.target.value);
-                    saveProfileLocally({ stream: e.target.value });
-                  }}
+                  value={stream || ''}
+                  onChange={(e) => setStream(e.target.value || undefined)}
                   className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
                 >
-                  <option value="Management & Administration">Management & Administration</option>
-                  <option value="Finance, Banking & Accounting">Finance, Banking & Accounting</option>
-                  <option value="Marketing & Operations">Marketing & Operations</option>
+                  <option value="">Select Academic Stream</option>
+                  <option value="Management & Administration">Management &amp; Administration</option>
+                  <option value="Finance, Banking & Accounting">Finance, Banking &amp; Accounting</option>
+                  <option value="Marketing & Operations">Marketing &amp; Operations</option>
                   <option value="Human Resources (HR)">Human Resources (HR)</option>
                   <option value="Computer Science">Computer Science / IT</option>
-                  <option value="Mechanical">Mechanical Engineering</option>
                   <option value="Civil Engineering">Civil Engineering</option>
                   <option value="Electrical">Electrical Engineering</option>
-                  <option value="Electronics">Electronics & Telecom</option>
-                  <option value="Commerce">Commerce & Accounting</option>
-                  <option value="Law">Law & Legal Studies</option>
-                  <option value="General">General / Any Stream</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-medium text-[#5B6478] block mb-1">Domicile State</label>
-                <select
-                  value={selectedState}
-                  onChange={(e) => {
-                    setSelectedState(e.target.value);
-                    saveProfileLocally({ domicileState: e.target.value });
-                  }}
-                  className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs font-semibold text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
-                >
-                  {ALL_INDIAN_STATES.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
+                  <option value="Mechanical">Mechanical Engineering</option>
+                  <option value="Law / Judicial">Law / Legal</option>
+                  <option value="General">General / All-Stream</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E4E7EC] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#E4E7EC] text-xs">
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer text-[#5B6478] hover:text-[#12172B]">
                   <input
                     type="checkbox"
                     checked={isPwD}
-                    onChange={(e) => {
-                      setIsPwD(e.target.checked);
-                      saveProfileLocally({ isPwD: e.target.checked });
-                    }}
+                    onChange={(e) => setIsPwD(e.target.checked)}
                     className="rounded text-[#2B4EE6]"
                   />
                   <span>PwD / Divyangjan (+10y relaxation)</span>
@@ -967,19 +1046,16 @@ export default function GovtExamsPage() {
                   <input
                     type="checkbox"
                     checked={isExServicemen}
-                    onChange={(e) => {
-                      setIsExServicemen(e.target.checked);
-                      saveProfileLocally({ isExServicemen: e.target.checked });
-                    }}
+                    onChange={(e) => setIsExServicemen(e.target.checked)}
                     className="rounded text-[#2B4EE6]"
                   />
                   <span>Ex-Servicemen (+5y relaxation)</span>
                 </label>
               </div>
 
-              {/* Local CV dropzone */}
+              {/* Actions & Local CV dropzone */}
               <div className="flex items-center gap-2">
-                <label className="px-3 py-1 bg-[#F7F8FA] hover:bg-white text-[#12172B] border border-[#E4E7EC] rounded text-xs font-medium cursor-pointer transition-colors flex items-center gap-1.5">
+                <label className="px-3 py-1.5 bg-[#F7F8FA] hover:bg-white text-[#12172B] border border-[#E4E7EC] rounded text-xs font-medium cursor-pointer transition-colors flex items-center gap-1.5">
                   <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>{isParsingCv ? 'Parsing locally...' : cvFileName ? 'Re-upload CV' : 'Auto-fill via CV'}</span>
                   <input
@@ -989,6 +1065,24 @@ export default function GovtExamsPage() {
                     className="hidden"
                   />
                 </label>
+
+                {eligibilityAvailable && (
+                  <button
+                    type="button"
+                    onClick={handleResetProfile}
+                    className="px-3 py-1.5 text-xs font-medium text-[#5B6478] hover:text-rose-600 border border-[#E4E7EC] rounded hover:bg-rose-50 transition-colors"
+                  >
+                    Clear Profile
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors shadow-2xs"
+                >
+                  Save &amp; Calculate Eligibility
+                </button>
               </div>
             </div>
 
@@ -1008,7 +1102,7 @@ export default function GovtExamsPage() {
           </p>
         </div>
 
-        {/* ─── View 1: Proximity Hierarchy Feed ─────────────────────────────── */}
+        {/* ─── VIEW 1: Active Openings Hierarchy Feed ────────────────────────── */}
         {activeView === 'hierarchy' && (
           <div className="space-y-8">
             {/* If All-India is selected, show an inviting prompt to pick a region */}
@@ -1023,7 +1117,7 @@ export default function GovtExamsPage() {
                       </h3>
                     </div>
                     <p className="text-xs text-[#5B6478] leading-relaxed">
-                      Select your <strong>State &amp; District</strong> in the dropdown above (or tap <strong className="text-[#12172B]">Detect My Region</strong>) to reveal Nagar Nigam, Electricity Board, and State PSC openings for your area.
+                      Select your <strong>State &amp; District</strong> in the dropdown above to reveal Nagar Nigam, Electricity Board, and State PSC openings for your area.
                     </p>
                   </div>
                   <button
@@ -1041,7 +1135,7 @@ export default function GovtExamsPage() {
               </div>
             )}
 
-            {/* Tier 1: Regional & District Department Openings (Only when a specific state is chosen) */}
+            {/* Tier 1: Regional & District Department Openings */}
             {!proximityGroups.isAllIndia && (categoryFilter === 'all' || categoryFilter === 'regional') && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
@@ -1074,8 +1168,10 @@ export default function GovtExamsPage() {
                       <ExamCardItem
                         key={exam.id}
                         exam={exam}
+                        eligibilityAvailable={eligibilityAvailable}
                         onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
                         onReport={() => setReportModalExam(exam)}
+                        onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
                       />
                     ))
                   )}
@@ -1083,7 +1179,7 @@ export default function GovtExamsPage() {
               </section>
             )}
 
-            {/* Tier 2: State Government (PSC & ESB) (Only when a specific state is chosen) */}
+            {/* Tier 2: State Government (PSC & ESB) */}
             {!proximityGroups.isAllIndia && (categoryFilter === 'all' || categoryFilter === 'state') && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
@@ -1098,7 +1194,7 @@ export default function GovtExamsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-[#5B6478] mt-0.5">
-                      {selectedState} Public Service Commission (PSC), Subordinate Staff Selection, and State Police recruitments.
+                      State Civil Services, Engineering Services, Sub-Engineer, Police SI, and Educational Service exams conducted by the State Public Service Commission.
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-[#12172B] bg-white px-2.5 py-1 rounded border border-[#E4E7EC]">
@@ -1109,15 +1205,17 @@ export default function GovtExamsPage() {
                 <div className="space-y-3">
                   {proximityGroups.state.length === 0 ? (
                     <div className="p-6 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
-                      No state-specific PSC openings currently active for {selectedState}. All-India Central and PSU openings below are 100% open to applicants from {selectedState}.
+                      No active state-level commission openings currently verified for {selectedState}. Check Central Commission and PSU openings below.
                     </div>
                   ) : (
                     proximityGroups.state.map((exam) => (
                       <ExamCardItem
                         key={exam.id}
                         exam={exam}
+                        eligibilityAvailable={eligibilityAvailable}
                         onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
                         onReport={() => setReportModalExam(exam)}
+                        onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
                       />
                     ))
                   )}
@@ -1125,22 +1223,22 @@ export default function GovtExamsPage() {
               </section>
             )}
 
-            {/* Tier 3: Central Government (UPSC, SSC, Railways, Banks) */}
+            {/* Tier 3: Central Government (Open All India) */}
             {(categoryFilter === 'all' || categoryFilter === 'central') && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#12172B]"></span>
+                      <span className="w-2 h-2 rounded-full bg-[#D97B0A]"></span>
                       <h2 className="text-base font-semibold text-[#12172B]">
-                        Tier 3: Central Government Jobs &amp; Examinations
+                        Tier 3: Central Government Commissions &amp; National Bodies
                       </h2>
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-[#F7F8FA] text-[#12172B] rounded border border-[#E4E7EC]">
-                        All India Cadre
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-[#FFFBEB] text-[#D97B0A] rounded border border-[#FDE68A]">
+                        100% Open All India (Zero Domicile Barrier)
                       </span>
                     </div>
                     <p className="text-xs text-[#5B6478] mt-0.5">
-                      UPSC Civil Services, Staff Selection Commission (SSC CGL/CHSL), Railway Recruitment Boards (RRB), and Public Sector Banks.
+                      Union Public Service Commission (UPSC), Staff Selection Commission (SSC), Railway Recruitment Boards (RRB), and Public Sector Banking (IBPS/SBI).
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-[#12172B] bg-white px-2.5 py-1 rounded border border-[#E4E7EC]">
@@ -1149,14 +1247,22 @@ export default function GovtExamsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {proximityGroups.central.map((exam) => (
-                    <ExamCardItem
-                      key={exam.id}
-                      exam={exam}
-                      onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
-                      onReport={() => setReportModalExam(exam)}
-                    />
-                  ))}
+                  {proximityGroups.central.length === 0 ? (
+                    <div className="p-6 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
+                      No central government openings match your current filter criteria.
+                    </div>
+                  ) : (
+                    proximityGroups.central.map((exam) => (
+                      <ExamCardItem
+                        key={exam.id}
+                        exam={exam}
+                        eligibilityAvailable={eligibilityAvailable}
+                        onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
+                        onReport={() => setReportModalExam(exam)}
+                        onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
+                      />
+                    ))
+                  )}
                 </div>
               </section>
             )}
@@ -1167,16 +1273,16 @@ export default function GovtExamsPage() {
                 <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#D97B0A]"></span>
+                      <span className="w-2 h-2 rounded-full bg-purple-600"></span>
                       <h2 className="text-base font-semibold text-[#12172B]">
-                        Tier 4: Maharatna & Navratna PSUs & Defense Laboratories
+                        Tier 4: Public Sector Undertakings (PSUs) &amp; Defense Research
                       </h2>
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-[#FFFBEB] text-[#D97B0A] rounded border border-[#FDE68A]">
-                        Technical & Executive Cadre
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-700 rounded border border-purple-200">
+                        Maharatna / Navratna PSUs
                       </span>
                     </div>
                     <p className="text-xs text-[#5B6478] mt-0.5">
-                      BHEL, IOCL, ONGC, NTPC, ISRO, DRDO, and Airports Authority of India (AAI) engineering recruitments.
+                      Direct engineering, management, and scientific trainee recruitment at BHEL, IOCL, ONGC, NTPC, DRDO, ISRO &amp; Airport Authority of India (AAI).
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-[#12172B] bg-white px-2.5 py-1 rounded border border-[#E4E7EC]">
@@ -1185,64 +1291,369 @@ export default function GovtExamsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {proximityGroups.psu.map((exam) => (
-                    <ExamCardItem
-                      key={exam.id}
-                      exam={exam}
-                      onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
-                      onReport={() => setReportModalExam(exam)}
-                    />
-                  ))}
+                  {proximityGroups.psu.length === 0 ? (
+                    <div className="p-6 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
+                      No PSU openings match your current filter criteria.
+                    </div>
+                  ) : (
+                    proximityGroups.psu.map((exam) => (
+                      <ExamCardItem
+                        key={exam.id}
+                        exam={exam}
+                        eligibilityAvailable={eligibilityAvailable}
+                        onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
+                        onReport={() => setReportModalExam(exam)}
+                        onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
+                      />
+                    ))
+                  )}
                 </div>
               </section>
             )}
           </div>
         )}
 
-        {/* ─── View 2: Year-Round Calendar Timeline View ─────────────────────── */}
+        {/* ─── VIEW 2: Government Job Calendar & PSC Directories ────────────── */}
         {activeView === 'calendar' && (
           <div className="space-y-6">
-            <div className="bg-white p-4 rounded-md border border-[#E4E7EC] flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-[#12172B]">Filter by Examination Month:</span>
-                <div className="flex flex-wrap gap-1">
-                  {['All', '2026-09', '2026-10', '2026-11', '2026-12'].map((m) => (
+            {/* Sub-Tabs Selector */}
+            <div className="bg-white p-3 rounded-md border border-[#E4E7EC] flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-1 bg-[#F7F8FA] p-0.5 rounded border border-[#E4E7EC]">
+                <button
+                  type="button"
+                  onClick={() => setCalendarSubTab('psc_directory')}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                    calendarSubTab === 'psc_directory'
+                      ? 'bg-white text-[#12172B] shadow-2xs'
+                      : 'text-[#5B6478] hover:text-[#12172B]'
+                  }`}
+                >
+                  36 State &amp; UT PSC Directories
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarSubTab('central_timetable')}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                    calendarSubTab === 'central_timetable'
+                      ? 'bg-white text-[#12172B] shadow-2xs'
+                      : 'text-[#5B6478] hover:text-[#12172B]'
+                  }`}
+                >
+                  Central Timetable (UPSC, SSC, RRB, Banking)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarSubTab('milestones')}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                    calendarSubTab === 'milestones'
+                      ? 'bg-white text-[#12172B] shadow-2xs'
+                      : 'text-[#5B6478] hover:text-[#12172B]'
+                  }`}
+                >
+                  Upcoming Milestones &amp; Dates
+                </button>
+              </div>
+
+              <div className="text-xs text-[#5B6478]">
+                {calendarSubTab === 'psc_directory' && `Covering all 28 States & 8 Union Territories`}
+                {calendarSubTab === 'central_timetable' && `Official Central Staffing & Examination Schedules`}
+                {calendarSubTab === 'milestones' && `${filteredActiveExams.length} active exam milestones`}
+              </div>
+            </div>
+
+            {/* Sub-Tab 1: 36 State & UT PSC Master Directory */}
+            {calendarSubTab === 'psc_directory' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-md border border-[#E4E7EC] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="absolute left-3 top-2.5 text-[#5B6478]" />
+                    <input
+                      type="text"
+                      placeholder="Search state, UT, or commission (e.g. BPSC, UPPSC, MPSC, DSSSB, KPSC)..."
+                      value={pscSearchQuery}
+                      onChange={(e) => setPscSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {(['all', 'State', 'Union Territory'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setPscTypeFilter(t)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                          pscTypeFilter === t
+                            ? 'bg-[#12172B] text-white border-[#12172B]'
+                            : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
+                        }`}
+                      >
+                        {t === 'all' ? 'All (36)' : t === 'State' ? '28 States' : '8 Union Territories'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredPscDirectories.map((psc) => (
+                    <article
+                      key={psc.state}
+                      className="bg-white p-4 sm:p-5 rounded-md border border-[#E4E7EC] hover:border-[#2B4EE6]/40 transition-colors space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-bold text-[#12172B]">{psc.state}</h3>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F7F8FA] border border-[#E4E7EC] text-[#5B6478]">
+                                {psc.type}
+                              </span>
+                            </div>
+                            <div className="text-xs font-semibold text-[#2B4EE6] mt-0.5">
+                              {psc.commissionName} ({psc.shortCode})
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] px-2 py-0.5 rounded border border-[#E4E7EC] shrink-0">
+                            H.Q. {psc.headquarters}
+                          </span>
+                        </div>
+
+                        {/* Annual Cycle & Exams */}
+                        <div className="text-xs text-[#5B6478] space-y-1">
+                          <div>
+                            <strong className="text-[#12172B]">Typical Cycle:</strong> {psc.annualCycle}
+                          </div>
+                          <div>
+                            <strong className="text-[#12172B]">Primary Exams:</strong>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {psc.primaryExams.map((ex, i) => (
+                                <span key={i} className="text-[10px] font-medium bg-[#F7F8FA] text-[#5B6478] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
+                                  {ex}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Domicile / Quota Advisory Note */}
+                        <div className="p-2.5 bg-[#FFFBEB] border border-[#FDE68A] rounded text-[11px] text-[#12172B] leading-relaxed">
+                          <strong className="text-amber-900">Statutory Quota / Domicile Note:</strong> {psc.advisoryNote}
+                        </div>
+                      </div>
+
+                      {/* Action Links */}
+                      <div className="pt-3 border-t border-[#E4E7EC] flex items-center justify-between gap-2">
+                        <a
+                          href={psc.officialWebsite}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold text-[#2B4EE6] hover:underline inline-flex items-center gap-1"
+                        >
+                          <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Official Portal</span>
+                          <ExternalLink size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                        </a>
+                        <a
+                          href={psc.verificationPortal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1 text-xs font-medium text-[#12172B] bg-[#F7F8FA] hover:bg-[#EEF2F6] border border-[#E4E7EC] rounded inline-flex items-center gap-1"
+                        >
+                          <span>Candidate OTR / Verify</span>
+                          <ArrowUpRight size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Tab 2: Central Government Yearly Recruitment Timetable */}
+            {calendarSubTab === 'central_timetable' && (
+              <div className="space-y-4">
+                <div className="bg-white p-3 rounded-md border border-[#E4E7EC] flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold text-[#12172B] mr-1">Agency:</span>
+                  {(['all', 'UPSC', 'SSC', 'Railways (RRB)', 'Banking (IBPS/SBI)', 'Defence & Research'] as const).map((ag) => (
                     <button
-                      key={m}
-                      onClick={() => setSelectedMonth(m)}
-                      className={`px-2.5 py-1 rounded border text-[11px] font-medium transition-colors ${
-                        selectedMonth === m
+                      key={ag}
+                      onClick={() => setCentralAgencyFilter(ag)}
+                      className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                        centralAgencyFilter === ag
                           ? 'bg-[#12172B] text-white border-[#12172B]'
                           : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
                       }`}
                     >
-                      {m === 'All'
-                        ? 'All Dates'
-                        : m === '2026-09'
-                        ? 'Sep 2026'
-                        : m === '2026-10'
-                        ? 'Oct 2026'
-                        : m === '2026-11'
-                        ? 'Nov 2026'
-                        : 'Dec 2026'}
+                      {ag === 'all' ? 'All Central Boards' : ag}
                     </button>
                   ))}
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredCentralTimetables.map((exam) => (
+                    <article
+                      key={exam.id}
+                      className="bg-white p-4 sm:p-5 rounded-md border border-[#E4E7EC] hover:border-[#2B4EE6]/40 transition-colors space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-[#2B4EE6] uppercase tracking-wider block">
+                              {exam.agency}
+                            </span>
+                            <h3 className="text-sm font-bold text-[#12172B] mt-0.5">{exam.title}</h3>
+                            <span className="text-xs text-[#5B6478] block">{exam.cadre}</span>
+                          </div>
+                          <span className="text-[11px] font-semibold text-[#0E9F6E] bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 rounded shrink-0">
+                            {exam.vacanciesEstimate}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 bg-[#F7F8FA] p-2.5 rounded border border-[#E4E7EC] text-center text-xs">
+                          <div>
+                            <span className="text-[10px] text-[#5B6478] block">Notification</span>
+                            <strong className="text-[#12172B] text-[11px]">{exam.annualNotificationMonth}</strong>
+                          </div>
+                          <div className="border-x border-[#E4E7EC]">
+                            <span className="text-[10px] text-[#5B6478] block">Prelims</span>
+                            <strong className="text-[#12172B] text-[11px]">{exam.prelimsWindow}</strong>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#5B6478] block">Mains</span>
+                            <strong className="text-[#12172B] text-[11px]">{exam.mainsWindow}</strong>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-[#5B6478] space-y-1">
+                          <div>
+                            <strong className="text-[#12172B]">Prescribed Qualification:</strong> {exam.minimumQualification}
+                          </div>
+                          <div>
+                            <strong className="text-[#12172B]">Age Window:</strong> {exam.ageLimits}
+                          </div>
+                          <p className="text-[11px] text-[#5B6478] leading-relaxed pt-1">
+                            {exam.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#E4E7EC] flex items-center justify-between gap-2">
+                        <a
+                          href={exam.officialPortal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold text-[#2B4EE6] hover:underline inline-flex items-center gap-1"
+                        >
+                          <Globe size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                          <span>Official Portal</span>
+                          <ExternalLink size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                        </a>
+                        <a
+                          href={exam.gazetteCalendarUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1 text-xs font-medium text-[#12172B] bg-[#F7F8FA] hover:bg-[#EEF2F6] border border-[#E4E7EC] rounded inline-flex items-center gap-1"
+                        >
+                          <span>Annual Timetable</span>
+                          <ArrowUpRight size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
-              <span className="text-xs text-[#5B6478]">
-                Showing {filteredExams.length} scheduled exam milestones
-              </span>
+            )}
+
+            {/* Sub-Tab 3: Upcoming Examination Milestones */}
+            {calendarSubTab === 'milestones' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-md border border-[#E4E7EC] flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#12172B]">Filter Milestones by Month:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {['All', '2026-09', '2026-10', '2026-11', '2026-12'].map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setSelectedMonth(m)}
+                          className={`px-2.5 py-1 rounded border text-[11px] font-medium transition-colors ${
+                            selectedMonth === m
+                              ? 'bg-[#12172B] text-white border-[#12172B]'
+                              : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC] hover:text-[#12172B]'
+                          }`}
+                        >
+                          {m === 'All'
+                            ? 'All Dates'
+                            : m === '2026-09'
+                            ? 'Sep 2026'
+                            : m === '2026-10'
+                            ? 'Oct 2026'
+                            : m === '2026-11'
+                            ? 'Nov 2026'
+                            : 'Dec 2026'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-xs text-[#5B6478]">
+                    Showing {filteredActiveExams.length} active exam milestones
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {filteredActiveExams.length === 0 ? (
+                    <div className="p-8 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
+                      No active examination milestones scheduled for the selected month.
+                    </div>
+                  ) : (
+                    filteredActiveExams.map((exam) => (
+                      <ExamCardItem
+                        key={exam.id}
+                        exam={exam}
+                        eligibilityAvailable={eligibilityAvailable}
+                        onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
+                        onReport={() => setReportModalExam(exam)}
+                        onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── VIEW 3: Dedicated Archive Section (Past / Closed Exams) ──────── */}
+        {activeView === 'archive' && (
+          <div className="space-y-6">
+            <div className="p-5 bg-white border border-[#E4E7EC] rounded-md space-y-2">
+              <div className="flex items-center gap-2">
+                <FileText size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-[#5B6478]" />
+                <h2 className="text-base font-bold text-[#12172B]">
+                  Archived &amp; Concluded Government Examinations ({telemetry.closedNotifications})
+                </h2>
+              </div>
+              <p className="text-xs text-[#5B6478] leading-relaxed">
+                Official records of completed recruitment cycles (including SBI PO, UPSC CSE, previous SSC CGL cycles, and state commissions). These past notifications and syllabi are retained as an authoritative historical archive to help aspirants research past exam patterns, reservation matrices, and syllabus breakdowns.
+              </p>
             </div>
 
             <div className="space-y-3">
-              {filteredExams.map((exam) => (
-                <ExamCardItem
-                  key={exam.id}
-                  exam={exam}
-                  onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
-                  onReport={() => setReportModalExam(exam)}
-                />
-              ))}
+              {filteredArchivedExams.length === 0 ? (
+                <div className="p-8 bg-white rounded-md border border-[#E4E7EC] text-center text-xs text-[#5B6478]">
+                  No archived government exams match your search or filter.
+                </div>
+              ) : (
+                filteredArchivedExams.map((exam) => (
+                  <ExamCardItem
+                    key={exam.id}
+                    exam={exam}
+                    isArchived={true}
+                    eligibilityAvailable={eligibilityAvailable}
+                    onChecklist={() => setActiveChecklistExam({ exam, result: exam.eligibilityResult })}
+                    onReport={() => setReportModalExam(exam)}
+                    onOpenProfileDrawer={() => setProfileDrawerOpen(true)}
+                  />
+                ))
+              )}
             </div>
           </div>
         )}
@@ -1274,32 +1685,55 @@ export default function GovtExamsPage() {
             </div>
 
             {/* Verdict Box */}
-            <div
-              className={`p-3 rounded border text-xs leading-relaxed ${
-                activeChecklistExam.result.status === 'eligible'
-                  ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#0E9F6E]'
-                  : activeChecklistExam.result.status === 'partially_eligible'
-                  ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#D97B0A]'
-                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#D9534F]'
-              }`}
-            >
-              <div className="font-bold flex items-center gap-1.5">
-                {activeChecklistExam.result.status === 'eligible' ? (
-                  <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
-                ) : activeChecklistExam.result.status === 'partially_eligible' ? (
-                  <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
-                ) : (
-                  <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
-                )}
-                <span>Verdict: {activeChecklistExam.result.badgeLabel}</span>
+            {!eligibilityAvailable ? (
+              <div className="p-4 rounded border border-[#E4E7EC] bg-[#F7F8FA] text-xs space-y-2">
+                <div className="font-semibold text-[#12172B] flex items-center gap-1.5">
+                  <GraduationCap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  <span>Resume or Qualifications Required for Eligibility Calculation</span>
+                </div>
+                <p className="text-[#5B6478] leading-relaxed">
+                  No academic qualifications or resume have been provided in this session yet. Upload your CV or configure your degree, stream, age, and reservation category to see whether you qualify under the official DoPT and Commission guidelines.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveChecklistExam(null);
+                    setProfileDrawerOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors inline-flex items-center gap-1.5"
+                >
+                  <Settings size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                  <span>Set Up My Qualifications</span>
+                </button>
               </div>
-              <p className="mt-1">{activeChecklistExam.result.summary}</p>
-            </div>
+            ) : (
+              <div
+                className={`p-3 rounded border text-xs leading-relaxed ${
+                  activeChecklistExam.result.status === 'eligible'
+                    ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#0E9F6E]'
+                    : activeChecklistExam.result.status === 'partially_eligible'
+                    ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#D97B0A]'
+                    : 'bg-[#FEF2F2] border-[#FECACA] text-[#D9534F]'
+                }`}
+              >
+                <div className="font-bold flex items-center gap-1.5">
+                  {activeChecklistExam.result.status === 'eligible' ? (
+                    <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                  ) : activeChecklistExam.result.status === 'partially_eligible' ? (
+                    <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                  ) : (
+                    <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                  )}
+                  <span>Verdict: {activeChecklistExam.result.badgeLabel}</span>
+                </div>
+                <p className="mt-1">{activeChecklistExam.result.summary}</p>
+              </div>
+            )}
 
-            {/* Detailed Criteria Checklist */}
+            {/* Prescribed Criteria Checklist */}
             <div className="space-y-2 text-xs">
               <span className="text-[11px] font-semibold text-[#12172B] block">
-                Prescribed Criteria vs. Your Profile
+                Prescribed Statutory Criteria
               </span>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {activeChecklistExam.result.checks.map((chk, i) => (
@@ -1336,10 +1770,8 @@ export default function GovtExamsPage() {
             <div className="p-3 bg-[#F7F8FA] rounded border border-[#E4E7EC] text-[11px] text-[#5B6478] space-y-1">
               <div className="font-semibold text-[#12172B] mb-1">Official Timeline Milestones:</div>
               <div className="grid grid-cols-2 gap-2">
-                <div>Apply Deadline: <strong className="text-[#12172B]">{activeChecklistExam.exam.importantDates.applyEndDate}</strong></div>
-                <div>Exam Date: <strong className="text-[#12172B]">{activeChecklistExam.exam.importantDates.examDate || 'TBA'}</strong></div>
-                <div>Admit Card: <strong className="text-[#12172B]">{activeChecklistExam.exam.importantDates.admitCardDate || 'TBA'}</strong></div>
-                <div>Application Fee: <strong className="text-[#12172B]">₹{activeChecklistExam.exam.eligibility.fee.general} (Gen) / ₹{activeChecklistExam.exam.eligibility.fee.reserved}</strong></div>
+                <div>Apply Deadline: <strong className="text-[#12172B]">{formatExamDate(activeChecklistExam.exam.importantDates.applyEndDate)}</strong></div>
+                <div>Exam Date: <strong className="text-[#12172B]">{formatExamDate(activeChecklistExam.exam.importantDates.examDate)}</strong></div>
               </div>
             </div>
 
@@ -1348,114 +1780,95 @@ export default function GovtExamsPage() {
                 href={activeChecklistExam.exam.officialLinks.notificationPdfUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-semibold text-[#2B4EE6] hover:underline inline-flex items-center gap-1.5"
+                className="text-xs text-[#2B4EE6] hover:underline inline-flex items-center gap-1"
               >
-                <span>Official Notification PDF</span>
-                <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                <span>Download Official Gazette PDF</span>
+                <ExternalLink size={12} strokeWidth={ICON_STROKE_WIDTH} />
               </a>
-              <a
-                href={activeChecklistExam.exam.officialLinks.applyPortalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded transition-colors inline-flex items-center gap-1.5"
+
+              <button
+                onClick={() => setActiveChecklistExam(null)}
+                className="px-4 py-2 bg-[#12172B] text-white rounded text-xs font-semibold hover:bg-black"
               >
-                <span>Apply on Official Portal</span>
-                <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-              </a>
+                Got It
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Report Broken Link / Shifted Date Modal ─────────────────────────── */}
+      {/* ─── Report Broken Link / Postponement Modal ────────────────────────── */}
       {reportModalExam && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-md border border-[#E4E7EC] max-w-md w-full p-6 space-y-4 shadow-xl">
             <div className="flex items-start justify-between border-b border-[#E4E7EC] pb-3">
               <div>
-                <span className="text-[11px] font-bold text-[#D97B0A] uppercase tracking-wider block">
-                  Aspirant Audit Report
-                </span>
-                <h3 className="text-base font-bold text-[#12172B] mt-0.5">
-                  Report Date Change or Link Issue
-                </h3>
-                <span className="text-xs text-[#5B6478]">
-                  {reportModalExam.title} ({reportModalExam.conductingBody})
-                </span>
+                <h3 className="text-base font-bold text-[#12172B]">Report Gazette Update</h3>
+                <p className="text-xs text-[#5B6478] mt-0.5">{reportModalExam.title}</p>
               </div>
               <button
                 onClick={() => setReportModalExam(null)}
                 className="text-gray-400 hover:text-gray-600 p-1"
-                aria-label="Close modal"
+                aria-label="Close report modal"
               >
                 <X size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             </div>
 
             {reportSuccessMsg ? (
-              <div className="p-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded text-xs text-[#0E9F6E] leading-relaxed">
+              <div className="p-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded text-xs text-[#0E9F6E]">
                 {reportSuccessMsg}
               </div>
             ) : (
               <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
                 <div>
-                  <label className="text-[11px] font-semibold text-[#12172B] block mb-1">
-                    Issue Observed
-                  </label>
+                  <label className="block text-[#12172B] font-semibold mb-1">Issue / Change Type</label>
                   <select
                     value={reportIssueType}
                     onChange={(e) => setReportIssueType(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
+                    className="w-full p-2 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B]"
                   >
-                    <option value="Date Postponed / Rescheduled">Exam Date Postponed or Rescheduled</option>
-                    <option value="Apply Window Closed / Extended">Application Window Closed or Extended</option>
-                    <option value="Admit Card Released Early">Admit Card Link Available Early</option>
-                    <option value="Broken Official PDF Link">Broken or Inaccessible Official PDF Link</option>
+                    <option value="Date Postponed / Rescheduled">Date Postponed / Rescheduled</option>
+                    <option value="Corrigendum Issued (Vacancies / Criteria Changed)">Corrigendum Issued (Vacancies / Criteria Changed)</option>
+                    <option value="Application Portal Link Expired / Broken">Application Portal Link Expired / Broken</option>
+                    <option value="Registration Deadline Extended">Registration Deadline Extended</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#12172B] block mb-1">
-                    Official Gazette / Corrigendum URL (Proof)
-                  </label>
+                  <label className="block text-[#12172B] font-semibold mb-1">Official Corrigendum / Source Link</label>
                   <input
                     type="url"
-                    required
-                    placeholder="https://commission.gov.in/corrigendum.pdf"
+                    placeholder="https://commission.gov.in/notice_extension.pdf"
                     value={reportProofUrl}
                     onChange={(e) => setReportProofUrl(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
+                    className="w-full p-2 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#12172B] block mb-1">
-                    Specific Details / Changed Dates
-                  </label>
+                  <label className="block text-[#12172B] font-semibold mb-1">Additional Notes</label>
                   <textarea
-                    rows={2}
-                    placeholder="e.g. New exam date published on 24 Sep: now scheduled for 15 Nov..."
+                    rows={3}
+                    placeholder="Provide relevant details from the notice..."
                     value={reportDetails}
                     onChange={(e) => setReportDetails(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B] focus:outline-none focus:border-[#2B4EE6]"
+                    className="w-full p-2 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-xs text-[#12172B]"
                   />
                 </div>
 
-                <p className="text-[10px] text-[#5B6478] leading-tight">
-                  Advisory Notice: Reports do not mutate public listings immediately. Every report is audited against the official gazette before changes go live.
-                </p>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E4E7EC]">
+                <div className="pt-2 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setReportModalExam(null)}
-                    className="px-3 py-1.5 bg-white text-[#5B6478] border border-[#E4E7EC] rounded text-xs"
+                    className="px-3 py-1.5 text-xs text-[#5B6478] hover:text-[#12172B]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-[#12172B] text-white rounded text-xs font-semibold hover:bg-black transition-colors"
+                    className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors shadow-2xs"
                   >
                     Submit Report
                   </button>
@@ -1467,16 +1880,19 @@ export default function GovtExamsPage() {
       )}
 
       {/* ─── Footer ──────────────────────────────────────────────────────────── */}
-      <footer className="bg-white border-t border-[#E4E7EC] py-8 text-center text-xs text-[#5B6478] mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
-          <p>© 2026 NicheHire. Verified government jobs directory &amp; genuine public sector notifications.</p>
-          <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-[#12172B]">
-            <Link href="/" className="hover:text-[#2B4EE6]">Candidate Search</Link>
-            <Link href="/about" className="hover:text-[#2B4EE6]">About &amp; Verification</Link>
-            <Link href="/pricing" className="hover:text-[#2B4EE6]">Employer Pricing</Link>
-            <Link href="/govt-exams" className="text-amber-800 font-semibold">Govt Jobs Portal</Link>
-            <Link href="/privacy" className="hover:text-[#2B4EE6]">Privacy Policy (DPDP Act)</Link>
-            <Link href="/terms" className="hover:text-[#2B4EE6]">Terms of Service</Link>
+      <footer className="mt-auto bg-white border-t border-[#E4E7EC] py-8 text-xs text-[#5B6478]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>© {new Date().getFullYear()} NicheHire. Independent Pan-India Government Job Directory &amp; Exam Intelligence Engine.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="hover:text-[#12172B] transition-colors">
+              Verified Private Jobs
+            </Link>
+            <Link href="/about" className="hover:text-[#12172B] transition-colors">
+              About &amp; Trust
+            </Link>
+            <Link href="/pricing" className="hover:text-[#12172B] transition-colors">
+              Employer Pricing
+            </Link>
           </div>
         </div>
       </footer>
@@ -1492,11 +1908,21 @@ interface ExamCardItemProps {
     isVerificationPending: boolean;
     daysLeft: number;
   };
+  eligibilityAvailable: boolean;
+  isArchived?: boolean;
   onChecklist: () => void;
   onReport: () => void;
+  onOpenProfileDrawer: () => void;
 }
 
-function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
+function ExamCardItem({
+  exam,
+  eligibilityAvailable,
+  isArchived = false,
+  onChecklist,
+  onReport,
+  onOpenProfileDrawer,
+}: ExamCardItemProps) {
   const { eligibilityResult, isPastDeadline, isVerificationPending, daysLeft } = exam;
 
   // Short monogram
@@ -1546,33 +1972,49 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
                 </span>
               )}
 
-              {/* Traffic-Light Eligibility Badge */}
-              <span
-                className={`text-[11px] font-medium px-2 py-0.5 rounded border flex items-center gap-1 ${
-                  eligibilityResult.status === 'eligible'
-                    ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]'
-                    : eligibilityResult.status === 'partially_eligible'
-                    ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
-                    : eligibilityResult.status === 'ineligible'
-                    ? 'bg-[#FEF2F2] text-[#D9534F] border-[#FECACA]'
-                    : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC]'
-                }`}
-                title={eligibilityResult.summary}
-              >
-                {eligibilityResult.status === 'eligible' ? (
-                  <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
-                ) : eligibilityResult.status === 'partially_eligible' ? (
-                  <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
-                ) : eligibilityResult.status === 'ineligible' ? (
-                  <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
-                ) : null}
-                <span>{eligibilityResult.badgeLabel}</span>
-              </span>
+              {/* Traffic-Light Eligibility Badge OR Neutral Prompt */}
+              {isArchived ? (
+                <span className="text-[11px] font-medium text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-2 py-0.5 rounded">
+                  Archived / Concluded
+                </span>
+              ) : !eligibilityAvailable ? (
+                <button
+                  type="button"
+                  onClick={onOpenProfileDrawer}
+                  className="text-[11px] font-medium px-2 py-0.5 rounded border border-[#E4E7EC] bg-[#F7F8FA] hover:bg-[#EEF2F6] text-[#5B6478] hover:text-[#12172B] transition-colors flex items-center gap-1 shrink-0"
+                  title="Upload your resume to see eligibility for this exam"
+                >
+                  <GraduationCap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#5B6478]" />
+                  <span>Upload resume to check eligibility</span>
+                </button>
+              ) : (
+                <span
+                  className={`text-[11px] font-medium px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    eligibilityResult.status === 'eligible'
+                      ? 'bg-[#ECFDF5] text-[#0E9F6E] border-[#A7F3D0]'
+                      : eligibilityResult.status === 'partially_eligible'
+                      ? 'bg-[#FFFBEB] text-[#D97B0A] border-[#FDE68A]'
+                      : eligibilityResult.status === 'ineligible'
+                      ? 'bg-[#FEF2F2] text-[#D9534F] border-[#FECACA]'
+                      : 'bg-[#F7F8FA] text-[#5B6478] border-[#E4E7EC]'
+                  }`}
+                  title={eligibilityResult.summary}
+                >
+                  {eligibilityResult.status === 'eligible' ? (
+                    <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
+                  ) : eligibilityResult.status === 'partially_eligible' ? (
+                    <Info size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D97B0A]" />
+                  ) : eligibilityResult.status === 'ineligible' ? (
+                    <XCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#D9534F]" />
+                  ) : null}
+                  <span>{eligibilityResult.badgeLabel}</span>
+                </span>
+              )}
 
               {/* Status / Countdown */}
-              {isPastDeadline ? (
-                <span className="text-[11px] text-[#5B6478] bg-[#F7F8FA] border border-[#E4E7EC] px-1.5 py-0.5 rounded">
-                  Registration Closed
+              {isPastDeadline || isArchived ? (
+                <span className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                  Closed on {formatExamDate(exam.importantDates.applyEndDate)}
                 </span>
               ) : daysLeft === 0 ? (
                 <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded animate-pulse">
@@ -1616,12 +2058,12 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
           <span className="text-[#E4E7EC]">•</span>
           <span className="inline-flex items-center gap-1">
             <Calendar size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-            Last Date: <strong className="text-[#12172B]">{exam.importantDates.applyEndDate}</strong>
+            {isPastDeadline ? 'Registration Closed:' : 'Last Date to Apply:'} <strong className="text-[#12172B]">{formatExamDate(exam.importantDates.applyEndDate)}</strong>
           </span>
           {exam.importantDates.examDate && (
             <>
               <span className="text-[#E4E7EC]">•</span>
-              <span>Exam: <strong className="text-[#12172B]">{exam.importantDates.examDate}</strong></span>
+              <span>Exam: <strong className="text-[#12172B]">{formatExamDate(exam.importantDates.examDate)}</strong></span>
             </>
           )}
         </div>
@@ -1642,14 +2084,18 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
           ) : (
             <span>Verified on <strong className="text-[#12172B]">{exam.lastVerifiedDate}</strong></span>
           )}
-          <span className="text-[#E4E7EC]">•</span>
-          <button
-            onClick={onReport}
-            className="text-[#5B6478] hover:text-[#D97B0A] underline inline-flex items-center gap-1"
-          >
-            <span>Report issue / date shift</span>
-            <Flag size={12} strokeWidth={ICON_STROKE_WIDTH} />
-          </button>
+          {!isArchived && (
+            <>
+              <span className="text-[#E4E7EC]">•</span>
+              <button
+                onClick={onReport}
+                className="text-[#5B6478] hover:text-[#D97B0A] underline inline-flex items-center gap-1"
+              >
+                <span>Report issue / date shift</span>
+                <Flag size={12} strokeWidth={ICON_STROKE_WIDTH} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1660,7 +2106,7 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
             onClick={onChecklist}
             className="px-3 py-1.5 text-xs font-medium text-[#12172B] bg-white border border-[#E4E7EC] hover:bg-[#F7F8FA] hover:border-[#12172B]/30 rounded transition-colors whitespace-nowrap"
           >
-            Check Criteria Checklist
+            {eligibilityAvailable ? 'Check Criteria' : 'View Criteria'}
           </button>
           <a
             href={exam.officialLinks.notificationPdfUrl}
@@ -1675,9 +2121,13 @@ function ExamCardItem({ exam, onChecklist, onReport }: ExamCardItemProps) {
             href={exam.officialLinks.applyPortalUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap inline-flex items-center gap-1.5 ${
+              isArchived
+                ? 'text-[#5B6478] bg-[#F7F8FA] hover:bg-[#EEF2F6] border border-[#E4E7EC]'
+                : 'text-white bg-[#2B4EE6] hover:bg-[#1E3BBD]'
+            }`}
           >
-            <span>Official Portal</span>
+            <span>{isArchived ? 'Official Portal (Archived)' : 'Official Portal'}</span>
             <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
         </div>

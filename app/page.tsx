@@ -25,6 +25,8 @@ import type { WalkInJob } from './api/walkins/route';
 import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
 import { resolvePanIndiaLocation } from './lib/panIndiaGeo';
 import { suggestRelevantMissingSkills, evaluateDegreeAlignment } from './lib/skillsTaxonomy';
+import { getCandidateSession, clearCandidateSession, enforceSessionExpiry } from './lib/authSession';
+
 import {
   AlertTriangle,
   ArrowLeft,
@@ -291,19 +293,16 @@ export default function JobDashboard() {
         }
         loadCandidateData(session.user.id);
       } else {
-        try {
-          const saved = localStorage.getItem('nichehire_auth_session');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.user) {
-              setUser(parsed.user);
-              if (parsed.sessionToken) {
-                fetchAccessStatus(parsed.sessionToken);
-              }
-              loadCandidateData(parsed.user.id);
-            }
+        const candidateSession = getCandidateSession();
+        if (candidateSession?.user) {
+          setUser(candidateSession.user);
+          if (candidateSession.sessionToken) {
+            fetchAccessStatus(candidateSession.sessionToken);
           }
-        } catch {}
+          loadCandidateData(candidateSession.user.id);
+        } else {
+          setUser(null);
+        }
       }
     });
 
@@ -317,10 +316,24 @@ export default function JobDashboard() {
       }
     });
 
+    // Enforce 2.5-hour auto-logout interval & tab-focus check
+    const checkExpiry = () => {
+      const expired = enforceSessionExpiry();
+      if (expired) {
+        handleSignOut();
+      }
+    };
+    const expiryInterval = setInterval(checkExpiry, 60000); // Check every minute
+    window.addEventListener('focus', checkExpiry);
+
     // Load walk-ins count silently in background
     fetchWalkins();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearInterval(expiryInterval);
+      window.removeEventListener('focus', checkExpiry);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadCandidateData = (userId?: string) => {
@@ -344,9 +357,7 @@ export default function JobDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    try {
-      localStorage.removeItem('nichehire_auth_session');
-    } catch {}
+    clearCandidateSession();
     setUser(null);
     setAccessStatus(null);
     loadCandidateData();

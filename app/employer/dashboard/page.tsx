@@ -43,6 +43,8 @@ import {
   EmployerMembershipPlan,
   EMPLOYER_MEMBERSHIP_PLANS,
 } from '../../types/employerMembership';
+import { getEmployerSession, clearEmployerSession, enforceSessionExpiry } from '../../lib/authSession';
+
 
 interface EmployerJob {
   id: string;
@@ -168,20 +170,21 @@ export default function EmployerDashboardPage() {
   const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
 
   useEffect(() => {
-    // 1. Hydrate employer info & profile from localStorage
+    // 1. Hydrate employer info & profile from session if within 2.5-hour window
     try {
-      const storedComp = localStorage.getItem('nichehire_employer_company') || '';
-      const storedEmail = localStorage.getItem('nichehire_employer_email') || '';
-      if (storedComp) {
-        setEmployerCompany(storedComp);
-        setCompanyName(storedComp);
-      }
-      if (storedEmail) {
-        setWorkEmail(storedEmail);
+      const validSession = getEmployerSession();
+      if (validSession) {
+        setEmployerCompany(validSession.company);
+        setCompanyName(validSession.company);
+        setWorkEmail(validSession.email);
+      } else {
+        setEmployerCompany('');
+        setCompanyName('');
+        setWorkEmail('');
       }
 
       const storedProfile = localStorage.getItem('nichehire_employer_profile');
-      if (storedProfile) {
+      if (storedProfile && validSession) {
         const parsed = JSON.parse(storedProfile);
         setCompanyProfile(parsed);
         if (parsed.companyName) {
@@ -190,11 +193,11 @@ export default function EmployerDashboardPage() {
         }
         if (parsed.workEmail) setWorkEmail(parsed.workEmail);
         if (parsed.phone) setPhone(parsed.phone);
-      } else if (storedComp) {
+      } else if (validSession?.company) {
         setCompanyProfile((prev) => ({
           ...prev,
-          companyName: storedComp,
-          workEmail: storedEmail,
+          companyName: validSession.company,
+          workEmail: validSession.email,
         }));
       }
     } catch {}
@@ -229,6 +232,18 @@ export default function EmployerDashboardPage() {
         setEmployerUser(null);
       }
     });
+
+    // Enforce 2.5-hour session auto-logout
+    const checkExpiry = () => {
+      const expired = enforceSessionExpiry();
+      if (expired) {
+        handleEmployerSignOut();
+      }
+    };
+    const expiryInterval = setInterval(checkExpiry, 60000);
+    window.addEventListener('focus', checkExpiry);
+
+
 
     async function loadEmployerData() {
       setLoadingData(true);
@@ -344,18 +359,21 @@ export default function EmployerDashboardPage() {
 
     loadEmployerData();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearInterval(expiryInterval);
+      window.removeEventListener('focus', checkExpiry);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleEmployerSignOut = async () => {
     await supabase.auth.signOut();
+    clearEmployerSession();
     setEmployerUser(null);
     setEmployerCompany('');
-    try {
-      localStorage.removeItem('nichehire_employer_company');
-      localStorage.removeItem('nichehire_employer_email');
-    } catch {}
+    setWorkEmail('');
   };
+
 
   const handleOpenPostJob = () => {
     if (!employerUser) {

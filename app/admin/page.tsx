@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../supabase';
+import { getCandidateSession } from '../lib/authSession';
+
 import {
   Activity,
   AlertTriangle,
@@ -204,15 +206,13 @@ export default function FounderAdminPage() {
       let activeEmail = session?.user?.email || '';
 
       if (!activeToken) {
-        try {
-          const saved = localStorage.getItem('nichehire_auth_session');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            activeToken = parsed.sessionToken;
-            activeEmail = parsed.user?.email || (parsed.user?.phone ? parsed.user.phone : '');
-          }
-        } catch {}
+        const candidateSession = getCandidateSession();
+        if (candidateSession) {
+          activeToken = candidateSession.sessionToken;
+          activeEmail = candidateSession.user?.email || (candidateSession.user?.phone ? candidateSession.user.phone : '');
+        }
       }
+
 
       if (!activeToken) {
         setLoading(false);

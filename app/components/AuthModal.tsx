@@ -15,6 +15,8 @@ import {
   AlertTriangle,
 } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
+import { saveCandidateSession } from '../lib/authSession';
+
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -144,18 +146,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         referralCode: data.referralCode,
       };
 
-      try {
-        localStorage.setItem(
-          'nichehire_auth_session',
-          JSON.stringify({
-            user: authUser,
-            sessionToken: data.sessionToken,
-            referralCode: data.referralCode,
-          })
-        );
-      } catch (storageErr) {
-        console.warn('Could not persist auth session locally:', storageErr);
-      }
+      // Persist authenticated session with 2.5-hour auto-logout tracking
+      saveCandidateSession(authUser, data.sessionToken, data.referralCode);
+
 
       setAssignedReferralCode(data.referralCode);
       setSuccessMsg(
