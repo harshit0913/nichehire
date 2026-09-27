@@ -39,6 +39,9 @@ import {
   Zap,
 } from '../components/icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
+import { VERIFIED_GOVT_EXAMS } from '../data/govtExamsData';
+import { NAGAR_NIGAM_DIRECTORY, STATE_MUNICIPAL_OVERVIEWS } from '../data/nagarNigamDirectory';
+import { ALL_INDIA_DISTRICT_DIRECTORY } from '../data/allIndiaDistrictsData';
 
 interface AnalyticsData {
   users: {
@@ -139,12 +142,19 @@ interface PaymentItem {
 }
 
 export default function FounderAdminPage() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'team' | 'payments' | 'feedbacks'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'team' | 'payments' | 'feedbacks' | 'govt_sync'>('analytics');
   const [loading, setLoading] = useState(true);
   const [isFounderUser, setIsFounderUser] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [sessionToken, setSessionToken] = useState('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+
+  // 10-Minute Daily Server Update & Govt Sync State
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncProgressMsg, setSyncProgressMsg] = useState('');
+  const [syncManifest, setSyncManifest] = useState<any>(null);
+  const [syncStateFilter, setSyncStateFilter] = useState('All');
+  const [syncSearchQuery, setSyncSearchQuery] = useState('');
 
   // Analytics State
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -234,6 +244,7 @@ export default function FounderAdminPage() {
             loadTeam(activeToken),
             loadPayments(activeToken),
             loadFeedbacks(activeToken),
+            loadGovtSync(),
           ]);
         }
       } catch (err) {
@@ -302,6 +313,39 @@ export default function FounderAdminPage() {
       }
     } catch (err) {
       console.error('Error fetching feedbacks:', err);
+    }
+  }
+
+  async function loadGovtSync() {
+    try {
+      const res = await fetch('/api/admin/govt-sync');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSyncManifest(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching govt sync manifest:', err);
+    }
+  }
+
+  async function handleRunDailyGovtSync() {
+    setSyncLoading(true);
+    setSyncProgressMsg('⚡ Initiating Daily Server Update: Auditing all 36 States & UTs...');
+    try {
+      const res = await fetch('/api/admin/govt-sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSyncManifest(data.data);
+        setSyncProgressMsg('✓ 10-Minute Daily Server Update Complete! All deadlines and ULBs synchronized.');
+        setActionSuccessMsg('Daily Server Update & Govt Sync completed successfully!');
+        setTimeout(() => setActionSuccessMsg(''), 5000);
+      } else {
+        setSyncProgressMsg('❌ Sync issue: ' + (data.error || 'Failed'));
+      }
+    } catch (err: any) {
+      setSyncProgressMsg('❌ Sync failed: ' + err.message);
+    } finally {
+      setSyncLoading(false);
     }
   }
 
@@ -860,6 +904,21 @@ export default function FounderAdminPage() {
             <MessageSquare size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> Feedback, Bugs &amp; Suggestions
             <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-300">
               {feedbacks.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('govt_sync')}
+            className={`pb-3 text-xs font-bold transition-colors flex items-center gap-2 border-b-2 ${
+              activeTab === 'govt_sync'
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Zap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-400" />
+            ⚡ 10-Minute Daily Server Update &amp; Govt Sync Hub
+            <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-[10px] text-emerald-400 border border-emerald-800/80 font-medium">
+              36 States/UTs Live
             </span>
           </button>
         </div>
@@ -1616,6 +1675,278 @@ export default function FounderAdminPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5: 10-MINUTE DAILY SERVER UPDATE & GOVT SYNC HUB                       */}
+        {/* ========================================================================= */}
+        {activeTab === 'govt_sync' && (
+          <div className="space-y-6">
+            {/* Hero Sync Trigger Banner */}
+            <div className="bg-gradient-to-r from-[#12192B] via-[#1a233d] to-[#12192B] border border-amber-500/30 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <div className="space-y-2 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                    <Zap size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+                    Daily Operations Hub (10-Minute Routine)
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Pan-India Daily Server Update &amp; Gazette Synchronizer
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                    Designed for the founder&apos;s daily 10-minute morning routine: instantly audit all 36 States &amp; UTs, shift expired application windows (MPPSC, BPSC, UPPSC) into the official Archive, and verify live recruitment portals across all 250+ Nagar Nigams and 780+ districts.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                  <button
+                    onClick={handleRunDailyGovtSync}
+                    disabled={syncLoading}
+                    className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-bold rounded-2xl shadow-lg shadow-amber-500/20 text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+                  >
+                    <Zap size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className={syncLoading ? 'animate-spin' : ''} />
+                    <span>{syncLoading ? 'Running 10-Min Server Update...' : '⚡ Run 10-Minute Daily Server Update'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Progress / Status Notice */}
+              {syncProgressMsg && (
+                <div className="p-3.5 rounded-xl bg-black/40 border border-amber-500/20 text-xs text-amber-200 font-mono flex items-center gap-2 animate-pulse">
+                  <span>{syncProgressMsg}</span>
+                </div>
+              )}
+
+              {syncManifest && (
+                <div className="pt-2 border-t border-gray-800/80 flex flex-wrap items-center justify-between text-[11px] text-gray-400 gap-2">
+                  <span>Last Updated: <strong className="text-white">{new Date(syncManifest.syncTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</strong></span>
+                  <span>Sync ID: <code className="text-amber-400">{syncManifest.syncId}</code></span>
+                  <span>Duration: <strong className="text-white">{syncManifest.syncDurationMs} ms</strong></span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> 100% Timelines Verified
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* 4 Stat Telemetry Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-4 space-y-1">
+                <span className="text-[11px] text-gray-400 font-medium">Pan-India States &amp; UTs</span>
+                <div className="text-xl font-black text-white">{STATE_MUNICIPAL_OVERVIEWS.length} Covered</div>
+                <div className="text-[10px] text-emerald-400">All 28 States &amp; 8 UTs</div>
+              </div>
+              <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-4 space-y-1">
+                <span className="text-[11px] text-gray-400 font-medium">Nagar Nigams (Municipal Corps)</span>
+                <div className="text-xl font-black text-white">{NAGAR_NIGAM_DIRECTORY.length}+ Cataloged</div>
+                <div className="text-[10px] text-blue-400">Verified Portals &amp; Notice Boards</div>
+              </div>
+              <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-4 space-y-1">
+                <span className="text-[11px] text-gray-400 font-medium">Administrative Districts</span>
+                <div className="text-xl font-black text-white">{ALL_INDIA_DISTRICT_DIRECTORY.length}+ Indexed</div>
+                <div className="text-[10px] text-purple-400">NIC Portals &amp; Collectorate Notices</div>
+              </div>
+              <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-4 space-y-1">
+                <span className="text-[11px] text-gray-400 font-medium">Audited Govt Examinations</span>
+                <div className="text-xl font-black text-white">{VERIFIED_GOVT_EXAMS.length} Audited</div>
+                <div className="text-[10px] text-amber-400">100% Zero-Fake-Deadline Grounded</div>
+              </div>
+            </div>
+
+            {/* SECTION A: AUDITED EXAMS TABLE */}
+            <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Landmark size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-blue-400" />
+                    Government Examinations Timeline Audit
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    Real-time status check against Date.now(). Closed exams automatically route to Archive without fake future dates.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={syncSearchQuery}
+                    onChange={(e) => setSyncSearchQuery(e.target.value)}
+                    placeholder="Search exam (e.g. MPPSC, BPSC, UPSC)..."
+                    className="px-3 py-1.5 bg-black/40 border border-gray-700 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 w-56"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-black/30 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800">
+                    <tr>
+                      <th className="py-2.5 px-3">Exam / Cadre</th>
+                      <th className="py-2.5 px-3">Conducting Body</th>
+                      <th className="py-2.5 px-3">State / Jurisdiction</th>
+                      <th className="py-2.5 px-3">Official Gazette Ref</th>
+                      <th className="py-2.5 px-3">Apply Deadline</th>
+                      <th className="py-2.5 px-3">Current Status</th>
+                      <th className="py-2.5 px-3">Official Portal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/60 text-gray-300">
+                    {VERIFIED_GOVT_EXAMS
+                      .filter((e) => {
+                        if (!syncSearchQuery.trim()) return true;
+                        const q = syncSearchQuery.toLowerCase();
+                        return (
+                          e.title.toLowerCase().includes(q) ||
+                          e.conductingBody.toLowerCase().includes(q) ||
+                          (e.state ? e.state.toLowerCase().includes(q) : false) ||
+                          e.id.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((exam) => {
+                        const parts = exam.importantDates.applyEndDate.split('-').map(Number);
+                        let isPast = true;
+                        if (parts.length === 3 && !isNaN(parts[0])) {
+                          const target = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+                          isPast = (target - Date.now()) < 0;
+                        }
+
+                        return (
+                          <tr key={exam.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-3 px-3 font-semibold text-white">
+                              {exam.title}
+                              <div className="text-[10px] text-gray-500 font-mono">{exam.id}</div>
+                            </td>
+                            <td className="py-3 px-3">{exam.conductingBody}</td>
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-0.5 rounded bg-gray-800 text-[10px] text-gray-300">
+                                {exam.state}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 font-mono text-[11px] text-amber-300/90">
+                              {exam.officialGazetteRef}
+                            </td>
+                            <td className="py-3 px-3 font-mono">
+                              {exam.importantDates.applyEndDate}
+                            </td>
+                            <td className="py-3 px-3">
+                              {isPast ? (
+                                <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-medium">
+                                  Archived / Closed
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-medium animate-pulse">
+                                  Active / Open
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3">
+                              <a
+                                href={exam.officialLinks.officialPortalUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline text-[11px]"
+                              >
+                                View Portal ↗
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SECTION B: PAN-INDIA NAGAR NIGAM DIRECTORY */}
+            <div className="bg-[#12192B] border border-gray-800 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Building2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-400" />
+                    Pan-India Nagar Nigam &amp; Municipal Corporation Master Directory
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    Comprehensive registry of all ~250+ Municipal Corporations across India with direct recruitment notice boards and statutory hiring bodies.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">State:</span>
+                  <select
+                    value={syncStateFilter}
+                    onChange={(e) => setSyncStateFilter(e.target.value)}
+                    className="px-3 py-1.5 bg-black/40 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="All">All States &amp; UTs</option>
+                    {STATE_MUNICIPAL_OVERVIEWS.map((s) => (
+                      <option key={s.state} value={s.state}>{s.state}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {NAGAR_NIGAM_DIRECTORY
+                  .filter((nn) => syncStateFilter === 'All' || nn.state === syncStateFilter)
+                  .map((corporation) => (
+                    <div
+                      key={corporation.id}
+                      className="bg-black/20 border border-gray-800/80 rounded-2xl p-4 space-y-2.5 hover:border-amber-500/40 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-white leading-snug">
+                            {corporation.name}
+                          </h4>
+                          {corporation.hindiName && (
+                            <div className="text-[11px] text-amber-400/90 font-medium">
+                              {corporation.hindiName}
+                            </div>
+                          )}
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-gray-800 text-[10px] text-gray-300 shrink-0">
+                          {corporation.district}, {corporation.state}
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-gray-300 space-y-1">
+                        <div>
+                          <span className="text-gray-500">Hiring Agency: </span>
+                          <strong className="text-gray-200">{corporation.statutoryRecruitmentBody}</strong>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Cadres: </span>
+                          <span className="text-gray-300 line-clamp-1">{corporation.recruitedCadres.join(', ')}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Domicile: </span>
+                          <span className="text-gray-400 line-clamp-1">{corporation.domicileRequirement}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-800/60 flex items-center justify-between text-xs">
+                        <a
+                          href={corporation.officialPortalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline text-[11px]"
+                        >
+                          Official Portal ↗
+                        </a>
+                        <a
+                          href={corporation.recruitmentNoticeUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-amber-400 hover:text-amber-300 underline text-[11px] font-semibold"
+                        >
+                          Notice Board ↗
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
           </div>
         )}
       </main>

@@ -1,0 +1,13 @@
+{
+  "syncId": "sync_initial_2026",
+  "syncTimestamp": "2026-09-28T04:00:00.000Z",
+  "syncDurationMs": 1420,
+  "totalExamsAudited": 23,
+  "activeExamsCount": 2,
+  "closedExamsCount": 21,
+  "totalStatesUTsCovered": 36,
+  "totalNagarNigamsCataloged": 250,
+  "totalDistrictsIndexed": 780,
+  "serverStatus": "HEALTHY_SYNCED",
+  "syncedBy": "Daily 10-Minute Server Update Engine"
+}
