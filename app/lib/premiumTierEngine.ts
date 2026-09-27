@@ -4,6 +4,7 @@ import {
   FounderOverride,
   AccessResult,
   PREMIUM_LIMITS,
+  TIER_LIMITS,
 } from '../types/premium';
 
 /**
@@ -114,13 +115,13 @@ export function calculateUserTier(
 ): TierLevel {
   const isSubscriptionActive = subscriptionStatus === 'active';
 
-  // Tier 4: Premium (100+ referrals OR active ₹199/mo subscription)
-  if (referralCount >= 100 || isSubscriptionActive) {
+  // Tier 4: Premium (50+ referrals OR active ₹199/mo subscription OR highest achieved)
+  if (referralCount >= 50 || isSubscriptionActive || highestTierAchieved === 'premium') {
     return 'premium';
   }
 
-  // Tier 3: Trusted (50+ referrals)
-  if (referralCount >= 50 || highestTierAchieved === 'trusted') {
+  // Tier 3: Trusted (25+ referrals)
+  if (referralCount >= 25 || highestTierAchieved === 'trusted') {
     return 'trusted';
   }
 
@@ -133,7 +134,7 @@ export function calculateUserTier(
 }
 
 /**
- * Enforces usage limits for cost-bearing features.
+ * Enforces usage limits for cost-bearing features based on user's active membership tier.
  */
 export function checkUsageLimit(
   user: Pick<UserPremiumStatus, 'isFounder' | 'tier'>,
@@ -152,10 +153,13 @@ export function checkUsageLimit(
     return { allowed: false, remaining: 0, quotaBypass: false };
   }
 
+  const userTier = user.tier || 'member';
+  const tierQuotas = TIER_LIMITS[userTier] || TIER_LIMITS.member;
+
   const limit =
     feature === 'tailored_resume'
-      ? PREMIUM_LIMITS.tailoredResumesPerMonth
-      : PREMIUM_LIMITS.hrEmailDraftsPerMonth;
+      ? tierQuotas.tailoredResumes
+      : tierQuotas.hrEmailDrafts;
 
   const remaining = Math.max(0, limit - currentUsage);
 

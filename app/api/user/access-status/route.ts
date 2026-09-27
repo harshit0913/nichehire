@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
-import { resolveAccess, checkUsageLimit } from '../../../lib/premiumTierEngine';
+import { resolveAccess, checkUsageLimit, calculateUserTier } from '../../../lib/premiumTierEngine';
 import { UserPremiumStatus, FounderOverride } from '../../../types/premium';
 import { verifyAuthToken, ensureUserReferralProfile } from '../../../lib/referralEngine';
 
@@ -128,8 +128,41 @@ export async function GET(req: Request) {
       .order('created_at', { ascending: false })
       .limit(25);
 
+    const totalSignups = (referralRows || []).length;
     const qualifiedCount = referralRows?.filter((r) => r.status === 'qualified').length || 0;
     const provisionalCount = referralRows?.filter((r) => r.status === 'provisional').length || 0;
+    const effectiveReferralCount = Math.max(
+      profile?.qualifying_referral_count || 0,
+      totalSignups,
+      qualifiedCount
+    );
+
+    // Compute tier reward tier-wise based on total referral signups
+    const calculatedTier = isFounderUser
+      ? 'premium'
+      : calculateUserTier(
+          effectiveReferralCount,
+          profile?.subscription_status,
+          profile?.highest_tier_achieved
+        );
+
+    // Auto-update database if referral signups upgraded user's tier
+    if (!isFounderUser && profile && calculatedTier !== profile.tier) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({
+            qualifying_referral_count: effectiveReferralCount,
+            tier: calculatedTier,
+            highest_tier_achieved: calculatedTier,
+            premium_source: 'referral',
+          })
+          .eq('user_id', user.id);
+      } catch (autoPromoteErr) {
+        console.warn('Could not auto-promote user tier in database:', autoPromoteErr);
+      }
+    }
+
     const recentReferrals = (referralRows || []).map((r) => ({
       id: r.id,
       maskedId: `Candidate #${r.referred_user_id.slice(0, 6).toUpperCase()}`,
@@ -140,12 +173,12 @@ export async function GET(req: Request) {
 
     const userStatus: UserPremiumStatus = {
       userId: user.id,
-      tier: profile?.tier || (isFounderUser ? 'premium' : 'member'),
-      qualifyingReferralCount: Math.max(profile?.qualifying_referral_count || 0, qualifiedCount),
-      premiumSource: isFounderUser ? null : (profile?.premium_source || null),
+      tier: isFounderUser ? 'premium' : calculatedTier,
+      qualifyingReferralCount: effectiveReferralCount,
+      premiumSource: isFounderUser ? null : (profile?.premium_source || 'referral'),
       subscriptionStatus: profile?.subscription_status || null,
       subscriptionRenewsAt: profile?.subscription_renews_at || undefined,
-      highestTierAchieved: profile?.highest_tier_achieved || (isFounderUser ? 'premium' : 'member'),
+      highestTierAchieved: isFounderUser ? 'premium' : (profile?.highest_tier_achieved || calculatedTier),
       tierAchievedAt: profile?.tier_achieved_at || {},
       isFounder: isFounderUser,
       referredByUserId: profile?.referred_by || undefined,

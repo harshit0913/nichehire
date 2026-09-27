@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
+import { calculateUserTier } from '../../../lib/premiumTierEngine';
 
 export async function POST(req: Request) {
   try {
@@ -51,13 +52,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Record provisional referral in the referrals ledger
+    // 4. Record referral in the referrals ledger
     const { error: insertError } = await supabase
       .from('referrals')
       .insert({
         referrer_id: referrer.user_id,
         referred_user_id: newUserId,
-        status: 'provisional',
+        status: 'qualified',
       });
 
     if (insertError) {
@@ -72,9 +73,30 @@ export async function POST(req: Request) {
         referred_by: referrer.user_id,
       }, { onConflict: 'user_id' });
 
+    // 6. Track total referral signups and automatically promote referrer's tier
+    const { data: allReferrals } = await supabase
+      .from('referrals')
+      .select('id')
+      .eq('referrer_id', referrer.user_id);
+
+    const totalSignups = (allReferrals?.length || 1);
+    const newTier = calculateUserTier(totalSignups);
+
+    await supabase
+      .from('user_profiles')
+      .update({
+        qualifying_referral_count: totalSignups,
+        tier: newTier,
+        highest_tier_achieved: newTier,
+        premium_source: 'referral',
+      })
+      .eq('user_id', referrer.user_id);
+
     return NextResponse.json({
       success: true,
-      message: 'Referral successfully registered and queued for 7-day qualification',
+      totalReferralSignups: totalSignups,
+      rewardedTier: newTier,
+      message: `Referral successfully attributed! Referrer now has ${totalSignups} total referral signup(s) and is in ${newTier} tier.`,
     });
   } catch (err: any) {
     console.error('Referral registration error:', err);

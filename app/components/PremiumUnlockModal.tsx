@@ -71,7 +71,7 @@ export default function PremiumUnlockModal({
     }, 1000);
   };
 
-  const progressPercent = Math.min(100, Math.round((referralCount / 100) * 100));
+  const progressPercent = Math.min(100, Math.round((referralCount / 50) * 100));
 
   return (
     <div
@@ -162,8 +162,8 @@ export default function PremiumUnlockModal({
                 </div>
                 <div className="flex justify-between text-[10px] text-[#5B6478]">
                   <span className="flex items-center gap-1">10 <Star size={11} strokeWidth={ICON_STROKE_WIDTH} className="fill-emerald-500 text-emerald-500" /> Rising</span>
-                  <span>50 Trusted</span>
-                  <span className="flex items-center gap-1">100 <Crown size={11} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" /> Premium</span>
+                  <span>25 Trusted</span>
+                  <span className="flex items-center gap-1">50 <Crown size={11} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" /> Premium</span>
                 </div>
                 {provisionalCount > 0 && (
                   <div className="text-[11px] text-[#D97B0A] bg-amber-50 px-2 py-1 rounded border border-amber-200 flex items-center gap-1">
@@ -218,7 +218,7 @@ export default function PremiumUnlockModal({
                 <h3 className="text-sm font-bold text-[#12172B]">Path B: ₹199 / month</h3>
               </div>
               <p className="text-xs text-[#5B6478] leading-relaxed">
-                Unlock instant access without waiting for 100 referrals. Cancel anytime self-serve with one click.
+                Unlock instant access without waiting for 50 referrals. Cancel anytime self-serve with one click.
               </p>
 
               <div className="py-2 space-y-1.5 text-xs text-[#12172B]">

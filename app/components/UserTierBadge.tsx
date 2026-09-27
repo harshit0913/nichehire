@@ -56,7 +56,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
     );
   }
 
-  // 3. Premium Tier (Earned via 100 referrals OR ₹199/mo subscription)
+  // 3. Premium Tier (Earned via 50 referrals OR ₹199/mo subscription)
   if (access.level === 'premium') {
     return (
       <button
@@ -72,7 +72,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
     );
   }
 
-  // 4. Trusted Tier (50+ referrals)
+  // 4. Trusted Tier (25+ referrals)
   if (access.level === 'trusted') {
     return (
       <button
@@ -80,7 +80,7 @@ export default function UserTierBadge({ access, onClick, compact = false }: User
         className={`inline-flex items-center gap-1.5 font-bold rounded-full transition-all bg-amber-50 text-amber-700 border border-amber-200 shadow-xs hover:border-amber-300 ${
           compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         }`}
-        title="Trusted Member (50+ Referrals) — Gold Name & HR Email Drafts"
+        title="Trusted Member (25+ Referrals) — Gold Name & HR Email Drafts"
       >
         <ShieldCheck size={iconSize} strokeWidth={ICON_STROKE_WIDTH} className="shrink-0" />
         <span className="bg-gradient-to-r from-amber-700 to-yellow-600 bg-clip-text text-transparent">

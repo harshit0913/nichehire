@@ -52,6 +52,13 @@ export interface ReferralRecord {
   deviceFingerprintHash?: string;
 }
 
+export const TIER_LIMITS: Record<TierLevel, { tailoredResumes: number; hrEmailDrafts: number }> = {
+  member: { tailoredResumes: 3, hrEmailDrafts: 5 },
+  rising: { tailoredResumes: 11, hrEmailDrafts: 20 },
+  trusted: { tailoredResumes: 20, hrEmailDrafts: 35 },
+  premium: { tailoredResumes: 50, hrEmailDrafts: 100 },
+};
+
 export const PREMIUM_LIMITS = {
   tailoredResumesPerMonth: 11,
   hrEmailDraftsPerMonth: 20,

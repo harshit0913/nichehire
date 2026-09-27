@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { supabase } from '../supabase';
+import { calculateUserTier } from './premiumTierEngine';
 
 // Persistent in-memory fallback cache for verified accounts and referral codes
 interface CachedUserProfile {
@@ -195,14 +196,44 @@ export async function ensureUserReferralProfile(
       }
     }
 
-    // If referrer identified, record in referrals ledger
+    // If referrer identified, record in referrals ledger and automatically reward tier
     if (referrerUserId) {
       try {
         await supabase.from('referrals').insert({
           referrer_id: referrerUserId,
           referred_user_id: userId,
-          status: 'provisional',
+          status: 'qualified',
         });
+
+        // Compute total referral signups for this referrer
+        const { data: allRefs } = await supabase
+          .from('referrals')
+          .select('id')
+          .eq('referrer_id', referrerUserId);
+
+        const totalSignups = (allRefs?.length || 1);
+        const newTier = calculateUserTier(totalSignups);
+
+        // Update referrer's profile in database with new count and upgraded tier
+        await supabase
+          .from('user_profiles')
+          .update({
+            qualifying_referral_count: totalSignups,
+            tier: newTier,
+            highest_tier_achieved: newTier,
+            premium_source: 'referral',
+          })
+          .eq('user_id', referrerUserId);
+
+        // Update referrer's profile in memory cache
+        const cachedReferrer = profileCache.get(referrerUserId);
+        if (cachedReferrer) {
+          cachedReferrer.tier = newTier;
+        }
+
+        console.log(
+          `[Referral Tracker] Referrer ${referrerUserId} now has ${totalSignups} total referral signups. Auto-rewarded tier: ${newTier}`
+        );
       } catch (refInsertErr) {
         console.warn('Could not record referral row in database:', refInsertErr);
       }

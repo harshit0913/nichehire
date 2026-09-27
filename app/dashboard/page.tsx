@@ -417,11 +417,11 @@ export default function CandidateDashboardPage() {
             <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div
                 className="bg-purple-600 h-1.5 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (data.referralCount / 100) * 100)}%` }}
+                style={{ width: `${Math.min(100, (data.referralCount / 50) * 100)}%` }}
               ></div>
             </div>
             <p className="text-[11px] text-gray-500">
-              10 &rarr; Rising &bull; 50 &rarr; Trusted &bull; 100 &rarr; Lifetime Full Premium!
+              10 &rarr; Rising &bull; 25 &rarr; Trusted &bull; 50 &rarr; Lifetime Unlimited Premium!
             </p>
           </div>
         </div>
@@ -467,6 +467,175 @@ export default function CandidateDashboardPage() {
                 <Share2 size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} /> WhatsApp
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Live Referral Signups & Tier Rewards Section */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-purple-50 text-purple-700">
+                  <Users size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} />
+                </span>
+                <h2 className="text-base font-bold text-gray-900">
+                  Live Referral Signups &amp; Tier Rewards
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Every verified candidate or peer who registers via your link advances your lifetime tier with higher monthly AI quotas.
+              </p>
+            </div>
+
+            <div className="text-left sm:text-right">
+              <span className="text-[11px] text-gray-500 block font-medium">Total Signups Tracked</span>
+              <span className="text-lg font-black text-purple-700">
+                {data.referralCount} Verified {data.referralCount === 1 ? 'Signup' : 'Signups'}
+              </span>
+            </div>
+          </div>
+
+          {/* Tier Milestones Pathway */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {/* Member */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              data.referralCount < 10
+                ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-200'
+                : 'bg-gray-50/60 border-gray-100'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-gray-800">Member</span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">0+</span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium">3 Resumes &bull; 5 HR Drafts</p>
+              <div className="mt-2 text-[10px] text-gray-500">Default account tier</div>
+            </div>
+
+            {/* Rising */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              data.referralCount >= 10 && data.referralCount < 25
+                ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-300'
+                : data.referralCount >= 10
+                ? 'bg-emerald-50/30 border-emerald-100'
+                : 'bg-gray-50/60 border-gray-100'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                  <Star size={12} strokeWidth={ICON_STROKE_WIDTH} className="fill-emerald-600 text-emerald-600" /> Rising
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">10+</span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium">11 Resumes &bull; 20 HR Drafts</p>
+              <div className="mt-2 text-[10px] text-emerald-700 font-medium">
+                {data.referralCount >= 10 ? '✓ Unlocked' : `${10 - data.referralCount} more needed`}
+              </div>
+            </div>
+
+            {/* Trusted */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              data.referralCount >= 25 && data.referralCount < 50
+                ? 'bg-amber-50/60 border-amber-300 ring-1 ring-amber-300'
+                : data.referralCount >= 25
+                ? 'bg-amber-50/30 border-amber-100'
+                : 'bg-gray-50/60 border-gray-100'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-amber-800 flex items-center gap-1">
+                  <ShieldCheck size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-600" /> Trusted
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">25+</span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium">20 Resumes &bull; 35 HR Drafts</p>
+              <div className="mt-2 text-[10px] text-amber-700 font-medium">
+                {data.referralCount >= 25 ? '✓ Unlocked' : `${25 - data.referralCount} more needed`}
+              </div>
+            </div>
+
+            {/* Lifetime Premium */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              data.referralCount >= 50
+                ? 'bg-purple-50/70 border-purple-300 ring-1 ring-purple-300'
+                : 'bg-gray-50/60 border-gray-100'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-purple-800 flex items-center gap-1">
+                  <Crown size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" /> Lifetime
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">50+</span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium">50 Resumes &bull; 100 HR Drafts</p>
+              <div className="mt-2 text-[10px] text-purple-700 font-medium">
+                {data.referralCount >= 50 ? '✓ Unlocked VIP' : `${50 - data.referralCount} more needed`}
+              </div>
+            </div>
+          </div>
+
+          {/* Referral Signups Ledger Table */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+              Recent Candidate Signups via Your Link
+            </h3>
+
+            {(!data.recentReferrals || data.recentReferrals.length === 0) ? (
+              <div className="text-center py-8 space-y-2 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <Users size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto text-gray-400" />
+                <p className="text-xs text-gray-600 font-medium">No candidate referral signups yet.</p>
+                <p className="text-[11px] text-gray-400 max-w-sm mx-auto">
+                  Share your referral link on WhatsApp or college groups to start tracking your signups here in real time.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={copyRefLink}
+                    className="px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Copy size={12} strokeWidth={ICON_STROKE_WIDTH} /> Copy Your Link
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                    <tr>
+                      <th className="px-4 py-3">Candidate Reference</th>
+                      <th className="px-4 py-3">Registration Date</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Tier Progress Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {data.recentReferrals.map((ref) => (
+                      <tr key={ref.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-3 font-mono font-semibold text-gray-800">
+                          {ref.maskedId}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {new Date(ref.createdAt).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          {ref.status === 'qualified' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <Check size={10} strokeWidth={ICON_STROKE_WIDTH} /> Qualified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock size={10} strokeWidth={ICON_STROKE_WIDTH} /> Active Referral
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right text-emerald-600 font-semibold">
+                          +1 toward tier milestone
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
