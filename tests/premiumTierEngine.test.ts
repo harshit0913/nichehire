@@ -36,11 +36,11 @@ assert(calculateUserTier(0, null, 'member') === 'member', 'Case 1: Base signup d
 // ─── Case 2: Crossing 10 qualifying referrals awards rising ─────────────────
 assert(calculateUserTier(10, null, 'member') === 'rising', 'Case 2: 10 referrals awards rising');
 
-// ─── Case 3: Crossing 50 qualifying referrals awards trusted ────────────────
-assert(calculateUserTier(50, null, 'rising') === 'trusted', 'Case 3: 50 referrals awards trusted');
+// ─── Case 3: Crossing 25 qualifying referrals awards trusted ────────────────
+assert(calculateUserTier(25, null, 'rising') === 'trusted', 'Case 3: 25 referrals awards trusted');
 
-// ─── Case 4: Crossing 100 qualifying referrals awards premium ───────────────
-assert(calculateUserTier(100, null, 'trusted') === 'premium', 'Case 4: 100 referrals awards premium (referral path)');
+// ─── Case 4: Crossing 50 qualifying referrals awards premium ───────────────
+assert(calculateUserTier(50, null, 'trusted') === 'premium', 'Case 4: 50 referrals awards premium (referral path)');
 
 // ─── Case 5: Active ₹199/mo subscription awards premium ─────────────────────
 assert(calculateUserTier(0, 'active', 'member') === 'premium', 'Case 5: Active ₹199/mo subscription awards premium');
@@ -85,10 +85,10 @@ assert(
   'Case 9: Tier stickiness prevents badge revocation when referrals churn from 50 to 47'
 );
 
-// ─── Case 10: Usage metering enforces 11 tailored resumes cap ────────────────
-const regularPremium: Pick<UserPremiumStatus, 'isFounder' | 'tier'> = { isFounder: false, tier: 'premium' };
-const usageCheck10 = checkUsageLimit(regularPremium, 'tailored_resume', 10);
-const usageCheck11 = checkUsageLimit(regularPremium, 'tailored_resume', 11);
+// ─── Case 10: Usage metering enforces 11 tailored resumes cap (Rising tier) ──
+const regularRising: Pick<UserPremiumStatus, 'isFounder' | 'tier'> = { isFounder: false, tier: 'rising' };
+const usageCheck10 = checkUsageLimit(regularRising, 'tailored_resume', 10);
+const usageCheck11 = checkUsageLimit(regularRising, 'tailored_resume', 11);
 assert(usageCheck10.allowed && usageCheck10.remaining === 1, 'Case 10a: 10/11 tailored resumes leaves 1 remaining');
 assert(!usageCheck11.allowed && usageCheck11.remaining === 0, 'Case 10b: 11/11 tailored resumes blocks 12th resume');
 

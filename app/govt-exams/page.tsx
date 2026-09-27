@@ -1946,15 +1946,7 @@ function ExamCardItem({
               <span className="font-semibold text-[#12172B]">{exam.conductingBody}</span>
 
               {/* Entity Type / Tier Badge */}
-              {exam.entityType === 'ArticleshipOpportunity' ? (
-                <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">
-                  Articleship Training (ICAI)
-                </span>
-              ) : exam.entityType === 'ProfessionalExam' ? (
-                <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
-                  Professional Qualification Exam
-                </span>
-              ) : exam.entityType === 'PSURecruitment' || exam.category === 'psu' ? (
+              {exam.entityType === 'PSURecruitment' || exam.category === 'psu' ? (
                 <span className="text-[11px] font-medium text-cyan-800 bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 rounded">
                   PSU Recruitment
                 </span>

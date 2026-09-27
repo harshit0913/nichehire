@@ -54,6 +54,9 @@ export default function PhoneOtpVerification({
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 429 && data.retryAfter) {
+          setCountdown(data.retryAfter);
+        }
         throw new Error(data.error || 'Failed to send OTP.');
       }
 
@@ -61,11 +64,17 @@ export default function PhoneOtpVerification({
       setCountdown(10);
       if (data.otpCode) {
         setOtpCode(data.otpCode);
+        setNotice({
+          type: 'info',
+          text: data.deliveryNotice || `Testing Mode: Your verification OTP is ${data.otpCode}. Click Submit OTP to verify.`,
+        });
+      } else {
+        setOtpCode('');
+        setNotice({
+          type: 'success',
+          text: `Verification OTP dispatched to ${data.maskedIdentifier || phone} via SMS. Please enter the code below.`,
+        });
       }
-      setNotice({
-        type: 'info',
-        text: `Your verification OTP is ${data.otpCode || ''}. It has been auto-filled below. Click Submit OTP to verify.`,
-      });
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Error sending OTP.' });
     } finally {

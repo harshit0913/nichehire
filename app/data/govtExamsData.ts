@@ -3,9 +3,7 @@ import { DomicilePolicy, QualificationLevel, AgeRelaxation } from '../lib/govtEl
 export type GovtEntityType =
   | 'GovernmentRecruitment'
   | 'CompetitiveExam'
-  | 'PSURecruitment'
-  | 'ProfessionalExam'
-  | 'ArticleshipOpportunity';
+  | 'PSURecruitment';
 
 export interface GovtExam {
   id: string;
@@ -1113,80 +1111,6 @@ export const VERIFIED_GOVT_EXAMS: GovtExam[] = [
     },
     description: 'En-route radar control and aerodrome traffic coordination across all Indian international and domestic airports.',
     entityType: 'PSURecruitment',
-  },
-  {
-    id: 'icai-ca-intermediate-2026',
-    title: 'ICAI Chartered Accountancy (CA Intermediate) & Articleship Eligibility',
-    conductingBody: 'Institute of Chartered Accountants of India (ICAI)',
-    category: 'central',
-    entityType: 'ArticleshipOpportunity',
-    state: 'All India',
-    vacancies: 25000,
-    salaryScale: 'ICAI Articleship Stipend (₹3,000 - ₹15,000/mo) / Post-Qualification ₹9 - ₹25 LPA',
-    lastVerifiedDate: '2026-09-26',
-    officialGazetteRef: 'Chartered Accountants Act 1949 / Notification ICAI/EXAM/2026',
-    domicilePolicy: 'open_all_india',
-    importantDates: {
-      notificationDate: '2026-08-01',
-      applyStartDate: '2026-08-05',
-      applyEndDate: '2026-09-10',
-      admitCardDate: '2026-10-15',
-      examDate: '2026-11-02',
-      resultDate: '2027-01-10',
-    },
-    eligibility: {
-      minAge: 18,
-      maxAge: 45,
-      ageCutoffDate: '01-09-2026',
-      ageRelaxation: { obc: 0, sc_st: 0, pwd: 0, hardMaxAgeCap: 60 },
-      minQualificationLevel: 'Graduate',
-      mandatoryDegreeTypes: ['B.Com', 'BBA', 'Any', 'PostGraduate'],
-      requiredStreams: ['Commerce', 'Accounting', 'Finance', 'Taxation', 'Any'],
-      fee: { general: 1500, reserved: 1500, female: 1500 },
-    },
-    officialLinks: {
-      officialPortalUrl: 'https://www.icai.org',
-      notificationPdfUrl: 'https://www.icai.org/post/exam-dates-intermediate-2026',
-      applyPortalUrl: 'https://eservices.icai.org',
-    },
-    description: 'Statutory examination for Chartered Accountancy Intermediate. Passing Group 1 / both groups entitles candidates to commence 2-3 years mandatory practical training (Articleship) with registered CA firms across India including Kerala (Kannur, Kochi, Kozhikode).',
-  },
-  {
-    id: 'icai-ca-foundation-2026',
-    title: 'ICAI Chartered Accountancy (CA Foundation Entrance)',
-    conductingBody: 'Institute of Chartered Accountants of India (ICAI)',
-    category: 'central',
-    entityType: 'ProfessionalExam',
-    state: 'All India',
-    vacancies: 50000,
-    salaryScale: 'Academic Gateway / Statutory Certification',
-    lastVerifiedDate: '2026-09-26',
-    officialGazetteRef: 'ICAI/FND/2026/02',
-    domicilePolicy: 'open_all_india',
-    importantDates: {
-      notificationDate: '2026-08-10',
-      applyStartDate: '2026-08-15',
-      applyEndDate: '2026-09-20',
-      admitCardDate: '2026-11-20',
-      examDate: '2026-12-15',
-      resultDate: '2027-02-05',
-    },
-    eligibility: {
-      minAge: 16,
-      maxAge: 40,
-      ageCutoffDate: '01-10-2026',
-      ageRelaxation: { obc: 0, sc_st: 0, pwd: 0, hardMaxAgeCap: 50 },
-      minQualificationLevel: '12th',
-      mandatoryDegreeTypes: ['12th Standard', 'Intermediate', 'Any'],
-      requiredStreams: ['Commerce', 'Science', 'Arts', 'Any'],
-      fee: { general: 1500, reserved: 1500, female: 1500 },
-    },
-    officialLinks: {
-      officialPortalUrl: 'https://www.icai.org',
-      notificationPdfUrl: 'https://www.icai.org/post/foundation-exam-dates-2026',
-      applyPortalUrl: 'https://eservices.icai.org',
-    },
-    description: 'National entry examination for the Chartered Accountancy course conducted semi-annually across all major exam centers in India including Kannur, Kozhikode, and Ernakulam.',
   },
   {
     id: 'kerala-psc-div-accountant-2026',

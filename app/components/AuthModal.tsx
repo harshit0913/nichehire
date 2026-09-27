@@ -71,6 +71,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   if (!isOpen) return null;
 
+  const [deliveryStatus, setDeliveryStatus] = useState<'sent' | 'simulated' | 'failed' | null>(null);
+  const [deliveryNotice, setDeliveryNotice] = useState<string | null>(null);
+  const [maskedIdentifier, setMaskedIdentifier] = useState<string | null>(null);
+
   // ─── 1. OTP Authentication Flow (Mobile Phone or Email Address) ────────────
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -82,6 +86,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setIsSendingOtp(true);
     setErrorMsg('');
     setSuccessMsg('');
+    setDeliveryStatus(null);
+    setDeliveryNotice(null);
 
     try {
       const res = await fetch('/api/auth/otp/send', {
@@ -92,16 +98,27 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 429 && data.retryAfter) {
+          setOtpCountdown(data.retryAfter);
+        }
         throw new Error(data.error || 'Failed to send OTP code.');
       }
 
       setOtpSent(true);
       setOtpCountdown(10);
+      setDeliveryStatus(data.deliveryStatus || 'sent');
+      setDeliveryNotice(data.deliveryNotice || null);
+      setMaskedIdentifier(data.maskedIdentifier || null);
+
       if (data.otpCode) {
         setDispatchedOtp(data.otpCode);
         setOtpCode(data.otpCode);
+      } else {
+        setDispatchedOtp(null);
+        setOtpCode('');
       }
-      setSuccessMsg(data.message || `Unique 6-digit OTP code sent. Valid for 5 minutes.`);
+
+      setSuccessMsg(data.message || `Verification code sent. Valid for 5 minutes.`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error generating verification code.');
     } finally {
@@ -403,29 +420,39 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   </button>
                 </div>
 
-                {dispatchedOtp && (
-                  <div className="p-3 bg-blue-50/90 border border-blue-200 rounded-xl space-y-1.5 animate-fadeIn">
+                {dispatchedOtp ? (
+                  <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1.5 animate-fadeIn">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-blue-900 font-bold flex items-center gap-1">
-                        <ShieldCheck size={14} className="text-blue-600" />
-                        <span>Verification OTP Code:</span>
+                      <span className="text-amber-900 font-bold flex items-center gap-1">
+                        <AlertTriangle size={14} className="text-amber-600" />
+                        <span>Sandbox Testing Code:</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => setOtpCode(dispatchedOtp)}
-                        className="px-2 py-0.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-[10px] font-bold rounded-md"
+                        className="px-2 py-0.5 bg-amber-700 hover:bg-amber-800 text-white text-[10px] font-bold rounded-md"
                       >
                         Auto-Fill
                       </button>
                     </div>
-                    <div className="font-mono text-base font-black text-[#2B4EE6] tracking-widest text-center py-1 bg-white rounded-lg border border-blue-100">
+                    <div className="text-[11px] text-amber-800 leading-tight">
+                      {deliveryNotice || 'SMS gateway unprovisioned on server. For immediate verification, use the code below:'}
+                    </div>
+                    <div className="font-mono text-base font-black text-amber-950 tracking-widest text-center py-1 bg-white rounded-lg border border-amber-200">
                       {dispatchedOtp}
                     </div>
-                    <div className="text-[10px] text-blue-700 text-center">
-                      Auto-filled into the field below. Click "Verify &amp; Continue" to authenticate.
-                    </div>
                   </div>
-                )}
+                ) : deliveryStatus === 'sent' ? (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 text-xs animate-fadeIn">
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                      <CheckCircle2 size={14} className="text-[#0E9F6E]" />
+                      <span>Code Dispatched via Gateway</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800">
+                      Please check your {isEmailInput ? 'email inbox' : 'SMS messages'} on {maskedIdentifier || identifier}.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div>
                   <label className="block text-xs font-bold text-gray-800 mb-1.5 text-center">

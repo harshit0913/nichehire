@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { calculatePanIndiaGeoTier, resolvePanIndiaLocation } from '../../../lib/panIndiaGeo';
+import {
+  normalizeSearchInput,
+  doesJobMatchQuery,
+  rankJobsStrictTierOrder,
+  isInherentlyGlobalRole,
+} from '../../../lib/searchRankingEngine';
+import { detectGovtCrossPortalSuggestion } from '../../../lib/govtCrossPortal';
 
 const FETCH_TIMEOUT_MS = 14000;
 
@@ -637,10 +644,39 @@ export async function POST(req: Request) {
       verifiedOnly,
     } = await req.json();
 
-    const query = (role || '').trim();
+    const rawRole = (role || '').trim();
+    const query = rawRole;
+    const cleanQuery = normalizeSearchInput(rawRole);
     const locQuery = (location || '').trim().toLowerCase();
     const now = Date.now();
     const failedSources: string[] = [];
+
+    // --- CHECK FOR GOVERNMENT EXAM / RECRUITMENT TERMS ---
+    const govtMatch = detectGovtCrossPortalSuggestion(rawRole);
+    if (govtMatch && govtMatch.isGovtExam) {
+      console.log(`[CROSS-PORTAL SEARCH] Query "${rawRole}" matched government exam: ${govtMatch.matchedTitle}`);
+      return NextResponse.json({
+        jobs: [],
+        govtSuggestion: {
+          isGovtExam: true,
+          query: rawRole,
+          matchedTitle: govtMatch.matchedTitle,
+          conductingBody: govtMatch.conductingBody,
+          category: govtMatch.category,
+          targetUrl: govtMatch.targetUrl,
+          officialPortalUrl: govtMatch.officialPortalUrl,
+          message: govtMatch.advisoryNote,
+        },
+        meta: {
+          total: 0,
+          rawTotal: 0,
+          failedSources: [],
+          portalCount: 0,
+          localCompanies: [],
+          isGovtMatch: true,
+        },
+      });
+    }
 
     // --- 1. ADZUNA API (Local & On-Site Verified) ---
     async function fetchAdzuna(): Promise<any[]> {
@@ -1351,6 +1387,9 @@ export async function POST(req: Request) {
       }
     });
     let rawJobs = Array.from(uniqueJobsMap.values());
+    if (cleanQuery) {
+      rawJobs = rawJobs.filter((j: any) => doesJobMatchQuery(j, cleanQuery));
+    }
     rawJobs.forEach((j: any) => {
       if (!j.applicantCount || !j.applicantText) {
         const est = estimateApplicants(j.id, j.postedAt, j.postedText);
@@ -1491,29 +1530,10 @@ export async function POST(req: Request) {
     }
 
     // --- MULTI-TIER GEOGRAPHIC PROXIMITY SORTING ENGINE ---
-    // User requirement:
-    // 1. Same place (Tier 1)
-    // 2. That district / satellite town (Tier 2)
-    // 3. Nearby city within state (Tier 3)
-    // 4. Whole state (Tier 4)
-    // 5. Other states / Pan-India Remote (Tier 5)
-    // 6. Other countries / International Remote (Tier 6)
-    // Within each tier: title relevance match followed by post date (newest first).
-    const qLower = query.toLowerCase();
-    filtered.sort((a: any, b: any) => {
-      // 1. Geographic proximity tier
-      if (a.geoTier !== b.geoTier) {
-        return a.geoTier - b.geoTier;
-      }
-      // 2. Title relevance
-      if (qLower) {
-        const aTitleMatch = (a.title || '').toLowerCase().includes(qLower) ? 1 : 0;
-        const bTitleMatch = (b.title || '').toLowerCase().includes(qLower) ? 1 : 0;
-        if (aTitleMatch !== bTitleMatch) return bTitleMatch - aTitleMatch;
-      }
-      // 3. Freshness (newest first)
-      return (b.postedAt || 0) - (a.postedAt || 0);
-    });
+    // Enforces strict tier ordering:
+    // Tier 1 (City) -> Tier 2 (Regional Hub) -> Tier 3 (State) -> Tier 4 (National) -> Tier 5/6 (International)
+    // with soft quota expansion and internationalByDefault exception for scarce global roles (e.g. Petroleum, Marine, Aviation)
+    filtered = rankJobsStrictTierOrder(filtered, cleanQuery, location || '');
 
     const resolvedGeo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
     const activeLocalCompanies =

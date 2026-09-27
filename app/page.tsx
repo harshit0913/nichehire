@@ -26,6 +26,8 @@ import { matchCoordinatesToRegion, LocationMatch } from './lib/indianGeoBounds';
 import { resolvePanIndiaLocation } from './lib/panIndiaGeo';
 import { suggestRelevantMissingSkills, evaluateDegreeAlignment } from './lib/skillsTaxonomy';
 import { getCandidateSession, clearCandidateSession, enforceSessionExpiry } from './lib/authSession';
+import { normalizeSearchInput, doesJobMatchQuery } from './lib/searchRankingEngine';
+import { detectGovtCrossPortalSuggestion } from './lib/govtCrossPortal';
 
 import {
   AlertTriangle,
@@ -150,6 +152,7 @@ export default function JobDashboard() {
   const [applicants, setApplicants] = useState('Any Applicants');
   const [isStartupOnly, setIsStartupOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [govtSuggestion, setGovtSuggestion] = useState<any | null>(null);
 
   // User Location Detection State & Dynamic Company Suggestions
   const [userLocationMatch, setUserLocationMatch] = useState<LocationMatch | null>(null);
@@ -609,7 +612,26 @@ export default function JobDashboard() {
       if (!res.ok) throw new Error(data.error || 'Failed to fetch jobs');
       setAllLiveJobs(data.jobs || []);
 
-      if ((!data.jobs || data.jobs.length === 0) && data.meta?.failedSources?.length) {
+      if (data.govtSuggestion) {
+        setGovtSuggestion(data.govtSuggestion);
+      } else {
+        const clientGovt = detectGovtCrossPortalSuggestion(roleToUse);
+        if (clientGovt && clientGovt.isGovtExam) {
+          setGovtSuggestion({
+            isGovtExam: true,
+            query: roleToUse,
+            matchedTitle: clientGovt.matchedTitle,
+            conductingBody: clientGovt.conductingBody,
+            category: clientGovt.category,
+            targetUrl: clientGovt.targetUrl,
+            message: clientGovt.advisoryNote,
+          });
+        } else {
+          setGovtSuggestion(null);
+        }
+      }
+
+      if ((!data.jobs || data.jobs.length === 0) && data.meta?.failedSources?.length && !data.govtSuggestion) {
         setErrorMsg(
           `Some sources didn't respond (${data.meta.failedSources.join(', ')}). Try adjusting your search query.`
         );
@@ -840,6 +862,14 @@ export default function JobDashboard() {
     if (verifiedOnly && !job.isVerified) return false;
     if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     if (selectedType !== 'All Types' && job.type !== selectedType) return false;
+
+    // Strict query matching on client side:
+    // Ensures combined filters (e.g. "digital marketing" + "Remote") apply simultaneously (AND logic),
+    // and unrelated jobs are never displayed.
+    const cleanSearchQ = normalizeSearchInput(searchQuery);
+    if (cleanSearchQ && !doesJobMatchQuery(job, cleanSearchQ)) {
+      return false;
+    }
 
     // Distance Filter (Hierarchical proximity)
     if (distance && distance !== 'Any Distance' && locationQuery) {
@@ -1903,6 +1933,33 @@ export default function JobDashboard() {
             </div>
           )}
 
+          {/* Government Recruitment Cross-Portal Suggestion Card */}
+          {govtSuggestion && (
+            <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-[#12172B] via-[#1E293B] to-[#1E3BBD] text-white rounded-2xl shadow-md border border-blue-900 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider">
+                    <span>🏛️ Government Recruitment Detected</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                    Looking for {govtSuggestion.matchedTitle || govtSuggestion.conductingBody || govtSuggestion.query}?
+                  </h3>
+                  <p className="text-xs text-blue-200 max-w-xl leading-relaxed">
+                    {govtSuggestion.message ||
+                      `"${govtSuggestion.query}" is an official examination conducted by ${govtSuggestion.conductingBody}. We track all active notifications, admit cards, and eligibility criteria on our dedicated Government Jobs portal.`}
+                  </p>
+                </div>
+                <Link
+                  href={govtSuggestion.targetUrl || `/govt-exams?q=${encodeURIComponent(govtSuggestion.query)}`}
+                  className="shrink-0 px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-gray-950 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 hover:scale-[1.02]"
+                >
+                  <span>Explore Government Portal</span>
+                  <ArrowRight size={13} strokeWidth={ICON_STROKE_WIDTH} />
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Results Header */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-3">
@@ -1941,7 +1998,7 @@ export default function JobDashboard() {
 
           {/* Empty State */}
           {!isLoading && filteredJobs.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-md bg-white border-[#E4E7EC]">
+            <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-dashed rounded-2xl bg-white border-[#E4E7EC]">
               {activeTab === 'saved' ? (
                 <>
                   <div className="w-10 h-10 rounded bg-[#FFFBEB] text-[#D97B0A] flex items-center justify-center mb-2 border border-[#FDE68A]">
@@ -1977,29 +2034,83 @@ export default function JobDashboard() {
                     + Post a walk-in drive
                   </button>
                 </>
+              ) : govtSuggestion ? (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-[#2B4EE6] flex items-center justify-center mb-3 border border-blue-100">
+                    <Search size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#12172B]">
+                    0 Private Sector Jobs for "{searchQuery}"
+                  </h3>
+                  <p className="mt-1 text-xs text-[#5B6478] max-w-md">
+                    "{searchQuery}" is recognized as an official government recruitment or competitive exam. Check the government notifications banner above to explore open vacancies.
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        fetchJobs('');
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-xl shadow-xs transition-colors"
+                    >
+                      Browse All Private Jobs
+                    </button>
+                    <Link
+                      href={govtSuggestion.targetUrl || `/govt-exams?q=${encodeURIComponent(searchQuery)}`}
+                      className="px-4 py-2 text-xs font-bold text-gray-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-2xs"
+                    >
+                      Go to Government Portal →
+                    </Link>
+                  </div>
+                </>
               ) : (
                 <>
-                  <div className="w-10 h-10 rounded bg-[#F7F8FA] text-[#5B6478] flex items-center justify-center mb-2 border border-[#E4E7EC]">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 text-[#5B6478] flex items-center justify-center mb-3 border border-[#E4E7EC]">
                     <Search size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} className="text-[#5B6478]" />
                   </div>
-                  <h3 className="text-sm font-semibold text-[#12172B]">No jobs match your current filters</h3>
-                  <p className="mt-1 text-xs text-[#5B6478] max-w-sm">
-                    Try widening your filters (e.g. choose Any Age or All Modes).
+                  <h3 className="text-sm font-bold text-[#12172B]">
+                    {searchQuery ? `No jobs found matching "${searchQuery}"` : 'No jobs match your current filters'}
+                  </h3>
+                  <p className="mt-1 text-xs text-[#5B6478] max-w-md">
+                    {searchQuery
+                      ? `We couldn't find any verified openings matching "${searchQuery}". Try different keywords, clear your filters, or check spelling.`
+                      : 'Try widening your filters (e.g. choose Any Mode or All Types).'}
                   </p>
-                  <button
-                    onClick={() => {
-                      setWorkMode('Any Mode');
-                      setPostedTime('Any Time');
-                      setDistance('Any Distance');
-                      setApplicants('Any Applicants');
-                      setVerifiedOnly(false);
-                      setIsStartupOnly(false);
-                      fetchJobs();
-                    }}
-                    className="mt-3 px-3.5 py-1.5 text-xs font-medium text-[#2B4EE6] bg-[#2B4EE6]/5 border border-[#2B4EE6]/20 rounded hover:bg-[#2B4EE6]/10 transition-colors"
-                  >
-                    Reset all filters
-                  </button>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                    <button
+                      onClick={() => {
+                        setWorkMode('Any Mode');
+                        setSelectedType('All Types');
+                        setPostedTime('Any Time');
+                        setDistance('Any Distance');
+                        setApplicants('Any Applicants');
+                        setVerifiedOnly(false);
+                        setIsStartupOnly(false);
+                        setSearchQuery('');
+                        fetchJobs('');
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-xl shadow-xs transition-colors"
+                    >
+                      Clear all filters &amp; Browse all jobs
+                    </button>
+                    {searchQuery && (
+                      <button
+                        onClick={() => {
+                          setWorkMode('Any Mode');
+                          setSelectedType('All Types');
+                          setPostedTime('Any Time');
+                          setDistance('Any Distance');
+                          setApplicants('Any Applicants');
+                          setVerifiedOnly(false);
+                          setIsStartupOnly(false);
+                          fetchJobs(searchQuery);
+                        }}
+                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                      >
+                        Keep "{searchQuery}" &amp; Reset other filters
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </div>
