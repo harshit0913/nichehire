@@ -352,6 +352,18 @@ export default function GovtExamsPage() {
         daysLeft = diffDays;
       }
 
+      // Check upcoming (registration start date in the future)
+      const startParts = exam.importantDates.applyStartDate.split('-').map(Number);
+      let isUpcoming = false;
+      let daysUntilStart = 0;
+      if (startParts.length === 3 && !isNaN(startParts[0])) {
+        const [sYear, sMonth, sDay] = startParts;
+        const startMidnight = new Date(sYear, sMonth - 1, sDay).getTime();
+        const diffStart = Math.round((startMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+        isUpcoming = diffStart > 0;
+        daysUntilStart = diffStart;
+      }
+
       // Verification age check (14 days stale threshold)
       const verifiedDate = new Date(exam.lastVerifiedDate);
       const diffDays = Math.floor((now.getTime() - verifiedDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -361,6 +373,8 @@ export default function GovtExamsPage() {
         ...exam,
         eligibilityResult,
         isPastDeadline,
+        isUpcoming,
+        daysUntilStart,
         isVerificationPending,
         daysLeft,
       };
@@ -374,7 +388,8 @@ export default function GovtExamsPage() {
   // ─── Real-Time Telemetry Counters ──────────────────────────────────────────
   const telemetry = useMemo(() => {
     const totalExams = evaluatedExams.length;
-    const openApplications = activeExams.length;
+    const openApplications = activeExams.filter((e) => !e.isUpcoming).length;
+    const upcomingCount = activeExams.filter((e) => e.isUpcoming).length;
     const closedNotifications = archivedExams.length;
     const totalVacancies = activeExams.reduce((acc, e) => acc + e.vacancies, 0);
     const uniqueBodies = new Set(evaluatedExams.map((e) => e.conductingBody)).size;
@@ -382,7 +397,7 @@ export default function GovtExamsPage() {
       ? activeExams.filter((e) => e.eligibilityResult.status === 'eligible').length
       : 0;
 
-    return { totalExams, openApplications, closedNotifications, activeExams: openApplications, totalVacancies, uniqueBodies, eligibleCount };
+    return { totalExams, openApplications, upcomingCount, closedNotifications, activeExams: activeExams.length, totalVacancies, uniqueBodies, eligibleCount };
   }, [evaluatedExams, activeExams, archivedExams, eligibilityAvailable]);
 
   // ─── Filtered Active Exams (Main Feed & Active Calendar) ───────────────────
@@ -657,7 +672,12 @@ export default function GovtExamsPage() {
             <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white border border-[#E4E7EC] shadow-2xs">
               <span className="flex items-center gap-1.5 font-semibold text-[#12172B]">
                 <span className="w-2 h-2 rounded-full bg-[#0E9F6E] animate-pulse"></span>
-                {telemetry.openApplications} Open Applications
+                {telemetry.openApplications} Open Now
+                {telemetry.upcomingCount > 0 && (
+                  <span className="text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded text-[10px]">
+                    +{telemetry.upcomingCount} Upcoming
+                  </span>
+                )}
               </span>
               <span className="text-[#E4E7EC]">•</span>
               <span className="text-[#5B6478]">
@@ -2225,6 +2245,8 @@ interface ExamCardItemProps {
   exam: GovtExam & {
     eligibilityResult: EligibilityCheckResult;
     isPastDeadline: boolean;
+    isUpcoming?: boolean;
+    daysUntilStart?: number;
     isVerificationPending: boolean;
     daysLeft: number;
   };
@@ -2243,7 +2265,7 @@ function ExamCardItem({
   onReport,
   onOpenProfileDrawer,
 }: ExamCardItemProps) {
-  const { eligibilityResult, isPastDeadline, isVerificationPending, daysLeft } = exam;
+  const { eligibilityResult, isPastDeadline, isUpcoming, daysUntilStart = 0, isVerificationPending, daysLeft } = exam;
 
   // Short monogram
   const initials = exam.conductingBody
@@ -2328,6 +2350,10 @@ function ExamCardItem({
                 <span className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
                   Closed on {formatExamDate(exam.importantDates.applyEndDate)}
                 </span>
+              ) : isUpcoming ? (
+                <span className="text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded">
+                  Registration Opens {formatExamDate(exam.importantDates.applyStartDate)} ({daysUntilStart}d)
+                </span>
               ) : daysLeft === 0 ? (
                 <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded animate-pulse">
                   Closes Today! (Last Day to Apply)
@@ -2370,7 +2396,10 @@ function ExamCardItem({
           <span className="text-[#E4E7EC]">•</span>
           <span className="inline-flex items-center gap-1">
             <Calendar size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-            {isPastDeadline ? 'Registration Closed:' : 'Last Date to Apply:'} <strong className="text-[#12172B]">{formatExamDate(exam.importantDates.applyEndDate)}</strong>
+            {isUpcoming ? 'Registration Opens:' : isPastDeadline ? 'Registration Closed:' : 'Last Date to Apply:'}{' '}
+            <strong className="text-[#12172B]">
+              {formatExamDate(isUpcoming ? exam.importantDates.applyStartDate : exam.importantDates.applyEndDate)}
+            </strong>
           </span>
           {exam.importantDates.examDate && (
             <>
@@ -2439,7 +2468,7 @@ function ExamCardItem({
                 : 'text-white bg-[#2B4EE6] hover:bg-[#1E3BBD]'
             }`}
           >
-            <span>{isArchived ? 'Official Portal (Archived)' : 'Official Portal'}</span>
+            <span>{isArchived ? 'Official Portal (Archived)' : isUpcoming ? 'Official Portal (Opens Soon)' : 'Official Portal'}</span>
             <ArrowUpRight size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
         </div>
