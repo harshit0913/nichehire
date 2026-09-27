@@ -3,11 +3,13 @@
 // Strictly governed by app/lib/iconRules.ts.
 
 export {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
+  BarChart3,
   Bookmark,
   Briefcase,
   Building2,
@@ -53,6 +55,7 @@ export {
   Star,
   Target,
   Trash2,
+  TrendingUp,
   Upload,
   Download,
   RefreshCw,
