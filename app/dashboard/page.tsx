@@ -65,14 +65,28 @@ export default function CandidateDashboardPage() {
     async function loadDashboard() {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      let activeToken = session?.access_token;
+      let activeUserId = session?.user?.id;
+
+      if (!activeToken) {
+        try {
+          const saved = localStorage.getItem('nichehire_auth_session');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            activeToken = parsed.sessionToken;
+            activeUserId = parsed.user?.id;
+          }
+        } catch {}
+      }
+
+      if (!activeToken || !activeUserId) {
         setLoading(false);
         return;
       }
 
       try {
         const res = await fetch('/api/user/access-status', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers: { Authorization: `Bearer ${activeToken}` },
         });
         const access = await res.json();
         setData(access);
@@ -81,7 +95,7 @@ export default function CandidateDashboardPage() {
         const { data: fbRows } = await supabase
           .from('user_feedbacks')
           .select('id, type, message, status, admin_reply, replied_at, created_at')
-          .eq('user_id', session.user.id)
+          .eq('user_id', activeUserId)
           .order('created_at', { ascending: false });
 
         if (fbRows) {

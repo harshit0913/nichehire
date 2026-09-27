@@ -61,7 +61,7 @@ export default function PhoneOtpVerification({
       setCountdown(30);
       setNotice({
         type: 'info',
-        text: `OTP sent to ${data.phone}. (Test code: ${data.demoOtp})`,
+        text: data.message || `Unique 6-digit OTP sent to ${data.maskedIdentifier || data.phone}. Please enter it below.`,
       });
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Error sending OTP.' });

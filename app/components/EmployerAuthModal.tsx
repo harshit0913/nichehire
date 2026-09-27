@@ -60,15 +60,22 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
 
         if (error) throw error;
         if (data.user) {
-          // Initialize user_profile with employer role
+          // Initialize user_profile with employer role and guaranteed unique referral code
           try {
-            await supabase
-              .from('user_profiles')
-              .upsert({
-                user_id: data.user.id,
-                assigned_role: 'Employer',
-                tier: 'member',
-              }, { onConflict: 'user_id' });
+            const profRes = await fetch('/api/auth/register-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.user.id,
+                email: email.trim().toLowerCase(),
+                role: 'Employer',
+                companyName: companyName.trim(),
+              }),
+            });
+            const profData = await profRes.json();
+            if (profData.referralCode) {
+              localStorage.setItem('nichehire_employer_referral_code', profData.referralCode);
+            }
           } catch (profileErr) {
             console.warn('Could not record employer profile row:', profileErr);
           }
@@ -95,6 +102,23 @@ export default function EmployerAuthModal({ isOpen, onClose, onSuccess }: Employ
             localStorage.setItem('nichehire_employer_company', comp);
           }
           localStorage.setItem('nichehire_employer_email', data.user.email || email.trim());
+
+          // Guarantee referral code is active
+          try {
+            const profRes = await fetch('/api/auth/register-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.user.id,
+                email: data.user.email,
+                role: 'Employer',
+              }),
+            });
+            const profData = await profRes.json();
+            if (profData.referralCode) {
+              localStorage.setItem('nichehire_employer_referral_code', profData.referralCode);
+            }
+          } catch {}
 
           setSuccessMsg('Welcome back! Employer session authenticated.');
           onSuccess(data.user, { companyName: comp, email: data.user.email });

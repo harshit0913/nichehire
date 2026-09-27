@@ -284,19 +284,37 @@ export default function JobDashboard() {
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.access_token) {
-        fetchAccessStatus(session.access_token);
+      if (session?.user) {
+        setUser(session.user);
+        if (session?.access_token) {
+          fetchAccessStatus(session.access_token);
+        }
+        loadCandidateData(session.user.id);
+      } else {
+        try {
+          const saved = localStorage.getItem('nichehire_auth_session');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.user) {
+              setUser(parsed.user);
+              if (parsed.sessionToken) {
+                fetchAccessStatus(parsed.sessionToken);
+              }
+              loadCandidateData(parsed.user.id);
+            }
+          }
+        } catch {}
       }
-      loadCandidateData(session?.user?.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.access_token) {
-        fetchAccessStatus(session.access_token);
+      if (session?.user) {
+        setUser(session.user);
+        if (session?.access_token) {
+          fetchAccessStatus(session.access_token);
+        }
+        loadCandidateData(session.user.id);
       }
-      loadCandidateData(session?.user?.id);
     });
 
     // Load walk-ins count silently in background
@@ -326,7 +344,11 @@ export default function JobDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    try {
+      localStorage.removeItem('nichehire_auth_session');
+    } catch {}
     setUser(null);
+    setAccessStatus(null);
     loadCandidateData();
   };
 

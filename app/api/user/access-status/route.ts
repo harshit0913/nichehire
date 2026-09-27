@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
 import { resolveAccess, checkUsageLimit } from '../../../lib/premiumTierEngine';
 import { UserPremiumStatus, FounderOverride } from '../../../types/premium';
+import { verifyAuthToken, ensureUserReferralProfile } from '../../../lib/referralEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +26,29 @@ export async function GET(req: Request) {
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    let resolvedUser: { id: string; email?: string } | null = null;
 
-    if (authError || !user) {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (user && !authError) {
+        resolvedUser = user;
+      }
+    } catch {
+      // Supabase token failed, check custom token below
+    }
+
+    if (!resolvedUser) {
+      // Check custom OTP JWT token
+      const customPayload = verifyAuthToken(token);
+      if (customPayload) {
+        resolvedUser = {
+          id: customPayload.userId,
+          email: customPayload.type === 'email' ? customPayload.identifier : undefined,
+        };
+      }
+    }
+
+    if (!resolvedUser) {
       return NextResponse.json(
         {
           level: 'member',
@@ -42,6 +63,8 @@ export async function GET(req: Request) {
         { status: 200 }
       );
     }
+
+    const user = resolvedUser;
 
     // 1. Fetch user profile
     const { data: profile } = await supabase
@@ -62,7 +85,12 @@ export async function GET(req: Request) {
     // 2. Ensure each user has a unique referral code (Founder gets clean 'FOUNDER' code)
     let referralCode = isFounderUser ? 'FOUNDER' : profile?.referral_code;
     if (!referralCode) {
-      referralCode = `REF-${user.id.slice(0, 8).toUpperCase()}`;
+      const ensured = await ensureUserReferralProfile({
+        userId: user.id,
+        email: user.email,
+        role: isFounderUser ? 'Founder & CEO' : 'Member',
+      });
+      referralCode = ensured.referralCode;
     }
 
     if (isFounderUser && (!profile?.is_founder || profile?.referral_code !== 'FOUNDER' || !profile?.assigned_role)) {
