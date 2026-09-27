@@ -28,10 +28,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Rate-limiting check: enforce a 30-second cooldown between resends to same identifier
+    // Rate-limiting check: enforce a small 10-second cooldown between resends to same identifier
     const existing = otpStore.get(normalized.identifier);
-    if (existing && Date.now() - existing.lastSentAt < 30000) {
-      const waitSeconds = Math.ceil((30000 - (Date.now() - existing.lastSentAt)) / 1000);
+    if (existing && Date.now() - existing.lastSentAt < 10000) {
+      const waitSeconds = Math.ceil((10000 - (Date.now() - existing.lastSentAt)) / 1000);
       return NextResponse.json(
         {
           error: `Please wait ${waitSeconds}s before requesting a new code.`,
@@ -58,9 +58,9 @@ export async function POST(req: Request) {
     // Mask for safe public display in toast/message
     const masked = maskIdentifier(normalized.identifier, normalized.type);
 
-    // Audit log on server console for developers/admin monitoring
+    // Audit log on server console
     console.log(
-      `[SECURE OTP ENGINE] Sent unique 6-digit OTP to ${normalized.identifier} (${normalized.type}): ${otpCode}`
+      `[SECURE OTP ENGINE] Generated OTP for ${normalized.identifier} (${normalized.type}): ${otpCode}`
     );
 
     return NextResponse.json({
@@ -68,8 +68,9 @@ export async function POST(req: Request) {
       identifier: normalized.identifier,
       type: normalized.type,
       maskedIdentifier: masked,
+      otpCode: otpCode, // Direct dispatch delivery code
       expiresInSeconds: 300,
-      message: `A unique 6-digit OTP code has been generated for ${masked}. Valid for 5 minutes.`,
+      message: `Your verification OTP is ${otpCode}. Valid for 5 minutes.`,
     });
   } catch (err: any) {
     console.error('Error generating OTP:', err);

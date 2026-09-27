@@ -168,23 +168,23 @@ export async function GET(req: Request) {
       success: true,
       timestamp: new Date().toISOString(),
       users: {
-        total: Math.max(totalProfiles, 18), // fallback minimum for display
-        candidates: Math.max(candidatesCount, 14),
-        employers: Math.max(employerCount, 3),
-        team: Math.max(teamCount, 2),
+        total: totalProfiles,
+        candidates: candidatesCount,
+        employers: employerCount,
+        team: teamCount,
         tiers: tierCounts,
-        newSignupsThisWeek: Math.max(newSignupsThisWeek, 6),
+        newSignupsThisWeek: newSignupsThisWeek,
       },
       traffic: trafficSummary,
       operations: {
-        totalJobs: Math.max(jobCount || 0, 48), // combines verified + employer jobs
-        totalApplications: Math.max(appCount || 0, 32),
-        activeWalkins: Math.max(walkinCount || 0, 12),
+        totalJobs: jobCount || 0,
+        totalApplications: appCount || 0,
+        activeWalkins: walkinCount || 0,
         referrals: {
           total: totalReferrals,
           qualified: qualifiedReferrals,
           provisional: provisionalReferrals,
-          conversionRatePct: totalReferrals > 0 ? Math.round((qualifiedReferrals / totalReferrals) * 100) : 100,
+          conversionRatePct: totalReferrals > 0 ? Math.round((qualifiedReferrals / totalReferrals) * 100) : 0,
         },
         monetization: {
           approvedRevenueInr: approvedPaymentTotal,

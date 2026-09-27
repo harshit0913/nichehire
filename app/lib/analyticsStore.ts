@@ -1,5 +1,5 @@
 // app/lib/analyticsStore.ts
-// Robust in-memory and Supabase-backed site traffic and visitor analytics store
+// 100% Genuine, Database-Backed Site Traffic and Visitor Analytics (Zero Mock/Fake Data)
 
 import { supabase } from '../supabase';
 
@@ -42,121 +42,12 @@ export interface AnalyticsSummary {
   referrerSources: Array<{ source: string; count: number; percentage: number }>;
 }
 
-// Global in-memory cache to ensure continuous tracking even before/during DB sync
-interface MemoryAnalyticsState {
-  totalVisits: number;
-  uniqueVisitorsSet: Set<string>;
-  dailyMap: Map<string, { visits: number; visitors: Set<string> }>;
-  routeMap: Map<string, number>;
-  deviceCounts: { desktop: number; mobile: number; tablet: number };
-  referrerMap: Map<string, number>;
-  initialized: boolean;
-}
-
-const memoryState: MemoryAnalyticsState = {
-  totalVisits: 0,
-  uniqueVisitorsSet: new Set<string>(),
-  dailyMap: new Map(),
-  routeMap: new Map(),
-  deviceCounts: { desktop: 0, mobile: 0, tablet: 0 },
-  referrerMap: new Map(),
-  initialized: false,
-};
-
-// Seed realistic baseline data for the last 14 days so analytics is never blank
-function initializeSeedData() {
-  if (memoryState.initialized) return;
-
-  const now = new Date();
-  const seedRoutes: Record<string, number> = {
-    '/': 1420,
-    '/dashboard': 580,
-    '/employer/dashboard': 390,
-    '/govt-exams': 470,
-    '/pricing': 310,
-    '/about': 180,
-    '/about/domain-guide': 95,
-  };
-
-  Object.entries(seedRoutes).forEach(([path, count]) => {
-    memoryState.routeMap.set(path, count);
-  });
-
-  memoryState.deviceCounts = {
-    desktop: 1820,
-    mobile: 1450,
-    tablet: 175,
-  };
-
-  memoryState.referrerMap.set('Direct / Bookmark', 1620);
-  memoryState.referrerMap.set('Google Search', 940);
-  memoryState.referrerMap.set('WhatsApp Share', 510);
-  memoryState.referrerMap.set('LinkedIn / Peer Invite', 375);
-
-  let baselineTotal = 0;
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateStr = d.toISOString().slice(0, 10);
-    // Natural variance: 140 to 280 visits/day
-    const daySeed = Math.floor(160 + Math.sin(i * 1.2) * 55 + (14 - i) * 6);
-    const uniqueSeed = Math.floor(daySeed * 0.72);
-
-    const visitorsSet = new Set<string>();
-    for (let u = 0; u < uniqueSeed; u++) {
-      visitorsSet.add(`seed-user-${i}-${u}`);
-      memoryState.uniqueVisitorsSet.add(`seed-user-${i}-${u}`);
-    }
-
-    memoryState.dailyMap.set(dateStr, {
-      visits: daySeed,
-      visitors: visitorsSet,
-    });
-    baselineTotal += daySeed;
-  }
-
-  memoryState.totalVisits = baselineTotal;
-  memoryState.initialized = true;
-}
-
-// Track an incoming visit
+// Track an incoming visit directly to database
 export async function recordVisit(payload: VisitPayload) {
-  initializeSeedData();
-
   const cleanPath = payload.path || '/';
   const cleanDevice = (payload.device || 'desktop').toLowerCase();
   const visitorId = payload.visitorId || 'anon-' + Math.random().toString(36).slice(2, 10);
-  const referrer = payload.referrer || 'Direct / Bookmark';
-  const todayStr = new Date().toISOString().slice(0, 10);
 
-  // 1. Update in-memory state instantly
-  memoryState.totalVisits += 1;
-  memoryState.uniqueVisitorsSet.add(visitorId);
-
-  // Daily map
-  const daily = memoryState.dailyMap.get(todayStr) || { visits: 0, visitors: new Set<string>() };
-  daily.visits += 1;
-  daily.visitors.add(visitorId);
-  memoryState.dailyMap.set(todayStr, daily);
-
-  // Route map
-  memoryState.routeMap.set(cleanPath, (memoryState.routeMap.get(cleanPath) || 0) + 1);
-
-  // Device counts
-  if (cleanDevice === 'mobile') memoryState.deviceCounts.mobile += 1;
-  else if (cleanDevice === 'tablet') memoryState.deviceCounts.tablet += 1;
-  else memoryState.deviceCounts.desktop += 1;
-
-  // Referrer map
-  let sourceCategory = 'Direct / Bookmark';
-  if (referrer.includes('google')) sourceCategory = 'Google Search';
-  else if (referrer.includes('whatsapp') || referrer.includes('wa.me')) sourceCategory = 'WhatsApp Share';
-  else if (referrer.includes('linkedin')) sourceCategory = 'LinkedIn / Peer Invite';
-  else if (referrer.includes('ref=')) sourceCategory = 'Referral Link Invite';
-  else if (referrer && referrer !== 'Direct / Bookmark') sourceCategory = 'Web Referral';
-
-  memoryState.referrerMap.set(sourceCategory, (memoryState.referrerMap.get(sourceCategory) || 0) + 1);
-
-  // 2. Persist to Supabase asynchronously without blocking
   try {
     await supabase.from('site_visits').insert([
       {
@@ -169,95 +60,131 @@ export async function recordVisit(payload: VisitPayload) {
       },
     ]);
   } catch (err) {
-    // Non-fatal, memoryState preserves count
-    console.warn('site_visits DB insert notice (fallback to memory):', err);
+    console.error('Failed to record site visit to Supabase:', err);
   }
 }
 
-// Generate complete analytics summary
+// Generate genuine analytics summary computed strictly from database rows
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
-  initializeSeedData();
-
-  // Try fetching any recent real DB visits to blend
-  try {
-    const { count: dbCount } = await supabase
-      .from('site_visits')
-      .select('*', { count: 'exact', head: true });
-
-    if (dbCount && dbCount > 0) {
-      memoryState.totalVisits = Math.max(memoryState.totalVisits, dbCount + 3445);
-    }
-  } catch {}
-
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayEntry = memoryState.dailyMap.get(todayStr) || { visits: 245, visitors: new Set() };
-  const todayVisits = todayEntry.visits;
-  const todayUnique = Math.max(todayEntry.visitors.size, Math.floor(todayVisits * 0.74));
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Compute 14-day trends
+  // 1. Fetch all real visits recorded in database
+  const { data: visitsRows, count: totalDbCount, error } = await supabase
+    .from('site_visits')
+    .select('path, visitor_id, device_type, referrer, created_at', { count: 'exact' });
+
+  if (error) {
+    console.warn('Could not query site_visits from Supabase:', error.message);
+  }
+
+  const visits = visitsRows || [];
+  const totalVisits = totalDbCount ?? visits.length;
+
+  // 2. Compute unique visitors
+  const uniqueVisitorSet = new Set<string>();
+  visits.forEach((v) => {
+    if (v.visitor_id) uniqueVisitorSet.add(v.visitor_id);
+  });
+  const uniqueVisitors = uniqueVisitorSet.size;
+
+  // 3. Compute today's visits
+  const todayVisitsList = visits.filter((v) => v.created_at && v.created_at.slice(0, 10) === todayStr);
+  const todayVisits = todayVisitsList.length;
+  const todayUniqueSet = new Set<string>();
+  todayVisitsList.forEach((v) => {
+    if (v.visitor_id) todayUniqueSet.add(v.visitor_id);
+  });
+  const todayUnique = todayUniqueSet.size;
+
+  // 4. Compute this week's visits
+  const weekVisits = visits.filter((v) => v.created_at && v.created_at >= sevenDaysAgo).length;
+
+  // 5. Compute real 14-day daily trends
   const dailyTrends: DailyVisitStat[] = [];
   const now = new Date();
-  let weekVisits = 0;
 
   for (let i = 13; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateStr = d.toISOString().slice(0, 10);
-    const entry = memoryState.dailyMap.get(dateStr) || {
-      visits: Math.floor(180 + Math.random() * 50),
-      visitors: new Set(),
-    };
-    const visits = entry.visits;
-    const unique = Math.max(entry.visitors.size, Math.floor(visits * 0.7));
+    const dayRows = visits.filter((v) => v.created_at && v.created_at.slice(0, 10) === dateStr);
+    const dayVisitors = new Set<string>();
+    dayRows.forEach((v) => {
+      if (v.visitor_id) dayVisitors.add(v.visitor_id);
+    });
 
     dailyTrends.push({
       date: dateStr,
-      visits,
-      uniqueVisitors: unique,
+      visits: dayRows.length,
+      uniqueVisitors: dayVisitors.size,
     });
-
-    if (i < 7) {
-      weekVisits += visits;
-    }
   }
 
-  // Top routes
-  const topRoutes: RouteVisitStat[] = Array.from(memoryState.routeMap.entries())
-    .map(([path, visits]) => ({
+  // 6. Compute real top routes
+  const routeCounts = new Map<string, number>();
+  visits.forEach((v) => {
+    const p = v.path || '/';
+    routeCounts.set(p, (routeCounts.get(p) || 0) + 1);
+  });
+
+  const topRoutes: RouteVisitStat[] = Array.from(routeCounts.entries())
+    .map(([path, count]) => ({
       path,
-      visits,
-      percentage: Math.round((visits / Math.max(1, memoryState.totalVisits)) * 100),
+      visits: count,
+      percentage: totalVisits > 0 ? Math.round((count / totalVisits) * 100) : 0,
     }))
     .sort((a, b) => b.visits - a.visits)
-    .slice(0, 8);
+    .slice(0, 10);
 
-  // Device Breakdown
-  const totalDevices =
-    memoryState.deviceCounts.desktop +
-    memoryState.deviceCounts.mobile +
-    memoryState.deviceCounts.tablet || 1;
+  // 7. Compute real device breakdown
+  let desktopCount = 0;
+  let mobileCount = 0;
+  let tabletCount = 0;
 
+  visits.forEach((v) => {
+    const dev = (v.device_type || 'desktop').toLowerCase();
+    if (dev === 'mobile') mobileCount += 1;
+    else if (dev === 'tablet') tabletCount += 1;
+    else desktopCount += 1;
+  });
+
+  const totalDevs = desktopCount + mobileCount + tabletCount;
   const deviceBreakdown = {
-    desktop: memoryState.deviceCounts.desktop,
-    mobile: memoryState.deviceCounts.mobile,
-    tablet: memoryState.deviceCounts.tablet,
-    desktopPct: Math.round((memoryState.deviceCounts.desktop / totalDevices) * 100),
-    mobilePct: Math.round((memoryState.deviceCounts.mobile / totalDevices) * 100),
-    tabletPct: Math.round((memoryState.deviceCounts.tablet / totalDevices) * 100),
+    desktop: desktopCount,
+    mobile: mobileCount,
+    tablet: tabletCount,
+    desktopPct: totalDevs > 0 ? Math.round((desktopCount / totalDevs) * 100) : 0,
+    mobilePct: totalDevs > 0 ? Math.round((mobileCount / totalDevs) * 100) : 0,
+    tabletPct: totalDevs > 0 ? Math.round((tabletCount / totalDevs) * 100) : 0,
   };
 
-  // Referrer Breakdown
-  const totalRefs = Array.from(memoryState.referrerMap.values()).reduce((a, b) => a + b, 0) || 1;
-  const referrerSources = Array.from(memoryState.referrerMap.entries())
+  // 8. Compute real referrer sources
+  const refCounts = new Map<string, number>();
+  visits.forEach((v) => {
+    let source = 'Direct / Bookmark';
+    const ref = (v.referrer || '').toLowerCase();
+    if (!ref) source = 'Direct / Bookmark';
+    else if (ref.includes('google')) source = 'Google Search';
+    else if (ref.includes('whatsapp') || ref.includes('wa.me')) source = 'WhatsApp Share';
+    else if (ref.includes('linkedin')) source = 'LinkedIn / Peer Invite';
+    else if (ref.includes('ref=')) source = 'Referral Link Invite';
+    else source = 'Web Referral';
+
+    refCounts.set(source, (refCounts.get(source) || 0) + 1);
+  });
+
+  const referrerSources = Array.from(refCounts.entries())
     .map(([source, count]) => ({
       source,
       count,
-      percentage: Math.round((count / totalRefs) * 100),
+      percentage: totalVisits > 0 ? Math.round((count / totalVisits) * 100) : 0,
     }))
     .sort((a, b) => b.count - a.count);
 
   return {
-    totalVisits: memoryState.totalVisits,
-    uniqueVisitors: Math.max(memoryState.uniqueVisitorsSet.size, Math.floor(memoryState.totalVisits * 0.71)),
+    totalVisits,
+    uniqueVisitors,
     todayVisits,
     todayUnique,
     weekVisits,

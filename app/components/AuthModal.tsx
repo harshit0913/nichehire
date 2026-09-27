@@ -34,6 +34,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [assignedReferralCode, setAssignedReferralCode] = useState('');
+  const [dispatchedOtp, setDispatchedOtp] = useState<string | null>(null);
 
   // Password specific state
   const [passwordMode, setPasswordMode] = useState<'signin' | 'signup'>('signin');
@@ -93,7 +94,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       }
 
       setOtpSent(true);
-      setOtpCountdown(30);
+      setOtpCountdown(10);
+      if (data.otpCode) {
+        setDispatchedOtp(data.otpCode);
+        setOtpCode(data.otpCode);
+      }
       setSuccessMsg(data.message || `Unique 6-digit OTP code sent. Valid for 5 minutes.`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error generating verification code.');
@@ -404,6 +409,30 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     Change
                   </button>
                 </div>
+
+                {dispatchedOtp && (
+                  <div className="p-3 bg-blue-50/90 border border-blue-200 rounded-xl space-y-1.5 animate-fadeIn">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-blue-900 font-bold flex items-center gap-1">
+                        <ShieldCheck size={14} className="text-blue-600" />
+                        <span>Verification OTP Code:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode(dispatchedOtp)}
+                        className="px-2 py-0.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-[10px] font-bold rounded-md"
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                    <div className="font-mono text-base font-black text-[#2B4EE6] tracking-widest text-center py-1 bg-white rounded-lg border border-blue-100">
+                      {dispatchedOtp}
+                    </div>
+                    <div className="text-[10px] text-blue-700 text-center">
+                      Auto-filled into the field below. Click "Verify &amp; Continue" to authenticate.
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-gray-800 mb-1.5 text-center">

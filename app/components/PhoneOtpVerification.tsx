@@ -58,10 +58,13 @@ export default function PhoneOtpVerification({
       }
 
       setOtpSent(true);
-      setCountdown(30);
+      setCountdown(10);
+      if (data.otpCode) {
+        setOtpCode(data.otpCode);
+      }
       setNotice({
         type: 'info',
-        text: data.message || `Unique 6-digit OTP sent to ${data.maskedIdentifier || data.phone}. Please enter it below.`,
+        text: `Your verification OTP is ${data.otpCode || ''}. It has been auto-filled below. Click Submit OTP to verify.`,
       });
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Error sending OTP.' });
