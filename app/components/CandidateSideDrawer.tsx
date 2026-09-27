@@ -20,6 +20,8 @@ import {
   HelpCircle,
   LogOut,
   SlidersHorizontal,
+  Upload,
+  Download,
 } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 import UserTierBadge from './UserTierBadge';
@@ -79,7 +81,17 @@ export default function CandidateSideDrawer({
   const [newStatus, setNewStatus] = useState<CandidateApplication['status']>('Applied');
   const [newPortalUrl, setNewPortalUrl] = useState('');
 
-  // Load applications and profile specific to this user ID
+  // Uploaded Resume State
+  const [uploadedResume, setUploadedResume] = useState<{
+    fileName: string;
+    fileSize: string;
+    uploadedAt: string;
+    rawText?: string;
+  } | null>(null);
+  const [isUploadingInDrawer, setIsUploadingInDrawer] = useState(false);
+  const [drawerUploadNotice, setDrawerUploadNotice] = useState<string | null>(null);
+
+  // Load applications, profile, and resume specific to this user ID
   useEffect(() => {
     if (propProfile) {
       setCandidateProfile(propProfile);
@@ -105,10 +117,82 @@ export default function CandidateSideDrawer({
           setCandidateProfile(JSON.parse(profData));
         }
       }
+
+      const resumeKey = `nichehire_uploaded_resume_${user.id}`;
+      const savedResume = localStorage.getItem(resumeKey);
+      if (savedResume) {
+        setUploadedResume(JSON.parse(savedResume));
+      }
     } catch {
       // Ignore
     }
   }, [user?.id, isOpen, propProfile]);
+
+  const handleDrawerResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setIsUploadingInDrawer(true);
+    setDrawerUploadNotice(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64String = (reader.result as string).split(',')[1];
+          const res = await fetch('/api/resume/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileBase64: base64String,
+              mimeType: file.type || 'application/pdf',
+              fileName: file.name,
+            }),
+          });
+
+          const data = await res.json();
+          if (data) {
+            const resumeMeta = {
+              fileName: file.name,
+              fileSize: `${Math.round(file.size / 1024)} KB`,
+              uploadedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+              rawText: data.rawText || '',
+            };
+            setUploadedResume(resumeMeta);
+            localStorage.setItem(`nichehire_uploaded_resume_${user.id}`, JSON.stringify(resumeMeta));
+
+            // Also update candidate profile if empty
+            const profKey = `nichehire_candidate_profile_${user.id}`;
+            const existingProf = JSON.parse(localStorage.getItem(profKey) || '{}');
+            const updatedProf = {
+              ...existingProf,
+              fullName: existingProf.fullName || (data.name && data.name !== 'Applicant' ? data.name : ''),
+              headline: existingProf.headline || data.role || '',
+              city: existingProf.city || data.location || '',
+              degree: existingProf.degree || data.education || '',
+              skills: Array.isArray(data.skills) && data.skills.length > 0
+                ? Array.from(new Set([...(existingProf.skills || []), ...data.skills]))
+                : (existingProf.skills || []),
+              bio: existingProf.bio || data.summary || '',
+            };
+            setCandidateProfile(updatedProf);
+            localStorage.setItem(profKey, JSON.stringify(updatedProf));
+
+            setDrawerUploadNotice(`✓ Resume "${file.name}" uploaded & profile synced!`);
+            setTimeout(() => setDrawerUploadNotice(null), 4000);
+          }
+        } catch {
+          setDrawerUploadNotice('Could not parse resume file. Please try another PDF or DOCX.');
+        } finally {
+          setIsUploadingInDrawer(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingInDrawer(false);
+      setDrawerUploadNotice('Failed to read file.');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -578,15 +662,95 @@ export default function CandidateSideDrawer({
             {/* ── Tab 3: Resume & Skills ── */}
             {activeTab === 'resume' && (
               <div className="space-y-4">
-                <div className="pb-1 border-b border-[#E4E7EC]">
-                  <h4 className="text-xs font-bold text-[#12172B] flex items-center gap-1.5">
-                    <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
-                    <span>Candidate Resume &amp; Profile Summary</span>
-                  </h4>
-                  <span className="text-[11px] text-[#5B6478]">ATS-ready profile for direct recruiter review</span>
+                <div className="pb-1 border-b border-[#E4E7EC] flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-[#12172B] flex items-center gap-1.5">
+                      <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                      <span>Resume &amp; Profile Data</span>
+                    </h4>
+                    <span className="text-[11px] text-[#5B6478]">Manage your CV, extracted credentials, and ATS readiness</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenEditProfile();
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2B4EE6] hover:underline"
+                  >
+                    <Edit3 size={11} strokeWidth={ICON_STROKE_WIDTH} />
+                    <span>Edit Profile</span>
+                  </button>
                 </div>
 
+                {/* Uploaded Resume Card */}
+                <div className="p-3.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border border-blue-200/80 rounded-xl space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#2B4EE6] text-white flex items-center justify-center shrink-0">
+                        <Upload size={14} strokeWidth={ICON_STROKE_WIDTH} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-[#12172B]">Uploaded Resume (CV)</span>
+                        <p className="text-[10px] text-[#5B6478]">
+                          Used for 1-click apply and recruiter searches
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="cursor-pointer px-2.5 py-1 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-2xs">
+                      <span>{isUploadingInDrawer ? 'Parsing...' : uploadedResume ? 'Replace' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.docx,.doc,.txt"
+                        className="hidden"
+                        disabled={isUploadingInDrawer}
+                        onChange={handleDrawerResumeUpload}
+                      />
+                    </label>
+                  </div>
+
+                  {uploadedResume ? (
+                    <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-100 text-[11px]">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6] shrink-0" />
+                        <span className="font-semibold text-[#12172B] truncate">{uploadedResume.fileName}</span>
+                        <span className="text-[10px] text-[#5B6478] shrink-0">({uploadedResume.fileSize})</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#0E9F6E] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+                        Synced
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-white/70 rounded-lg border border-dashed border-blue-200 text-center">
+                      <p className="text-[11px] text-[#5B6478]">
+                        No resume uploaded yet. Upload a PDF or Word doc to auto-fill your profile details.
+                      </p>
+                    </div>
+                  )}
+
+                  {drawerUploadNotice && (
+                    <div className="p-2 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded text-[11px] flex items-center gap-1.5 font-medium">
+                      <CheckCircle2 size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+                      <span>{drawerUploadNotice}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Details Summary */}
                 <div className="bg-[#F7F8FA] p-3.5 rounded-xl border border-[#E4E7EC] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-[#5B6478] tracking-wider">Profile Credentials</span>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenEditProfile();
+                      }}
+                      className="text-[11px] text-[#2B4EE6] font-semibold hover:underline"
+                    >
+                      Update
+                    </button>
+                  </div>
+
                   <div>
                     <span className="text-[10px] uppercase font-bold text-[#5B6478] tracking-wider">Education</span>
                     <p className="text-xs font-semibold text-[#12172B] mt-0.5">
@@ -635,7 +799,7 @@ export default function CandidateSideDrawer({
                     className="w-full py-2.5 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
                   >
                     <FileText size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
-                    <span>Open AI Resume Builder &amp; PDF Export</span>
+                    <span>Open Simple Resume Builder (PDF)</span>
                   </button>
 
                   <button

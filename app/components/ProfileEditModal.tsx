@@ -11,6 +11,9 @@ import {
   IndianRupee,
   FileText,
   Plus,
+  Upload,
+  AlertTriangle,
+  CheckCircle2,
 } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
@@ -41,6 +44,40 @@ interface ProfileEditModalProps {
   userId?: string | null;
   userEmail?: string | null;
   onSaved?: (profile: CandidateProfileData) => void;
+}
+
+function mapToDegreeOption(extractedEducation?: string): string {
+  if (!extractedEducation) return 'B.Com (Commerce & Finance)';
+  const lower = extractedEducation.toLowerCase();
+  if (lower.includes('mba') || lower.includes('pgdm')) return 'MBA (Management / Supply Chain / Finance)';
+  if (lower.includes('bba') || lower.includes('bms')) return 'BBA / BMS (Business Administration)';
+  if (lower.includes('ca') || lower.includes('chartered') || lower.includes('icai')) return 'CA Final / Articleship (ICAI)';
+  if (lower.includes('cma')) return 'CMA (Cost & Management Accounting)';
+  if (lower.includes('cs') || lower.includes('company secretary')) return 'CS (Company Secretary)';
+  if (lower.includes('llb') || lower.includes('law') || lower.includes('advocate')) return 'LLB / BA LLB (Legal Studies)';
+  if (lower.includes('mbbs') || lower.includes('medical') || lower.includes('doctor')) return 'MBBS / Healthcare Administration';
+  if (lower.includes('bca') || lower.includes('computer application')) return 'BCA (Computer Applications)';
+  if (lower.includes('b.tech') || lower.includes('btech') || lower.includes('b.e') || lower.includes('engineer')) return 'B.Tech / B.E (Engineering)';
+  if (lower.includes('m.com') || lower.includes('mcom')) return 'M.Com (Accounting & Commerce)';
+  if (lower.includes('b.a') || lower.includes('ba ') || lower.includes('humanities') || lower.includes('journalism')) return 'B.A (Humanities & Social Sciences)';
+  if (lower.includes('m.a') || lower.includes('ma ') || lower.includes('economics')) return 'M.A (Economics / English / Arts)';
+  if (lower.includes('b.com') || lower.includes('bcom') || lower.includes('commerce')) return 'B.Com (Commerce & Finance)';
+  return 'Other Professional Degree';
+}
+
+function mapToExperienceLevel(level?: string, years?: number): string {
+  if (years !== undefined) {
+    if (years <= 1) return 'Fresher (0-1 yr)';
+    if (years <= 3) return '1-3 Years';
+    if (years <= 6) return '3-6 Years';
+    return '6+ Years';
+  }
+  if (!level) return 'Fresher (0-1 yr)';
+  const lower = level.toLowerCase();
+  if (lower.includes('senior') || lower.includes('lead') || lower.includes('executive')) return '6+ Years';
+  if (lower.includes('mid')) return '3-6 Years';
+  if (lower.includes('entry') || lower.includes('junior') || lower.includes('fresher')) return 'Fresher (0-1 yr)';
+  return '1-3 Years';
 }
 
 const DEFAULT_PROFILE: CandidateProfileData = {
@@ -112,6 +149,11 @@ export default function ProfileEditModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Resume Upload & Auto-Fill State
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [uploadedResumeMeta, setUploadedResumeMeta] = useState<{ fileName: string; fileSize: string; uploadedAt: string } | null>(null);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -126,12 +168,88 @@ export default function ProfileEditModal({
           email: userEmail || '',
         }));
       }
+
+      const resumeKey = `nichehire_uploaded_resume_${userId || 'guest'}`;
+      const savedResume = localStorage.getItem(resumeKey);
+      if (savedResume) {
+        setUploadedResumeMeta(JSON.parse(savedResume));
+      }
     } catch {
       // Ignore
     }
   }, [isOpen, userId, userEmail]);
 
   if (!isOpen) return null;
+
+  const handleResumeUploadAndAutoFill = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsingResume(true);
+    setUploadNotice(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64String = (reader.result as string).split(',')[1];
+          const res = await fetch('/api/resume/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileBase64: base64String,
+              mimeType: file.type || 'application/pdf',
+              fileName: file.name,
+            }),
+          });
+
+          const data = await res.json();
+          if (data) {
+            setProfile((prev) => ({
+              ...prev,
+              fullName: data.name && data.name !== 'Applicant' ? data.name : prev.fullName,
+              headline: data.role ? data.role : prev.headline,
+              city: data.location ? data.location : prev.city,
+              degree: mapToDegreeOption(data.education),
+              experienceLevel: mapToExperienceLevel(data.experienceLevel, data.yearsOfExperience),
+              skills: Array.isArray(data.skills) && data.skills.length > 0
+                ? Array.from(new Set([...prev.skills, ...data.skills]))
+                : prev.skills,
+              bio: data.summary ? data.summary : prev.bio,
+            }));
+
+            const resumeMeta = {
+              fileName: file.name,
+              fileSize: `${Math.round(file.size / 1024)} KB`,
+              uploadedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+              rawText: data.rawText || '',
+            };
+            setUploadedResumeMeta(resumeMeta);
+            localStorage.setItem(`nichehire_uploaded_resume_${userId || 'guest'}`, JSON.stringify(resumeMeta));
+
+            setUploadNotice({
+              type: 'success',
+              message: `Resume "${file.name}" parsed! Details auto-filled below. Review and click Save.`,
+            });
+          }
+        } catch {
+          setUploadNotice({
+            type: 'error',
+            message: 'Could not extract details from this file. You can still fill in your profile manually.',
+          });
+        } finally {
+          setIsParsingResume(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsParsingResume(false);
+      setUploadNotice({
+        type: 'error',
+        message: 'Failed to read file. Please select a valid PDF, DOCX, or TXT file.',
+      });
+    }
+  };
 
   const handleAddSkill = (skillToAdd: string) => {
     const trimmed = skillToAdd.trim();
@@ -208,6 +326,74 @@ export default function ProfileEditModal({
               Keep your profile up to date for direct corporate recruiter visibility and automated fit scoring.
             </p>
           </div>
+        </div>
+
+        {/* ── Auto-Fill via Resume Upload ── */}
+        <div className="p-4 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-purple-50/80 border border-blue-200 rounded-2xl space-y-3 mb-6 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#2B4EE6] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Upload size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#12172B]">
+                  1-Click Auto-Fill with Resume
+                </h4>
+                <p className="text-[11px] text-[#5B6478] leading-relaxed">
+                  Upload your existing CV (PDF, Word, or TXT) to automatically populate your education, skills, experience, and contact details.
+                </p>
+              </div>
+            </div>
+
+            <label className="cursor-pointer px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0">
+              <FileText size={13} strokeWidth={ICON_STROKE_WIDTH} />
+              <span>{isParsingResume ? 'Parsing...' : 'Upload Resume'}</span>
+              <input
+                type="file"
+                accept=".pdf,.docx,.doc,.txt"
+                className="hidden"
+                disabled={isParsingResume}
+                onChange={handleResumeUploadAndAutoFill}
+              />
+            </label>
+          </div>
+
+          {uploadedResumeMeta && (
+            <div className="flex items-center justify-between pt-2 border-t border-blue-200/60 text-xs">
+              <div className="flex items-center gap-1.5 text-blue-950 font-medium">
+                <FileText size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#2B4EE6]" />
+                <span className="font-bold">{uploadedResumeMeta.fileName}</span>
+                <span className="text-[10px] text-[#5B6478]">({uploadedResumeMeta.fileSize} • Uploaded {uploadedResumeMeta.uploadedAt})</span>
+              </div>
+              <span className="text-[10px] font-semibold text-[#0E9F6E] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                On File
+              </span>
+            </div>
+          )}
+
+          {uploadNotice && (
+            <div
+              className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                uploadNotice.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                  : 'bg-rose-50 text-rose-900 border border-rose-200'
+              }`}
+            >
+              {uploadNotice.type === 'success' ? (
+                <Check size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E] shrink-0" />
+              ) : (
+                <AlertTriangle size={13} strokeWidth={ICON_STROKE_WIDTH} className="text-rose-600 shrink-0" />
+              )}
+              <span className="text-[11px] leading-tight">{uploadNotice.message}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="relative flex items-center justify-center my-5">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#E4E7EC]" /></div>
+          <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider font-bold text-[#5B6478]">
+            Or Fill &amp; Edit Details Manually
+          </span>
         </div>
 
         <form

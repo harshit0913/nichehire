@@ -7,6 +7,38 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
 
+const FALLBACK_MODELS = [
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+];
+
+function ruleBasedPolishBullet(bullet: string): string {
+  let b = bullet.trim();
+  if (!b) return b;
+  const weakVerbs: Record<string, string> = {
+    'worked on': 'Engineered and delivered',
+    'helped with': 'Collaborated on',
+    'did': 'Executed',
+    'made': 'Developed',
+    'handled': 'Managed and streamlined',
+    'responsible for': 'Spearheaded',
+    'looking after': 'Oversaw operations for',
+    'took care of': 'Maintained and enhanced',
+    'assisted in': 'Supported key execution for',
+  };
+  for (const [weak, strong] of Object.entries(weakVerbs)) {
+    if (b.toLowerCase().startsWith(weak)) {
+      b = strong + b.slice(weak.length);
+      break;
+    }
+  }
+  if (!b.endsWith('.')) b = b + '.';
+  return b.charAt(0).toUpperCase() + b.slice(1);
+}
+
 export async function POST(req: Request) {
   try {
     const { userId, mode, bullets, userAnswers } = await req.json();
@@ -22,13 +54,6 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: 'Invalid mode. Must be "polish" or "strengthen".' },
         { status: 400 }
-      );
-    }
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'AI Editing is not configured. Add GOOGLE_API_KEY in environment variables.' },
-        { status: 500 }
       );
     }
 
@@ -78,15 +103,13 @@ export async function POST(req: Request) {
       }
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { temperature: 0.2 }, // Low temperature for adherence to facts
-    });
-
     // ─── Mode 1: Polish (Reword only, strict 1:1, zero new facts) ───────────
     if (mode === 'polish') {
-      const prompt = `You are a professional executive resume editor.
+      let rewrittenList: string[] = [];
+
+      if (apiKey) {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const prompt = `You are a professional executive resume editor.
 CRITICAL CONSTRAINT: You must reword for grammar, brevity, and strong active verbs ONLY.
 ABSOLUTELY FORBIDDEN:
 1. Do NOT invent, add, or alter any numbers, percentages, metrics, or currency amounts.
@@ -100,30 +123,33 @@ OUTPUT FORMAT:
 Return JSON only in this schema:
 {"rewritten": ["rewritten bullet 1", "rewritten bullet 2", ...]}`;
 
-      const res = await model.generateContent(prompt);
-      const text = res.response.text();
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('AI response could not be parsed. Please retry.');
+        for (const modelName of FALLBACK_MODELS) {
+          try {
+            const model = genAI.getGenerativeModel({
+              model: modelName,
+              generationConfig: { temperature: 0.2 },
+            });
+            const res = await model.generateContent(prompt);
+            const text = res.response.text();
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (Array.isArray(parsed.rewritten) && parsed.rewritten.length === bullets.length) {
+                rewrittenList = parsed.rewritten;
+                break;
+              }
+            }
+          } catch (mErr: any) {
+            console.warn(`Model ${modelName} failed during polish:`, mErr.message?.slice(0, 80));
+          }
+        }
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
-      const rewrittenList: string[] = parsed.rewritten || [];
-
-      // Validate 1:1 mapping
-      if (!validateOneToOneMapping(bullets, rewrittenList)) {
-        // Fallback: If lengths mismatch, return original bullets
-        return NextResponse.json({
-          reviews: bullets.map((orig: string) => ({
-            originalBullet: orig,
-            rewrittenBullet: orig,
-            flaggedFabrications: [],
-            status: 'pending',
-          })),
-        });
+      // If AI model was unavailable or output mismatch, use deterministic intelligent rule-based polish
+      if (rewrittenList.length !== bullets.length) {
+        rewrittenList = bullets.map(b => ruleBasedPolishBullet(b));
       }
 
-      // Run automated fact-check heuristic on every bullet pair
       const reviews: BulletDiffReview[] = bullets.map((orig: string, idx: number) => {
         const rewritten = rewrittenList[idx] || orig;
         const flagged = flagPotentialFabrications(orig, rewritten);
@@ -140,6 +166,9 @@ Return JSON only in this schema:
 
     // ─── Mode 2: Strengthen (Flags vagueness, asks user — never invents) ────
     if (mode === 'strengthen') {
+      let genAI: GoogleGenerativeAI | null = null;
+      if (apiKey) genAI = new GoogleGenerativeAI(apiKey);
+
       // If userAnswers are supplied, incorporate them into polished bullets
       if (userAnswers && Array.isArray(userAnswers) && userAnswers.length > 0) {
         const mergePrompt = `You are an executive resume editor.
@@ -156,11 +185,30 @@ OUTPUT FORMAT:
 Return JSON only:
 {"rewritten": ["bullet 1", "bullet 2", ...]}`;
 
-        const res = await model.generateContent(mergePrompt);
-        const text = res.response.text();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { rewritten: bullets };
-        const rewrittenList: string[] = parsed.rewritten || bullets;
+        let rewrittenList: string[] = [];
+        if (genAI) {
+          for (const modelName of FALLBACK_MODELS) {
+            try {
+              const model = genAI.getGenerativeModel({ model: modelName });
+              const res = await model.generateContent(mergePrompt);
+              const text = res.response.text();
+              const jsonMatch = text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (Array.isArray(parsed.rewritten) && parsed.rewritten.length === bullets.length) {
+                  rewrittenList = parsed.rewritten;
+                  break;
+                }
+              }
+            } catch (mErr: any) {
+              console.warn(`Model ${modelName} failed during strengthen merge:`, mErr.message?.slice(0, 80));
+            }
+          }
+        }
+
+        if (rewrittenList.length !== bullets.length) {
+          rewrittenList = bullets.map(b => ruleBasedPolishBullet(b));
+        }
 
         const reviews: BulletDiffReview[] = bullets.map((orig: string, idx: number) => {
           const rewritten = rewrittenList[idx] || orig;
@@ -188,12 +236,28 @@ OUTPUT FORMAT:
 Return JSON only:
 {"questions": [{"bulletIndex": 0, "question": "Roughly how much faster did deployment become?"}]}`;
 
-      const res = await model.generateContent(scanPrompt);
-      const text = res.response.text();
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { questions: [] };
+      let parsedQuestions: any[] = [];
+      if (genAI) {
+        for (const modelName of FALLBACK_MODELS) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const res = await model.generateContent(scanPrompt);
+            const text = res.response.text();
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (Array.isArray(parsed.questions)) {
+                parsedQuestions = parsed.questions;
+                break;
+              }
+            }
+          } catch (mErr: any) {
+            console.warn(`Model ${modelName} failed during strengthen scan:`, mErr.message?.slice(0, 80));
+          }
+        }
+      }
 
-      const questions: StrengthenQuestion[] = (parsed.questions || [])
+      const questions: StrengthenQuestion[] = parsedQuestions
         .filter((q: any) => q.question && typeof q.bulletIndex === 'number')
         .map((q: any) => ({
           bulletIndex: q.bulletIndex,

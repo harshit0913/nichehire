@@ -2564,6 +2564,7 @@ export default function JobDashboard() {
         onClose={() => setResumeBuilderOpen(false)}
         userId={user?.id}
         isLoggedIn={!!user}
+        candidateProfile={candidateProfile}
       />
 
       <PostWalkInModal
