@@ -47,11 +47,39 @@ function cleanDescription(html: string | undefined | null, maxLen = 4000): strin
 }
 
 function detectWorkMode(location: string = '', title: string = '', description: string = ''): 'Remote' | 'Hybrid' | 'On-site' {
-  const combined = `${location} ${title} ${description}`.toLowerCase();
-  if (combined.includes('hybrid')) return 'Hybrid';
-  if (combined.includes('remote') || combined.includes('work from home') || combined.includes('anywhere') || combined.includes('worldwide') || combined.includes('telecommute')) {
+  const loc = (location || '').toLowerCase();
+  const tit = (title || '').toLowerCase();
+  const desc = (description || '').toLowerCase();
+
+  // 1. Check location string first (highest fidelity signal)
+  if (/\b(remote|work from home|wfh|telecommute|virtual|anywhere)\b/i.test(loc)) {
     return 'Remote';
   }
+  if (/\b(hybrid)\b/i.test(loc)) {
+    return 'Hybrid';
+  }
+
+  // 2. Check title (explicit role title designation)
+  if (/\b(hybrid)\b/i.test(tit)) {
+    return 'Hybrid';
+  }
+  if (/\b(remote|work from home|wfh|telecommute)\b/i.test(tit)) {
+    return 'Remote';
+  }
+  if (/\b(on-site|onsite|in-office|in office|office based|wfo)\b/i.test(tit)) {
+    return 'On-site';
+  }
+
+  // 3. Check description with strict contextual patterns (prevent false positives from remote servers/teams/tools)
+  const hasStrictHybrid = /\b(hybrid work|hybrid role|hybrid model|days in office|hybrid schedule|days a week from office|hybrid environment|hybrid mode)\b/i.test(desc);
+  const hasStrictRemote = /\b(100% remote|fully remote|permanent remote|work from home|wfh role|remote position|remote role|remote opportunity|work from anywhere|entirely remote|open to remote|remote first|remote based)\b/i.test(desc);
+  const hasStrictOnsite = /\b(work from office|wfo|on-site|onsite|in-office|in office|physical presence|office based|relocation required|work on-site)\b/i.test(desc);
+
+  if (hasStrictHybrid) return 'Hybrid';
+  if (hasStrictRemote && !hasStrictOnsite) return 'Remote';
+  if (hasStrictOnsite && !hasStrictRemote) return 'On-site';
+
+  // 4. Default: Physical locations with no explicit remote designation are strictly On-site
   return 'On-site';
 }
 
@@ -1485,7 +1513,10 @@ export async function POST(req: Request) {
     // --- DISTANCE FILTER ---
     if (distance && distance !== 'Any Distance' && locQuery) {
       filtered = filtered.filter((j) => {
-        if (j.workMode === 'Remote') return true;
+        if (j.workMode === 'Remote') {
+          if (workMode === 'On-site') return false;
+          return true;
+        }
         if (distance === 'Within 10 km') {
           return j.geoTier === 1;
         }
@@ -1530,10 +1561,14 @@ export async function POST(req: Request) {
     }
 
     // --- MULTI-TIER GEOGRAPHIC PROXIMITY SORTING ENGINE ---
-    // Enforces strict tier ordering:
-    // Tier 1 (City) -> Tier 2 (Regional Hub) -> Tier 3 (State) -> Tier 4 (National) -> Tier 5/6 (International)
-    // with soft quota expansion and internationalByDefault exception for scarce global roles (e.g. Petroleum, Marine, Aviation)
+    // Enforces progressive tier ordering & soft quotas:
+    // Tier 1 (10 jobs) -> Tier 2 (backfill to 10) -> State (backfill to 15) -> Domestic India (backfill to 22) -> Remote (to 30) -> Next Pages
     filtered = rankJobsStrictTierOrder(filtered, cleanQuery, location || '');
+
+    // Final strict guarantee: enforce workMode so On-site NEVER returns Remote or Hybrid
+    if (workMode && workMode !== 'Any Mode') {
+      filtered = filtered.filter((j) => j.workMode === workMode);
+    }
 
     const resolvedGeo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
     const activeLocalCompanies =

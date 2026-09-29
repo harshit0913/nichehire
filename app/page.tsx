@@ -154,6 +154,10 @@ export default function JobDashboard() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [govtSuggestion, setGovtSuggestion] = useState<any | null>(null);
 
+  // Pagination State (Limit 30 jobs initially with next page navigation)
+  const [currentPage, setCurrentPage] = useState(1);
+  const JOBS_PER_PAGE = 30;
+
   // User Location Detection State & Dynamic Company Suggestions
   const [userLocationMatch, setUserLocationMatch] = useState<LocationMatch | null>(null);
   const [isDetectingLoc, setIsDetectingLoc] = useState(false);
@@ -580,6 +584,7 @@ export default function JobDashboard() {
     setIsLoading(true);
     setErrorMsg('');
     setHasSearched(true);
+    setCurrentPage(1);
 
     const roleToUse = overrideQuery !== undefined ? overrideQuery : searchQuery;
     const locToUse = overrideLoc !== undefined ? overrideLoc : locationQuery;
@@ -873,7 +878,9 @@ export default function JobDashboard() {
 
     // Distance Filter (Hierarchical proximity)
     if (distance && distance !== 'Any Distance' && locationQuery) {
-      if (job.workMode !== 'Remote') {
+      if (job.workMode === 'Remote') {
+        if (workMode === 'On-site') return false;
+      } else {
         const tier = job.geoTier ?? 1;
         if (distance === 'Within 10 km' && tier > 1) return false;
         if (distance === 'Within 25 km' && tier > 2) return false;
@@ -914,6 +921,20 @@ export default function JobDashboard() {
       }
     }
 
+    return true;
+  });
+
+  // ─── Pagination & Curated Slicing (30 jobs per page limit) ─────────────────
+  const totalJobs = filteredJobs.length;
+  const totalPages = Math.max(1, Math.ceil(totalJobs / JOBS_PER_PAGE));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (validCurrentPage - 1) * JOBS_PER_PAGE;
+  const endIndex = Math.min(startIndex + JOBS_PER_PAGE, totalJobs);
+  const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
+
+  // Curated portals for landing view filtered strictly by selected workMode
+  const displayedCuratedJobs = INITIAL_VERIFIED_JOBS.filter((job) => {
+    if (workMode !== 'Any Mode' && job.workMode !== workMode) return false;
     return true;
   });
 
@@ -1349,7 +1370,13 @@ export default function JobDashboard() {
                         <button
                           key={m}
                           type="button"
-                          onClick={() => setWorkMode(m)}
+                          onClick={() => {
+                            setWorkMode(m);
+                            setCurrentPage(1);
+                            if (hasSearched) {
+                              fetchJobs(undefined, undefined, { workMode: m });
+                            }
+                          }}
                           className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
                             workMode === m
                               ? 'bg-[#12172B] text-white'
@@ -1702,7 +1729,7 @@ export default function JobDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-[#12172B] bg-[#F7F8FA] px-2.5 py-1 rounded border border-[#E4E7EC]">
-                    {INITIAL_VERIFIED_JOBS.length} Curated Portals
+                    {displayedCuratedJobs.length} Curated Portals{workMode !== 'Any Mode' ? ` (${workMode})` : ''}
                   </span>
                 </div>
               </div>
@@ -1715,24 +1742,41 @@ export default function JobDashboard() {
                 </p>
               </div>
 
-              <div className="space-y-3">
-                {INITIAL_VERIFIED_JOBS.map((job) => (
-                  <JobCardItem
-                    key={job.id}
-                    job={job}
-                    rec={calculateRecommendation(job)}
-                    isSaved={savedJobIds.includes(job.id)}
-                    tailor={tailorMap[job.id]}
-                    locationQuery={locationQuery}
-                    onOpenDetails={openJobDetails}
-                    onToggleSave={toggleSaveJob}
-                    onTailorResume={handleTailorResume}
-                    onCloseTailor={closeTailor}
-                    onPrintPdf={handlePrintPdf}
-                    formatTimeAgo={formatTimeAgo}
-                  />
-                ))}
-              </div>
+              {displayedCuratedJobs.length === 0 ? (
+                <div className="p-8 text-center bg-[#F7F8FA] border border-[#E4E7EC] rounded-xl text-xs text-[#5B6478]">
+                  <p className="font-semibold text-[#12172B] mb-1">No featured direct portals under &quot;{workMode}&quot;</p>
+                  <p>Try switching to &quot;All Modes&quot; or use the search bar above to fetch live verified {workMode.toLowerCase()} roles across India.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWorkMode('Any Mode');
+                      setCurrentPage(1);
+                    }}
+                    className="mt-3 px-3 py-1.5 bg-[#12172B] text-white rounded text-xs font-medium"
+                  >
+                    Reset to All Modes
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {displayedCuratedJobs.map((job) => (
+                    <JobCardItem
+                      key={job.id}
+                      job={job}
+                      rec={calculateRecommendation(job)}
+                      isSaved={savedJobIds.includes(job.id)}
+                      tailor={tailorMap[job.id]}
+                      locationQuery={locationQuery}
+                      onOpenDetails={openJobDetails}
+                      onToggleSave={toggleSaveJob}
+                      onTailorResume={handleTailorResume}
+                      onCloseTailor={closeTailor}
+                      onPrintPdf={handlePrintPdf}
+                      formatTimeAgo={formatTimeAgo}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1968,7 +2012,7 @@ export default function JobDashboard() {
                   ? `Saved Opportunities (${filteredJobs.length})`
                   : activeTab === 'walkins'
                   ? `Walk-Ins & Offline Opportunities (${filteredWalkins.length})`
-                  : `Live Verified Jobs (${filteredJobs.length})`}
+                  : `Live Verified Jobs (${totalJobs}${totalJobs > JOBS_PER_PAGE ? ` • Page ${validCurrentPage} of ${totalPages}` : ''})`}
               </h2>
               <button
                 onClick={() => setHasSearched(false)}
@@ -2117,9 +2161,9 @@ export default function JobDashboard() {
           )}
 
           {/* Job Feed */}
-          {!isLoading && (
+          {!isLoading && paginatedJobs.length > 0 && (
             <div className="space-y-3">
-              {filteredJobs.map((job, idx) => (
+              {paginatedJobs.map((job, idx) => (
                 <JobCardItem
                   key={job.id || idx}
                   job={job}
@@ -2135,6 +2179,86 @@ export default function JobDashboard() {
                   formatTimeAgo={formatTimeAgo}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls (30 Jobs Per Page Limit) */}
+          {!isLoading && totalPages > 1 && (
+            <div className="mt-8 pt-6 border-t border-[#E4E7EC] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-[#5B6478]">
+                Showing <span className="font-semibold text-[#12172B]">{startIndex + 1}</span>–<span className="font-semibold text-[#12172B]">{endIndex}</span> of <span className="font-semibold text-[#12172B]">{totalJobs}</span> opportunities (30 per page)
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={validCurrentPage <= 1}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                    window.scrollTo({ top: 350, behavior: 'smooth' });
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium border border-[#E4E7EC] rounded-md text-[#12172B] bg-white hover:bg-[#F7F8FA] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                >
+                  <ArrowLeft size={13} />
+                  <span>Previous</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      if (totalPages <= 7) return true;
+                      if (page === 1 || page === totalPages) return true;
+                      if (Math.abs(page - validCurrentPage) <= 1) return true;
+                      return false;
+                    })
+                    .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                      if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                        acc.push(`dots-${page}`);
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item) => {
+                      if (typeof item === 'string') {
+                        return (
+                          <span key={item} className="px-1 text-xs text-[#5B6478]">
+                            …
+                          </span>
+                        );
+                      }
+                      const isCurrent = item === validCurrentPage;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            setCurrentPage(item);
+                            window.scrollTo({ top: 350, behavior: 'smooth' });
+                          }}
+                          className={`min-w-[32px] h-8 text-xs font-semibold rounded-md border transition-colors ${
+                            isCurrent
+                              ? 'bg-[#12172B] text-white border-[#12172B]'
+                              : 'bg-white text-[#12172B] border-[#E4E7EC] hover:bg-[#F7F8FA]'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={validCurrentPage >= totalPages}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 350, behavior: 'smooth' });
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium border border-[#E4E7EC] rounded-md text-[#12172B] bg-white hover:bg-[#F7F8FA] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                >
+                  <span>Next</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
             </div>
           )}
         </main>

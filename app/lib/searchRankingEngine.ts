@@ -175,17 +175,35 @@ export function rankJobsStrictTierOrder(
   const tier2: any[] = [];
   const tier3: any[] = [];
   const tier4: any[] = [];
-  const tier5: any[] = [];
+  const tier5Domestic: any[] = [];
+  const tierRemote: any[] = [];
   const tier6: any[] = [];
 
   jobs.forEach((job) => {
     const tier = Number(job.geoTier) || 5;
-    if (tier === 1) tier1.push(job);
-    else if (tier === 2) tier2.push(job);
-    else if (tier === 3) tier3.push(job);
-    else if (tier === 4) tier4.push(job);
-    else if (tier === 6) tier6.push(job);
-    else tier5.push(job);
+    const isRemote = job.workMode === 'Remote' || (job.location || '').toLowerCase().includes('remote');
+
+    if (tier === 1) {
+      if (isRemote) tierRemote.push(job);
+      else tier1.push(job);
+    } else if (tier === 2) {
+      if (isRemote) tierRemote.push(job);
+      else tier2.push(job);
+    } else if (tier === 3) {
+      if (isRemote) tierRemote.push(job);
+      else tier3.push(job);
+    } else if (tier === 4) {
+      if (isRemote) tierRemote.push(job);
+      else tier4.push(job);
+    } else if (tier === 6) {
+      tier6.push(job);
+    } else {
+      if (isRemote) {
+        tierRemote.push(job);
+      } else {
+        tier5Domestic.push(job);
+      }
+    }
   });
 
   // Intra-tier sorter: title relevance first, then freshness
@@ -204,37 +222,111 @@ export function rankJobsStrictTierOrder(
   const sortedT2 = sortTier(tier2);
   const sortedT3 = sortTier(tier3);
   const sortedT4 = sortTier(tier4);
-  const sortedT5 = sortTier(tier5);
+  const sortedT5Dom = sortTier(tier5Domestic);
+  const sortedRemote = sortTier(tierRemote);
   const sortedT6 = sortTier(tier6);
 
-  // Soft quota accumulation
   const result: any[] = [];
+  const addedIds = new Set<string>();
 
-  // Always include Tier 1
-  result.push(...sortedT1);
+  const takeFrom = (list: any[], maxCount: number) => {
+    let taken = 0;
+    for (const job of list) {
+      if (taken >= maxCount) break;
+      if (!addedIds.has(job.id)) {
+        addedIds.add(job.id);
+        result.push(job);
+        taken++;
+      }
+    }
+    return taken;
+  };
 
-  // Pull in Tier 2
-  result.push(...sortedT2);
+  // Progressive geographic quota allocation
+  const hasSpecificLocation = Boolean(
+    userLocation &&
+      userLocation.trim().toLowerCase() !== 'all india' &&
+      userLocation.trim().toLowerCase() !== 'india' &&
+      userLocation.trim().toLowerCase() !== 'remote'
+  );
 
-  // Pull in Tier 3
-  result.push(...sortedT3);
+  if (hasSpecificLocation && !isGlobalRole) {
+    // 1. First try finding 10 jobs in Tier 1 cities
+    takeFrom(sortedT1, 10);
 
-  // Pull in Tier 4
-  result.push(...sortedT4);
+    // 2. If Tier 1 doesn't yield 10 jobs, move to Tier 2 (nearby satellite cities within state) to reach 10 jobs
+    if (result.length < 10) {
+      takeFrom(sortedT2, 10 - result.length);
+    }
 
-  // Pull in Tier 5 (National / Pan-India)
-  result.push(...sortedT5);
+    // 3. If that also fails or to expand within state, target a total of 15 jobs within the state
+    if (result.length < 15) {
+      takeFrom(sortedT2, 15 - result.length);
+      if (result.length < 15) {
+        takeFrom(sortedT3, 15 - result.length);
+      }
+      if (result.length < 15) {
+        takeFrom(sortedT4, 15 - result.length);
+      }
+    }
 
-  // International Tier 6:
-  // If role is inherently global (e.g. Petroleum / Marine / Aviation), include all Tier 6.
-  // If regular domestic role and domestic results are already plentiful (>= 50),
-  // include Tier 6 at the very end up to reasonable total.
-  if (isGlobalRole) {
-    result.push(...sortedT6);
+    // 4. Move to Tier 4 / Domestic India targeting at least 20-22 jobs within India
+    if (result.length < 22) {
+      takeFrom(sortedT5Dom, 22 - result.length);
+    }
+
+    // 5. Target remote options to fill up to 30 jobs
+    if (result.length < 30) {
+      takeFrom(sortedRemote, 30 - result.length);
+    }
+
+    // 6. If still under 30, backfill from remaining domestic or international
+    if (result.length < 30) {
+      takeFrom(sortedT1, 30 - result.length);
+      takeFrom(sortedT2, 30 - result.length);
+      takeFrom(sortedT3, 30 - result.length);
+      takeFrom(sortedT4, 30 - result.length);
+      takeFrom(sortedT5Dom, 30 - result.length);
+      takeFrom(sortedT6, 30 - result.length);
+    }
+  } else if (isGlobalRole) {
+    // Inherently global roles: include Tier 6 alongside domestic opportunities
+    takeFrom(sortedT1, 10);
+    takeFrom(sortedT2, 5);
+    takeFrom(sortedT3, 5);
+    takeFrom(sortedT4, 5);
+    takeFrom(sortedT5Dom, 5);
+    takeFrom(sortedRemote, 10);
+    takeFrom(sortedT6, 30);
   } else {
-    // Soft quota: add international results after domestic ones
-    result.push(...sortedT6);
+    // Pan-India or Remote searches: balanced tier allocation
+    takeFrom(sortedT1, 10);
+    takeFrom(sortedT2, 10);
+    takeFrom(sortedT3, 10);
+    takeFrom(sortedT4, 10);
+    takeFrom(sortedT5Dom, 15);
+    takeFrom(sortedRemote, 15);
+    takeFrom(sortedT6, 10);
   }
+
+  // 7. CRUCIAL FOR PAGINATION: Append all remaining un-added jobs in strict tiered order
+  // This preserves all 200-300 parsed jobs across Page 2, Page 3, etc.
+  const appendRemaining = (list: any[]) => {
+    for (const job of list) {
+      if (!addedIds.has(job.id)) {
+        addedIds.add(job.id);
+        result.push(job);
+      }
+    }
+  };
+
+  appendRemaining(sortedT1);
+  appendRemaining(sortedT2);
+  appendRemaining(sortedT3);
+  appendRemaining(sortedT4);
+  appendRemaining(sortedT5Dom);
+  appendRemaining(sortedRemote);
+  appendRemaining(sortedT6);
 
   return result;
 }
