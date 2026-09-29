@@ -37,6 +37,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [assignedReferralCode, setAssignedReferralCode] = useState('');
   const [dispatchedOtp, setDispatchedOtp] = useState<string | null>(null);
+  const [deliveryStatus, setDeliveryStatus] = useState<'sent' | 'simulated' | 'failed' | null>(null);
+  const [deliveryNotice, setDeliveryNotice] = useState<string | null>(null);
+  const [maskedIdentifier, setMaskedIdentifier] = useState<string | null>(null);
 
   // Password specific state
   const [passwordMode, setPasswordMode] = useState<'signin' | 'signup'>('signin');
@@ -70,10 +73,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   }, [otpCountdown]);
 
   if (!isOpen) return null;
-
-  const [deliveryStatus, setDeliveryStatus] = useState<'sent' | 'simulated' | 'failed' | null>(null);
-  const [deliveryNotice, setDeliveryNotice] = useState<string | null>(null);
-  const [maskedIdentifier, setMaskedIdentifier] = useState<string | null>(null);
 
   // ─── 1. OTP Authentication Flow (Mobile Phone or Email Address) ────────────
   const handleSendOtp = async (e?: React.FormEvent) => {

@@ -56,11 +56,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "NicheHire Team" }],
   creator: "NicheHire",
-  metadataBase: new URL("https://nichehire-psi.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://www.nichehire.tech"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://nichehire-psi.vercel.app",
+    url: "https://www.nichehire.tech",
     siteName: "NicheHire — Your Job Buddy!!",
     title: "NicheHire — Your Job Buddy!!",
     description:
