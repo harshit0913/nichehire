@@ -23,11 +23,93 @@ interface DispatchResult {
  * 2. Supabase Auth signInWithOtp (native Supabase email transport)
  */
 async function dispatchEmailOtp(email: string, otpCode: string): Promise<DispatchResult> {
+  const sendgridKey = process.env.SENDGRID_API_KEY;
+  const mailgunKey = process.env.MAILGUN_API_KEY;
+  const mailgunDomain = process.env.MAILGUN_DOMAIN || 'nichehire.tech';
   const resendKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM || 'auth@nichehire.tech';
+  const fromName = process.env.EMAIL_FROM_NAME || 'NicheHire Auth';
 
+  const emailHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e4e7ec; border-radius: 16px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span style="font-size: 20px; font-weight: 800; color: #12172b; letter-spacing: -0.5px;">NicheHire</span>
+        <span style="display: block; font-size: 12px; color: #5b6478; margin-top: 4px;">Career &amp; Verification Portal</span>
+      </div>
+      <p style="font-size: 14px; color: #344054; line-height: 1.5;">Hello,</p>
+      <p style="font-size: 14px; color: #344054; line-height: 1.5;">Here is your unique 6-digit verification code to sign in or register on NicheHire:</p>
+      <div style="background-color: #f7f8fa; border: 1px solid #d0d5dd; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
+        <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #2b4ee6;">${otpCode}</span>
+      </div>
+      <p style="font-size: 12px; color: #667085; line-height: 1.5;">This code is valid for <strong>5 minutes</strong>. If you did not request this code, you can safely disregard this email.</p>
+      <div style="border-top: 1px solid #eaecf0; margin-top: 24px; padding-top: 16px; font-size: 11px; color: #98a2b3; text-align: center;">
+        © 2026 NicheHire (nichehire.tech). All rights reserved.
+      </div>
+    </div>
+  `;
+
+  // 1. SendGrid Dispatch (GitHub Student Developer Pack - Twilio SendGrid)
+  if (sendgridKey) {
+    try {
+      const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sendgridKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email }] }],
+          from: { email: fromEmail, name: fromName },
+          subject: `Your NicheHire Verification Code: ${otpCode}`,
+          content: [{ type: 'text/html', value: emailHtml }],
+        }),
+      });
+
+      if (res.status === 202 || res.ok) {
+        console.log(`[OTP DISPATCH - EMAIL: SUCCESS] Delivered to ${email} via SendGrid`);
+        return { channel: 'email', deliveryStatus: 'sent', provider: 'SendGrid' };
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.warn(`[OTP DISPATCH - EMAIL: SENDGRID FAILED] Status ${res.status}: ${errText}`);
+      }
+    } catch (err: any) {
+      console.warn(`[OTP DISPATCH - EMAIL: SENDGRID ERROR] ${err.message}`);
+    }
+  }
+
+  // 2. Mailgun Dispatch (GitHub Student Developer Pack - Mailgun)
+  if (mailgunKey && mailgunDomain) {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('from', `${fromName} <${fromEmail}>`);
+      formData.append('to', email);
+      formData.append('subject', `Your NicheHire Verification Code: ${otpCode}`);
+      formData.append('html', emailHtml);
+
+      const res = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`api:${mailgunKey}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      if (res.ok) {
+        console.log(`[OTP DISPATCH - EMAIL: SUCCESS] Delivered to ${email} via Mailgun`);
+        return { channel: 'email', deliveryStatus: 'sent', provider: 'Mailgun' };
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.warn(`[OTP DISPATCH - EMAIL: MAILGUN FAILED] Status ${res.status}: ${errText}`);
+      }
+    } catch (err: any) {
+      console.warn(`[OTP DISPATCH - EMAIL: MAILGUN ERROR] ${err.message}`);
+    }
+  }
+
+  // 3. Resend Dispatch (Fallback)
   if (resendKey) {
     try {
-      const fromEmail = process.env.EMAIL_FROM || 'NicheHire Auth <onboarding@resend.dev>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -38,23 +120,7 @@ async function dispatchEmailOtp(email: string, otpCode: string): Promise<Dispatc
           from: fromEmail,
           to: email,
           subject: `Your NicheHire Verification Code: ${otpCode}`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e4e7ec; border-radius: 16px; background-color: #ffffff;">
-              <div style="text-align: center; margin-bottom: 24px;">
-                <span style="font-size: 20px; font-weight: 800; color: #12172b; letter-spacing: -0.5px;">NicheHire</span>
-                <span style="display: block; font-size: 12px; color: #5b6478; margin-top: 4px;">Career & Verification Portal</span>
-              </div>
-              <p style="font-size: 14px; color: #344054; line-height: 1.5;">Hello,</p>
-              <p style="font-size: 14px; color: #344054; line-height: 1.5;">Here is your unique 6-digit verification code to sign in or register on NicheHire:</p>
-              <div style="background-color: #f7f8fa; border: 1px solid #d0d5dd; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
-                <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #2b4ee6;">${otpCode}</span>
-              </div>
-              <p style="font-size: 12px; color: #667085; line-height: 1.5;">This code is valid for <strong>5 minutes</strong>. If you did not request this code, you can safely disregard this email.</p>
-              <div style="border-top: 1px solid #eaecf0; margin-top: 24px; padding-top: 16px; font-size: 11px; color: #98a2b3; text-align: center;">
-                © 2026 NicheHire. All rights reserved.
-              </div>
-            </div>
-          `,
+          html: emailHtml,
         }),
       });
 
