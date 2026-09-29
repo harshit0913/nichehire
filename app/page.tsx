@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { SignInButton, SignUpButton, UserButton, useUser, useClerk } from '@clerk/nextjs';
 import ReactMarkdown from 'react-markdown';
 import AuthModal from './components/AuthModal';
 import EmailDraftModal from './components/EmailDraftModal';
@@ -87,6 +88,8 @@ export default function JobDashboard() {
   // Auth state
   const [user, setUser] = useState<any>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { isSignedIn: isClerkSignedIn, user: clerkUser } = useUser();
+  const { openSignIn } = useClerk();
 
   // Modals state
   const [activeOutreachJob, setActiveOutreachJob] = useState<Job | null>(null);
@@ -342,6 +345,21 @@ export default function JobDashboard() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Sync Clerk authenticated user into local user profile state
+  useEffect(() => {
+    if (isClerkSignedIn && clerkUser) {
+      const mappedUser = {
+        id: clerkUser.id,
+        email: clerkUser.primaryEmailAddress?.emailAddress || '',
+        user_metadata: {
+          full_name: clerkUser.fullName || clerkUser.firstName || 'Candidate',
+        },
+      };
+      setUser(mappedUser);
+      loadCandidateData(clerkUser.id);
+    }
+  }, [isClerkSignedIn, clerkUser]);
 
   const loadCandidateData = (userId?: string) => {
     try {
@@ -1058,12 +1076,16 @@ export default function JobDashboard() {
                   )}
                 </button>
 
-                <button
-                  onClick={handleSignOut}
-                  className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded-lg transition-colors hidden md:inline"
-                >
-                  Sign Out
-                </button>
+                {isClerkSignedIn ? (
+                  <UserButton />
+                ) : (
+                  <button
+                    onClick={handleSignOut}
+                    className="px-2.5 py-1.5 text-xs font-medium text-[#5B6478] hover:text-[#12172B] hover:bg-[#F7F8FA] rounded-lg transition-colors hidden md:inline"
+                  >
+                    Sign Out
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -1075,12 +1097,13 @@ export default function JobDashboard() {
                   <HelpCircle size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} />
                   <span>Tour</span>
                 </button>
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg transition-colors shadow-2xs"
-                >
-                  Sign In
-                </button>
+                <SignInButton mode="modal">
+                  <button
+                    className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B4EE6] hover:bg-[#1E3BBD] rounded-lg transition-colors shadow-2xs"
+                  >
+                    Sign In
+                  </button>
+                </SignInButton>
               </div>
             )}
 
@@ -1166,20 +1189,25 @@ export default function JobDashboard() {
               >
                 Platform Tour
               </button>
-              {user ? (
-                <button onClick={handleSignOut} className="text-red-600 font-semibold">
-                  Sign Out
-                </button>
+              {user || isClerkSignedIn ? (
+                <div className="flex items-center gap-2">
+                  {isClerkSignedIn ? (
+                    <UserButton />
+                  ) : (
+                    <button onClick={handleSignOut} className="text-red-600 font-semibold text-xs">
+                      Sign Out
+                    </button>
+                  )}
+                </div>
               ) : (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setAuthModalOpen(true);
-                  }}
-                  className="text-[#2B4EE6] font-semibold"
-                >
-                  Sign In
-                </button>
+                <SignInButton mode="modal">
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-[#2B4EE6] font-semibold text-xs"
+                  >
+                    Sign In
+                  </button>
+                </SignInButton>
               )}
             </div>
           </div>

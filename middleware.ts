@@ -1,3 +1,4 @@
+import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -9,7 +10,7 @@ interface RateLimitRecord {
 // In-memory sliding-window store for edge & serverless invocations
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
-// Cleanup stale entries every 5 minutes to prevent memory leaks with 5,000+ clients
+// Cleanup stale entries every 5 minutes to prevent memory leaks
 let lastCleanup = Date.now();
 function cleanupStaleEntries() {
   const now = Date.now();
@@ -60,14 +61,14 @@ function getRouteConfig(pathname: string): RateLimitConfig {
   return { limit: 120, windowMs: 60_000 }; // 120 requests per minute
 }
 
-export function middleware(req: NextRequest) {
+function applyRateLimit(req: NextRequest): NextResponse | null {
   cleanupStaleEntries();
 
   const { pathname } = req.nextUrl;
 
   // Only apply to API routes
   if (!pathname.startsWith('/api/')) {
-    return NextResponse.next();
+    return null;
   }
 
   // Identify client IP
@@ -122,6 +123,19 @@ export function middleware(req: NextRequest) {
   return response;
 }
 
+export default clerkMiddleware(async (_auth, req) => {
+  const rateLimitResponse = applyRateLimit(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+});
+
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+    '/__clerk/:path*',
+  ],
 };
