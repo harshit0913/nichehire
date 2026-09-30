@@ -87,6 +87,10 @@ export const metadata: Metadata = {
   },
 };
 
+const clerkPublishableKey =
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  "pk_test_bmV1dHJhbC1qYXliaXJkLTQ3NTAuY2xlcmsuYWNjb3VudHMuZGV2JA";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -94,7 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F7F8FA] text-[#12172B] font-sans selection:bg-[#2B4EE6]/15 selection:text-[#12172B]">
-        <ClerkProvider>
+        <ClerkProvider publishableKey={clerkPublishableKey}>
           <AnalyticsTracker />
           {children}
         </ClerkProvider>

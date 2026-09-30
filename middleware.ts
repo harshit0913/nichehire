@@ -123,12 +123,25 @@ function applyRateLimit(req: NextRequest): NextResponse | null {
   return response;
 }
 
-export default clerkMiddleware(async (_auth, req) => {
-  const rateLimitResponse = applyRateLimit(req);
-  if (rateLimitResponse) {
-    return rateLimitResponse;
+const defaultPublishableKey =
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  'pk_test_bmV1dHJhbC1qYXliaXJkLTQ3NTAuY2xlcmsuYWNjb3VudHMuZGV2JA';
+const defaultSecretKey =
+  process.env.CLERK_SECRET_KEY ||
+  'sk_test_6OlEwy8DN5CgfxOKlu1NizuiI8ASY6MHjR3UFvvIM7';
+
+export default clerkMiddleware(
+  async (_auth, req) => {
+    const rateLimitResponse = applyRateLimit(req);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+  },
+  {
+    publishableKey: defaultPublishableKey,
+    secretKey: defaultSecretKey,
   }
-});
+);
 
 export const config = {
   matcher: [
