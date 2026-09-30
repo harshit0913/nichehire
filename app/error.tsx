@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import * as Sentry from '@sentry/nextjs';
 
-export default function GlobalError({
+export default function ErrorBoundary({
   error,
   reset,
 }: {
@@ -11,8 +12,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log client-side error for telemetry
+    // Log client-side error for telemetry and Sentry tracking
     console.error('Unhandled application error:', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

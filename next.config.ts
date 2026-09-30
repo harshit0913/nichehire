@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const securityHeaders = [
   {
@@ -69,4 +70,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Sentry organization and project from dashboard
+  org: "niche-hire",
+  project: "javascript-nextjs",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // Upload a larger set of source maps for readable stack traces
+  widenClientFileUpload: true,
+
+  // Route browser telemetry to Sentry through a Next.js rewrite to prevent ad-blockers from blocking error reports
+  tunnelRoute: "/monitoring",
+});
