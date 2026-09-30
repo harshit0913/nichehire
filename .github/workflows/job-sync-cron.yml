@@ -14,7 +14,7 @@ jobs:
       - name: Ping Govt Exams Sync
         run: |
           echo "Syncing government examination dates & gazette deadlines..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" https://nichehire.tech/api/govt-exams/sync)
+          RESPONSE=$(curl -sL -w "\n%{http_code}" https://www.nichehire.tech/api/govt-exams/sync)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "HTTP Status: $HTTP_CODE"
@@ -23,7 +23,7 @@ jobs:
       - name: Ping Background Job Feed Sync
         run: |
           echo "Auditing live private job providers & feeds..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" https://nichehire.tech/api/jobs/sync)
+          RESPONSE=$(curl -sL -w "\n%{http_code}" https://www.nichehire.tech/api/jobs/sync)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "HTTP Status: $HTTP_CODE"

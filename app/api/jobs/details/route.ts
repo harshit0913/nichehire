@@ -124,6 +124,52 @@ export async function POST(req: Request) {
       }
     }
 
+    // 4. Zyte Anti-Bot Scraping Fallback (Bypasses Cloudflare / Akamai / 403 blocks)
+    const zyteKey = process.env.ZYTE_API_KEY;
+    if (url && url.startsWith('http') && zyteKey) {
+      try {
+        const basicAuth = Buffer.from(`${zyteKey}:`).toString('base64');
+        const zyteRes = await fetch('https://api.zyte.com/v1/extract', {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url,
+            httpResponseBody: true,
+          }),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (zyteRes.ok) {
+          const data = await zyteRes.json();
+          if (data.httpResponseBody) {
+            const html = Buffer.from(data.httpResponseBody, 'base64').toString('utf-8');
+            const descMatch =
+              html.match(/class="[^"]*(?:job-description|jobDescription|description|job-details)[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
+              html.match(/itemprop="description"[^>]*>([\s\S]*?)<\/div>/i);
+            if (descMatch) {
+              const cleanDesc = descMatch[1]
+                .replace(/<br\s*[\/]?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n\n')
+                .replace(/<li>/gi, '• ')
+                .replace(/<\/li>/gi, '\n')
+                .replace(/<[^>]*>/g, '')
+                .replace(/&amp;/g, '&')
+                .replace(/&nbsp;/g, ' ')
+                .trim();
+              if (cleanDesc.length > 100) {
+                return NextResponse.json({ description: cleanDesc });
+              }
+            }
+          }
+        }
+      } catch {
+        // Fall through
+      }
+    }
+
     return NextResponse.json({ error: 'Detail not found' }, { status: 404 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to fetch details' }, { status: 500 });

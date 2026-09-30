@@ -105,23 +105,15 @@ async function handleSync(req: Request) {
   }
 
   // 3. Audit Adzuna Configuration
-  if (process.env.ADZUNA_APP_ID && process.env.ADZUNA_API_KEY) {
-    providers.push({
-      name: 'Adzuna',
-      type: 'api',
-      status: 'healthy',
-      latencyMs: 0,
-      message: 'Configured with API credentials',
-    });
-  } else {
-    providers.push({
-      name: 'Adzuna',
-      type: 'api',
-      status: 'unconfigured',
-      latencyMs: 0,
-      message: 'Credentials missing (ADZUNA_APP_ID / ADZUNA_API_KEY)',
-    });
-  }
+  // 3. Audit Adzuna Configuration
+  const hasAdzuna = !!(process.env.ADZUNA_APP_ID && (process.env.ADZUNA_APP_KEY || process.env.ADZUNA_API_KEY));
+  providers.push({
+    name: 'Adzuna',
+    type: 'api',
+    status: hasAdzuna ? 'healthy' : 'unconfigured',
+    latencyMs: 0,
+    message: hasAdzuna ? 'Configured with API credentials' : 'Credentials missing (ADZUNA_APP_ID / ADZUNA_APP_KEY)',
+  });
 
   // 4. Audit JSearch (RapidAPI)
   if (process.env.RAPIDAPI_KEY) {
@@ -139,6 +131,27 @@ async function handleSync(req: Request) {
       status: 'unconfigured',
       latencyMs: 0,
       message: 'RAPIDAPI_KEY not configured',
+    });
+  }
+
+  // 5. Audit Zyte & Scraping Proxies
+  if (process.env.ZYTE_API_KEY) {
+    providers.push({
+      name: 'Zyte (Scrapy Cloud)',
+      type: 'portal',
+      status: 'healthy',
+      latencyMs: 0,
+      message: 'Zyte Scrapy Cloud credentials active',
+    });
+  }
+
+  if (process.env.SCRAPINGDOG_API_KEY) {
+    providers.push({
+      name: 'ScrapingDog',
+      type: 'api',
+      status: 'healthy',
+      latencyMs: 0,
+      message: 'LinkedIn proxy scraper active',
     });
   }
 
