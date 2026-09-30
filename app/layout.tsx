@@ -4,6 +4,7 @@ import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import AnalyticsTracker from "./components/AnalyticsTracker";
+import { WebsiteJsonLd, OrganizationJsonLd } from "./components/GoogleForJobsJsonLd";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -98,6 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F7F8FA] text-[#12172B] font-sans selection:bg-[#2B4EE6]/15 selection:text-[#12172B]">
+        <WebsiteJsonLd />
+        <OrganizationJsonLd />
         <ClerkProvider publishableKey={clerkPublishableKey}>
           <AnalyticsTracker />
           {children}
