@@ -188,6 +188,7 @@ export function OrganizationJsonLd() {
       availableLanguage: ['English', 'Hindi'],
     },
     sameAs: [
+      'https://www.linkedin.com/company/nichehirejobs',
       'https://github.com/harshit1834/nichehire',
     ],
   };
