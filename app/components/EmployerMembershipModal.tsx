@@ -163,7 +163,7 @@ export default function EmployerMembershipModal({
         return;
       }
 
-      const isFounder = ['harshitmishra7073@gmail.com', 'harshit0913@gmail.com', 'founder@nichehire.in'].includes(
+      const isFounder = ['harshitmishra7073@gmail.com', 'harshit0913@gmail.com', 'founder@nichehire.in', 'founder@nichehire.tech', 'harshit@nichehire.tech'].includes(
         emailToUse.toLowerCase().trim()
       );
 

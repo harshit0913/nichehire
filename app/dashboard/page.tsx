@@ -113,7 +113,7 @@ export default function CandidateDashboardPage() {
 
   const referralUrl = typeof window !== 'undefined' && data?.referralCode
     ? `${window.location.origin}/?ref=${data.referralCode}`
-    : `https://nichehire.in/?ref=${data?.referralCode || 'NICHE'}`;
+    : `https://www.nichehire.tech/?ref=${data?.referralCode || 'NICHE'}`;
 
   const copyRefLink = () => {
     navigator.clipboard.writeText(referralUrl);

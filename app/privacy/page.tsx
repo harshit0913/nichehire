@@ -130,7 +130,7 @@ export default function PrivacyPolicyPage() {
             <p>
               For statutory privacy notices, data erasure requests, or compliance inquiries under India&apos;s DPDP Act: <br />
               <strong className="text-[#12172B]">Data Protection Fiduciary:</strong> Harshit Mishra (Founder &amp; CEO, NicheHire) <br />
-              <strong className="text-[#12172B]">Official Grievance Email:</strong> harshit0913@gmail.com / harshit@nichehire.in <br />
+              <strong className="text-[#12172B]">Official Grievance Email:</strong> harshit0913@gmail.com / harshit@nichehire.tech <br />
               <strong className="text-[#12172B]">Headquarters:</strong> India
             </p>
           </section>

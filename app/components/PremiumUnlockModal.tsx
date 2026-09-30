@@ -41,7 +41,7 @@ export default function PremiumUnlockModal({
 
   const referralLink = typeof window !== 'undefined'
     ? `${window.location.origin}?ref=${referralCode}`
-    : `https://nichehire.in?ref=${referralCode}`;
+    : `https://www.nichehire.tech/?ref=${referralCode}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);

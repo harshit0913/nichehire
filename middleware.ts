@@ -123,6 +123,30 @@ function applyRateLimit(req: NextRequest): NextResponse | null {
   return response;
 }
 
+function checkDomainRedirect(req: NextRequest): NextResponse | null {
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').toLowerCase();
+
+  // Skip local development
+  if (host.includes('localhost') || host.includes('127.0.0.1')) {
+    return null;
+  }
+
+  // Redirect old domain (nichehire.in), vercel preview domains, or naked domain to https://www.nichehire.tech
+  if (
+    host.includes('nichehire.in') ||
+    host.includes('vercel.app') ||
+    host === 'nichehire.tech'
+  ) {
+    const url = req.nextUrl.clone();
+    url.protocol = 'https:';
+    url.host = 'www.nichehire.tech';
+    url.port = '';
+    return NextResponse.redirect(url, 308);
+  }
+
+  return null;
+}
+
 const hasClerkKeys = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
   process.env.CLERK_SECRET_KEY
@@ -130,12 +154,18 @@ const hasClerkKeys = Boolean(
 
 export default hasClerkKeys
   ? clerkMiddleware(async (_auth, req) => {
+      const redirectRes = checkDomainRedirect(req);
+      if (redirectRes) return redirectRes;
+
       const rateLimitResponse = applyRateLimit(req);
       if (rateLimitResponse) {
         return rateLimitResponse;
       }
     })
   : async (req: NextRequest) => {
+      const redirectRes = checkDomainRedirect(req);
+      if (redirectRes) return redirectRes;
+
       const rateLimitResponse = applyRateLimit(req);
       if (rateLimitResponse) {
         return rateLimitResponse;

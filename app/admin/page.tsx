@@ -206,7 +206,7 @@ export default function FounderAdminPage() {
 
   // Founder Referral Link
   const [copiedLink, setCopiedLink] = useState(false);
-  const founderReferralLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=FOUNDER` : 'https://nichehire.in/?ref=FOUNDER';
+  const founderReferralLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=FOUNDER` : 'https://www.nichehire.tech/?ref=FOUNDER';
 
   useEffect(() => {
     async function initAdmin() {

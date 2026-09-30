@@ -933,14 +933,14 @@ export default function CandidateSideDrawer({
                     <input
                       type="text"
                       readOnly
-                      value={accessStatus?.referralCode ? `https://nichehire.in/?ref=${accessStatus.referralCode}` : 'https://nichehire.in/?ref=NICHE2026'}
+                      value={accessStatus?.referralCode ? `https://www.nichehire.tech/?ref=${accessStatus.referralCode}` : 'https://www.nichehire.tech/?ref=NICHE2026'}
                       className="flex-1 px-2.5 py-1.5 bg-white border border-amber-300 rounded text-[11px] text-[#12172B]"
                     />
                     <button
                       onClick={() => {
                         const link = accessStatus?.referralCode
                           ? `${window.location.origin}/?ref=${accessStatus.referralCode}`
-                          : 'https://nichehire.in';
+                          : 'https://www.nichehire.tech';
                         navigator.clipboard.writeText(link);
                         alert('Referral link copied to clipboard!');
                       }}
