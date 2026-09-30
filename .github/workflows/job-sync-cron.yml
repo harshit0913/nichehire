@@ -28,3 +28,12 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "HTTP Status: $HTTP_CODE"
           echo "Response: $BODY"
+
+      - name: Trigger Zyte Scrapy Cloud Spider
+        run: |
+          echo "Triggering cloud spider career_portals on Zyte Scrapy Cloud..."
+          RESPONSE=$(curl -s -u "${{ secrets.ZYTE_SCRAPY_KEY || '31d08cad20114510b15bac0c1e1439ca' }}:" \
+            https://app.zyte.com/api/run.json \
+            -d project=880275 \
+            -d spider=career_portals)
+          echo "Zyte Response: $RESPONSE"
