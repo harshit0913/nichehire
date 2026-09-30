@@ -24,10 +24,10 @@ function ruleBasedPolishBullet(bullet: string): string {
     'did': 'Executed',
     'made': 'Developed',
     'handled': 'Managed and streamlined',
-    'responsible for': 'Spearheaded',
-    'looking after': 'Oversaw operations for',
-    'took care of': 'Maintained and enhanced',
-    'assisted in': 'Supported key execution for',
+    'responsible for': 'Led',
+    'looking after': 'Managed operations for',
+    'took care of': 'Maintained and improved',
+    'assisted in': 'Supported execution for',
   };
   for (const [weak, strong] of Object.entries(weakVerbs)) {
     if (b.toLowerCase().startsWith(weak)) {

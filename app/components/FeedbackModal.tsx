@@ -101,6 +101,12 @@ export default function FeedbackModal({ isOpen, onClose, userId: propUserId, use
           </div>
           <h2 className="text-lg font-bold text-gray-900">Help Us Make NicheHire Better</h2>
           <p className="text-xs text-gray-500">Share your thoughts, feature requests, or report an issue.</p>
+          <div className="mt-2.5 px-3 py-1.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg flex items-center justify-between text-[11px]">
+            <span className="text-[#1E40AF]">Direct founder assistance &amp; ideas:</span>
+            <a href="mailto:harshit@nichehire.tech" className="font-semibold text-[#2B4EE6] hover:underline">
+              harshit@nichehire.tech
+            </a>
+          </div>
         </div>
 
         {submitted ? (

@@ -2802,6 +2802,19 @@ export default function JobDashboard() {
                 <BadgeCheck size={ICON_SIZES.inline} strokeWidth={ICON_STROKE_WIDTH} className="text-[#0E9F6E]" />
                 <span>100% Genuine Direct Portal Guarantee</span>
               </div>
+              <div className="pt-1">
+                <a
+                  href="https://www.linkedin.com/company/nichehirejobs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#0A66C2] hover:text-[#004182] hover:underline"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76c-.97 0-1.75-.79-1.75-1.76s.78-1.75 1.75-1.75 1.75.78 1.75 1.75-.78 1.76-1.75 1.76m1.39 9.74v-8.37H5.07v8.37h2.78z" />
+                  </svg>
+                  <span>Follow NicheHire on LinkedIn</span>
+                </a>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -2842,12 +2855,16 @@ export default function JobDashboard() {
 
           <div className="pt-6 border-t border-[#E4E7EC] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#5B6478]">
             <p>© {new Date().getFullYear()} NicheHire. Verified job listings under 7 days old, direct from company career portals.</p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <Link href="/about" className="hover:text-[#12172B]">About</Link>
-              <Link href="/privacy" className="hover:text-[#12172B]">Privacy Policy</Link>
+              <a href="https://www.linkedin.com/company/nichehirejobs" target="_blank" rel="noopener noreferrer" className="hover:text-[#0A66C2] font-medium flex items-center gap-1">
+                <span>LinkedIn</span>
+                <ArrowUpRight size={10} strokeWidth={ICON_STROKE_WIDTH} />
+              </a>
+              <Link href="/privacy" className="hover:text-[#12172B]">Privacy</Link>
               <Link href="/terms" className="hover:text-[#12172B]">Terms</Link>
-              <Link href="/pricing" className="hover:text-[#12172B]">Pricing</Link>
-              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#12172B]">Contact / Feedback</button>
+              <button onClick={() => setFeedbackModalOpen(true)} className="hover:text-[#12172B]">Suggestions &amp; Help</button>
+              <a href="mailto:harshit@nichehire.tech" className="text-[#2B4EE6] font-semibold hover:underline">harshit@nichehire.tech</a>
             </div>
           </div>
         </div>

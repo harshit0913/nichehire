@@ -38,14 +38,28 @@ export async function POST(req: Request) {
     // Guardrail: instructed to reorganize/rephrase only, never invent experience.
     // This matters — a "tailored" resume that fabricates skills gets candidates disqualified,
     // or gets them into interviews they can't actually pass.
-    const prompt = `You are a professional resume editor. Rewrite the RESUME below so it is tailored to the JOB TARGET, while staying 100% truthful to the candidate's real experience.
+    // Humanized, anti-AI-detector prompt to avoid generic robotic tropes
+    const prompt = `You are an elite human resume consultant and career coach.
+Your job is to rewrite and tailor the candidate's RESUME for the TARGET JOB below in a natural, 100% humanized voice that completely avoids AI-generated cadence, AI cliches, and robotic boilerplate.
 
-Rules:
-- You may reorder and rephrase existing bullet points to foreground experience relevant to this job.
-- You may mirror language and keywords from the job description, but only where the candidate genuinely already has that experience in the original resume.
-- Never invent employers, job titles, dates, metrics, tools, or skills that are not already present in the original resume.
-- Keep the resume roughly the same overall length as the original.
-- Output ONLY the rewritten resume text. No preamble, no explanation, no markdown headers like "Tailored Resume:".
+CRITICAL OBJECTIVE: The output MUST read as if written by an articulate, experienced human engineer/professional. It must pass all AI detectors (ZeroGPT, Turnitin, GPTZero, CopyLeaks) with 0% AI detection probability.
+
+HUMANIZATION & ANTI-DETECTION RULES:
+1. STRICT BLACKLIST OF AI TRIGGER WORDS (NEVER USE ANY OF THESE):
+   - DO NOT USE: "spearheaded", "orchestrated", "synergized", "leveraged", "pivotal", "delved", "testament", "tapestry", "seamlessly", "cutting-edge", "game-changing", "fostered a culture", "proven track record", "results-driven", "seasoned professional", "adept at", "harnessed", "utilized", "instrumental in", "navigated the complexities", "dynamic landscape".
+2. NATURAL HUMAN VOCABULARY:
+   - Use straightforward, grounded action verbs: "Built", "Shipped", "Designed", "Wrote", "Led", "Automated", "Fixed", "Debugged", "Reduced", "Cut", "Scaled", "Managed", "Collaborated with", "Maintained", "Refactored", "Deployed".
+3. HIGH BURSTINESS & VARIED SENTENCE CADENCE:
+   - Vary bullet lengths naturally. Mix punchy 8-word impact statements with 20-word contextual technical explanations. Real humans do not write identical 14-word bullet templates.
+4. 100% FACTUAL HONESTY & PLAGIARISM RESISTANCE:
+   - Never fabricate employers, degrees, dates, tools, certifications, or metrics not already in the candidate's resume.
+   - Weave target keywords into existing achievements ONLY where the candidate genuinely performed that work.
+   - Do not copy-paste chunks of the job description verbatim. Rephrase naturally into the candidate's real context.
+5. GROUNDED PROFESSIONAL SUMMARY:
+   - Write a 2-3 sentence grounded summary. Speak plainly about actual technical strengths and target alignment. Zero marketing fluff.
+6. FORMAT:
+   - Output clean Markdown only (## for sections, - for bullets).
+   - No conversational preamble, no "Here is your tailored resume:", no explanatory notes.
 
 JOB TARGET
 Title: ${jobTitle}

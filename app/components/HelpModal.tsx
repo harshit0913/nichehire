@@ -62,10 +62,23 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           ))}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
+        <div className="mt-4 p-3.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div>
+            <p className="font-bold text-[#1E3A8A]">Need personal assistance or have suggestions?</p>
+            <p className="text-[#3B82F6] text-[11px]">Direct line to the founder &amp; platform team</p>
+          </div>
+          <a
+            href="mailto:harshit@nichehire.tech?subject=NicheHire%20Help%20%2F%20Suggestion"
+            className="inline-flex items-center justify-center px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BB8] text-white rounded-lg font-semibold text-xs transition-colors shrink-0 shadow-xs"
+          >
+            harshit@nichehire.tech
+          </a>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl"
+            className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl transition-colors"
           >
             Got it, thanks!
           </button>
