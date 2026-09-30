@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
 export const alt = 'NicheHire — Your Job Buddy!!';
 export const size = {
   width: 1200,
