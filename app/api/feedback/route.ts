@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
     // ─── Channel 3: Resend Email Forwarding ($0/mo up to 3k/mo) ───────────────
     const resendKey = process.env.RESEND_API_KEY;
-    const adminEmail = process.env.ADMIN_EMAIL || 'support@nichehire.in';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@nichehire.tech';
     if (resendKey && adminEmail) {
       try {
         await fetch('https://api.resend.com/emails', {
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'NicheHire Alerts <alerts@nichehire.in>',
+            from: 'NicheHire Alerts <alerts@nichehire.tech>',
             to: [adminEmail],
             reply_to: cleanEmail || undefined,
             subject: `[NicheHire ${type.toUpperCase()}] New user submission`,

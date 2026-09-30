@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 function isFounder(email?: string, dbIsFounder?: boolean): boolean {
   if (dbIsFounder) return true;
   if (!email) return false;
-  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.in,harshit0913@gmail.com')
+  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
     .toLowerCase()
     .split(',')
     .map((e) => e.trim());
@@ -88,7 +88,7 @@ function initSeedTeam(founderId: string, founderEmail?: string) {
   memoryTeamStore.set(founderId, {
     id: 'team-founder',
     userId: founderId,
-    email: founderEmail || 'founder@nichehire.in',
+    email: founderEmail || 'founder@nichehire.tech',
     fullName: 'Harshit Mishra (Founder & CEO)',
     roleTitle: 'Founder & Super Admin',
     status: 'approved',
@@ -161,7 +161,7 @@ export async function GET(req: Request) {
         mergedMap.set(p.user_id, {
           id: p.user_id,
           userId: p.user_id,
-          email: `candidate-${p.user_id.slice(0, 6)}@nichehire.in`,
+          email: `candidate-${p.user_id.slice(0, 6)}@nichehire.tech`,
           fullName: `Team Candidate #${p.user_id.slice(0, 6).toUpperCase()}`,
           roleTitle: p.assigned_role || 'Member',
           status: p.assigned_role && p.assigned_role !== 'Member' ? 'approved' : 'pending',

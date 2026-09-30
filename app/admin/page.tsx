@@ -1407,7 +1407,7 @@ export default function FounderAdminPage() {
                 <CreditCard size={ICON_SIZES.action} strokeWidth={ICON_STROKE_WIDTH} /> Employer Payment Proof &amp; Manual Verification Center
               </h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                When an employer pays via your UPI ID (<code className="text-emerald-400">harshit0913@slc</code>), their 12-digit UTR and payment screenshot appear here.
+                When an employer pays via your UPI ID, their 12-digit UTR and payment screenshot appear here.
                 Inspect the screenshot against your bank account statement, then click <strong>"Approve"</strong> to activate their featured job placement or <strong>"Reject"</strong> if unverified.
               </p>
             </div>
@@ -2031,7 +2031,7 @@ export default function FounderAdminPage() {
                   <input
                     type="text"
                     required
-                    placeholder="rohan@nichehire.in or phone"
+                    placeholder="rohan@nichehire.tech or phone"
                     value={newMemberEmail}
                     onChange={(e) => setNewMemberEmail(e.target.value)}
                     className="w-full bg-black/40 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500 font-mono"

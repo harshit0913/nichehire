@@ -74,7 +74,7 @@ export async function GET(req: Request) {
       .maybeSingle();
 
     // 1b. Check Founder Status via Email or Database Flag
-    const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.in,harshit0913@gmail.com')
+    const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
       .toLowerCase()
       .split(',')
       .map((e) => e.trim());

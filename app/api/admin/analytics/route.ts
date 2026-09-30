@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 function isFounder(email?: string, dbIsFounder?: boolean): boolean {
   if (dbIsFounder) return true;
   if (!email) return false;
-  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.in,harshit0913@gmail.com')
+  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
     .toLowerCase()
     .split(',')
     .map((e) => e.trim());

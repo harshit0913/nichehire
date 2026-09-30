@@ -122,12 +122,12 @@ export default function DomainGuidePage() {
               <Building2 size={ICON_SIZES.section} strokeWidth={ICON_STROKE_WIDTH} className="text-purple-600" />
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
-              For recruiting Indian candidates and corporate HR teams, having a genuine <code>.in</code> domain (e.g. <code>nichehire.in</code>) yields significantly higher conversion and trust than free foreign subdomains.
+              Having your own custom domain (e.g. <code>nichehire.tech</code>) yields significantly higher conversion, credibility, and trust than free foreign subdomains.
             </p>
             <div className="bg-gray-50 p-4 rounded-2xl text-xs space-y-2">
               <strong className="text-gray-900 block font-semibold">Best low-cost registrars without hidden price hikes:</strong>
               <ul className="list-disc list-inside space-y-1 text-gray-600">
-                <li><strong>Spaceship.com:</strong> <code>.in</code> often available for ₹399/yr, or <code>.site</code> / <code>.online</code> for ₹79 - ₹120 for year 1.</li>
+                <li><strong>Spaceship.com:</strong> Competitive rates for <code>.tech</code>, <code>.in</code>, <code>.site</code>, and <code>.online</code>.</li>
                 <li><strong>Dynadot:</strong> High reputation, free WHOIS privacy, and low renewal costs.</li>
                 <li><strong>Hostinger / Namecheap:</strong> Competitive initial coupons for first-time buyers.</li>
               </ul>
@@ -138,7 +138,7 @@ export default function DomainGuidePage() {
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2B4EE6] hover:bg-[#1E3BBD] text-white text-xs font-semibold rounded-xl transition-colors"
             >
-              Search .in Domains on Spaceship &rarr;
+              Search Custom Domains &rarr;
             </a>
           </div>
 
@@ -151,7 +151,7 @@ export default function DomainGuidePage() {
             <ol className="list-decimal list-inside space-y-2 text-xs text-blue-100/90 leading-relaxed">
               <li>Open your <strong>Vercel Dashboard</strong> &rarr; Select your <code>commerce-job-board</code> (or NicheHire) project.</li>
               <li>Navigate to <strong>Settings</strong> &rarr; <strong>Domains</strong>.</li>
-              <li>Type your custom domain (e.g. <code>nichehire.in</code> or <code>www.nichehire.in</code>) and click <strong>Add</strong>.</li>
+              <li>Type your custom domain (e.g. <code>nichehire.tech</code> or <code>www.nichehire.tech</code>) and click <strong>Add</strong>.</li>
               <li>Vercel will show the required DNS record:
                 <div className="bg-black/40 p-3 rounded-xl font-mono text-[11px] text-amber-300 my-2">
                   Type: CNAME &nbsp;|&nbsp; Name: www &nbsp;|&nbsp; Value: cname.vercel-dns.com<br/>

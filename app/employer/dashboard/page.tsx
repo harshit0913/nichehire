@@ -167,7 +167,7 @@ export default function EmployerDashboardPage() {
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [screenshotError, setScreenshotError] = useState('');
 
-  const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || 'harshit0913@slc';
+  const founderUpiId = process.env.NEXT_PUBLIC_FOUNDER_UPI_ID || '';
 
   useEffect(() => {
     // 1. Hydrate employer info & profile from session if within 2.5-hour window
