@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader } from "next/font/google";
+import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import AnalyticsTracker from "./components/AnalyticsTracker";
@@ -97,6 +98,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AnalyticsTracker />
           {children}
         </ClerkProvider>
+        {/* Simple Analytics - 100% Privacy-First Analytics from GitHub Student Pack */}
+        <Script
+          src="https://scripts.simpleanalyticscdn.com/latest.js"
+          strategy="afterInteractive"
+        />
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://queue.simpleanalyticscdn.com/noscript.gif"
+            alt=""
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </noscript>
       </body>
     </html>
   );
