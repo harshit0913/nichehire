@@ -71,6 +71,99 @@ export const INHERENTLY_GLOBAL_SECTORS: GlobalSectorDefinition[] = [
 ];
 
 /**
+ * Niche queries that must match ONLY the job title (not just description/company).
+ * Each entry has:
+ *   - aliases: all spelling / abbreviation variants the user might type
+ *   - titleMustContainAny: at least one of these must appear in the job title
+ *   - related: fallback search terms shown when primary results run out
+ */
+export interface NicheQueryDefinition {
+  aliases: string[];
+  titleMustContainAny: string[];
+  related: { label: string; query: string }[];
+}
+
+export const NICHE_EXACT_QUERIES: NicheQueryDefinition[] = [
+  {
+    aliases: ['ca articleship', 'ca articles', 'ca article', 'chartered accountant articleship', 'ca trainee', 'ca intern', 'ca internship', 'article assistant'],
+    titleMustContainAny: ['article', 'articleship', 'ca trainee', 'ca intern', 'article assistant'],
+    related: [
+      { label: 'CA Fresher Jobs', query: 'chartered accountant fresher' },
+      { label: 'Accounts Executive', query: 'accounts executive' },
+      { label: 'Tax Assistant', query: 'tax assistant' },
+      { label: 'Finance Intern', query: 'finance intern' },
+    ],
+  },
+  {
+    aliases: ['cs trainee', 'cs articleship', 'company secretary trainee', 'company secretary intern', 'cs intern'],
+    titleMustContainAny: ['cs trainee', 'company secretary trainee', 'cs intern', 'company secretary intern'],
+    related: [
+      { label: 'Company Secretary', query: 'company secretary' },
+      { label: 'Legal Intern', query: 'legal intern' },
+      { label: 'Compliance Officer', query: 'compliance officer' },
+    ],
+  },
+  {
+    aliases: ['llb intern', 'law intern', 'law internship', 'legal intern', 'advocate intern', 'legal trainee'],
+    titleMustContainAny: ['law intern', 'legal intern', 'advocate intern', 'legal trainee', 'llb intern'],
+    related: [
+      { label: 'Junior Advocate', query: 'junior advocate' },
+      { label: 'Legal Associate', query: 'legal associate' },
+      { label: 'Compliance Officer', query: 'compliance officer' },
+    ],
+  },
+  {
+    aliases: ['architect intern', 'architecture intern', 'architecture trainee', 'junior architect'],
+    titleMustContainAny: ['architect intern', 'architecture intern', 'junior architect', 'architecture trainee'],
+    related: [
+      { label: 'CAD Designer', query: 'cad designer' },
+      { label: 'Interior Designer', query: 'interior designer' },
+      { label: 'Civil Draftsman', query: 'civil draftsman' },
+    ],
+  },
+  {
+    aliases: ['cma trainee', 'icmai trainee', 'cost accountant trainee', 'cma intern'],
+    titleMustContainAny: ['cma trainee', 'cost accountant trainee', 'cma intern', 'icmai'],
+    related: [
+      { label: 'Cost Accountant', query: 'cost accountant' },
+      { label: 'Finance Analyst', query: 'finance analyst' },
+      { label: 'Accounts Assistant', query: 'accounts assistant' },
+    ],
+  },
+  {
+    aliases: ['apprenticeship', 'neem trainee', 'act apprentice', 'apprentice trainee'],
+    titleMustContainAny: ['apprentice', 'apprenticeship', 'neem trainee'],
+    related: [
+      { label: 'ITI Jobs', query: 'iti jobs' },
+      { label: 'Diploma Fresher', query: 'diploma fresher engineer' },
+      { label: 'Graduate Apprentice', query: 'graduate apprentice' },
+    ],
+  },
+];
+
+/**
+ * Detects if a query is a niche/exact-match type.
+ * Returns the matching NicheQueryDefinition or null.
+ */
+export function getNicheQueryDef(cleanQuery: string): NicheQueryDefinition | null {
+  if (!cleanQuery) return null;
+  const lower = cleanQuery.toLowerCase().trim();
+  return (
+    NICHE_EXACT_QUERIES.find((def) =>
+      def.aliases.some((alias) => lower === alias || lower.includes(alias) || alias.includes(lower))
+    ) || null
+  );
+}
+
+/**
+ * Returns related job suggestions for a niche query when primary results are exhausted.
+ */
+export function getRelatedJobSuggestions(cleanQuery: string): { label: string; query: string }[] {
+  const def = getNicheQueryDef(cleanQuery);
+  return def?.related || [];
+}
+
+/**
  * Normalizes search input:
  * - Replaces underscores, hyphens, plus signs with spaces
  * - Collapses repeated spaces
@@ -105,6 +198,7 @@ export function isInherentlyGlobalRole(query: string = '', title: string = ''): 
 /**
  * Evaluates whether a job satisfies query relevance:
  * - If query is empty -> matches
+ * - NICHE queries (e.g. "CA articleship"): job TITLE must contain at least one of the niche keywords
  * - If single term -> checks full text (title, company, description, skills)
  * - If multi-word -> requires exact phrase OR all individual terms to be present
  */
@@ -118,6 +212,13 @@ export function doesJobMatchQuery(job: any, cleanQuery: string): boolean {
   const location = (job.location || '').toLowerCase();
 
   const fullHaystack = `${title} ${company} ${skills} ${desc} ${location}`;
+
+  // 0. NICHE EXACT-MATCH GUARD — for specific niche roles the title must match
+  const nicheDef = getNicheQueryDef(cleanQuery);
+  if (nicheDef) {
+    // The job title MUST contain at least one of the niche title keywords
+    return nicheDef.titleMustContainAny.some((kw) => title.includes(kw.toLowerCase()));
+  }
 
   // 1. Direct phrase match anywhere
   if (fullHaystack.includes(cleanQuery)) {
@@ -141,6 +242,7 @@ export function doesJobMatchQuery(job: any, cleanQuery: string): boolean {
 
   return false;
 }
+
 
 /**
  * Applies strict tiered ordering and soft quota-based scope expansion.

@@ -5,7 +5,9 @@ import {
   doesJobMatchQuery,
   rankJobsStrictTierOrder,
   isInherentlyGlobalRole,
+  getRelatedJobSuggestions,
 } from '../../../lib/searchRankingEngine';
+
 import { detectGovtCrossPortalSuggestion } from '../../../lib/govtCrossPortal';
 
 const FETCH_TIMEOUT_MS = 14000;
@@ -1686,10 +1688,13 @@ export async function POST(req: Request) {
           TOP_LOCAL_COMPANIES_MAP['national'] ||
           [];
 
+    const relatedSuggestions = getRelatedJobSuggestions(cleanQuery);
+
     return NextResponse.json({
       jobs: filtered,
       needsExpansion,
       expansions,
+      relatedSuggestions,
       meta: {
         total: filtered.length,
         rawTotal: rawJobs.length,

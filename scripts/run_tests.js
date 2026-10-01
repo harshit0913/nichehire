@@ -5,10 +5,10 @@
  * and writes results + markdown workbooks to the artifacts directory.
  *
  * Usage: node scripts/run_tests.js
- * Requires: node-fetch (npm install node-fetch@2)
+ * Requires: Node.js 18+ (uses built-in global fetch)
  */
 
-const fetch = require('node-fetch');
+// Node 18+ has fetch globally — no import needed
 const fs = require('fs');
 const path = require('path');
 
@@ -69,7 +69,6 @@ async function runTests() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(scenario.body),
-        timeout: 30000,
       });
       const json = await res.json();
       const elapsed = Date.now() - start;
