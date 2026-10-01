@@ -670,6 +670,8 @@ export async function POST(req: Request) {
       distance,
       applicants,
       verifiedOnly,
+      radiusKm,
+      showOlder,
     } = await req.json();
 
     const rawRole = (role || '').trim();
@@ -725,14 +727,14 @@ export async function POST(req: Request) {
         const maxDaysParam = '&max_days_old=14'; // Expand window for regional depth
 
         const geoInfo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
-        let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50${cleanWhat}${cleanLoc}${maxDaysParam}`;
+        let adzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=100${cleanWhat}${cleanLoc}${maxDaysParam}`;
         
         const adzunaPromises = [fetchWithTimeout(adzunaUrl)];
 
         // Parallel State-Level Expansion for Pan-India Regional Depth
         if (geoInfo && geoInfo.state && geoInfo.state !== 'All India' && geoInfo.state.toLowerCase() !== locQuery) {
           const stateLoc = `&where=${encodeURIComponent(geoInfo.state)}`;
-          const stateAdzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=50${cleanWhat}${stateLoc}${maxDaysParam}`;
+          const stateAdzunaUrl = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=100${cleanWhat}${stateLoc}${maxDaysParam}`;
           adzunaPromises.push(fetchWithTimeout(stateAdzunaUrl));
         }
 
@@ -1570,6 +1572,111 @@ export async function POST(req: Request) {
       filtered = filtered.filter((j) => j.workMode === workMode);
     }
 
+    // --- SHOW OLDER OVERRIDE: if showOlder=true, allow up to 14d (re-filter from rawJobs) ---
+    if (showOlder) {
+      // Override: allow jobs up to 14 days old from the full ranked list
+      const maxAgeMs = 14 * 24 * 60 * 60 * 1000;
+      filtered = filtered.filter((j) => {
+        if (j.postedAt) return now - j.postedAt <= maxAgeMs;
+        const text = (j.postedText || '').toLowerCase();
+        if (text.includes('month') || text.includes('year')) return false;
+        const dayMatch = text.match(/(\d+)\s*d/);
+        if (dayMatch && parseInt(dayMatch[1], 10) > 14) return false;
+        const daysAgoMatch = text.match(/(\d+)\s*days?\s*ago/);
+        if (daysAgoMatch && parseInt(daysAgoMatch[1], 10) > 14) return false;
+        return true;
+      });
+    }
+
+    // --- HAVERSINE RADIUS FILTER (km) ---
+    let needsExpansion = false;
+    let expansions: string[] = [];
+
+    if (radiusKm && locQuery) {
+      // Geocode the search location using OpenStreetMap Nominatim (free, no key)
+      let centre: { lat: number; lon: number } | null = null;
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location || locQuery)}&limit=1`,
+          { headers: { 'User-Agent': 'NicheHire/1.0 (nichehire.tech)' } }
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (geoData[0]) {
+            centre = { lat: parseFloat(geoData[0].lat), lon: parseFloat(geoData[0].lon) };
+          }
+        }
+      } catch {
+        // Geocoding failed — skip radius filter gracefully
+      }
+
+      if (centre) {
+        const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const R = 6371;
+          const dLat = toRad(lat2 - lat1);
+          const dLon = toRad(lon2 - lon1);
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+
+        const withCoords = filtered.filter((j) => j.latitude && j.longitude);
+        if (withCoords.length > 0) {
+          const radiusFiltered = withCoords.filter((j) => {
+            const dist = haversine(centre!.lat, centre!.lon, j.latitude, j.longitude);
+            return dist <= radiusKm;
+          });
+          if (radiusFiltered.length === 0) {
+            needsExpansion = true;
+            expansions = ['State-wide', 'Nearby towns (±50 km)', 'India-wide remote', 'Global remote'];
+            // Return all geo-tagged jobs within 3× the radius as a graceful expansion
+            filtered = withCoords.filter((j) =>
+              haversine(centre!.lat, centre!.lon, j.latitude, j.longitude) <= radiusKm * 3
+            );
+            if (filtered.length === 0) filtered = withCoords.slice(0, 30);
+          } else {
+            filtered = radiusFiltered;
+          }
+        }
+        // If no jobs have coordinates, skip radius filter and just return the normal results
+      }
+    }
+
+    // --- SERP API VERIFICATION (first 30 jobs) ---
+    const SERP_API_KEY = process.env.SERP_API_KEY || '';
+    if (SERP_API_KEY && filtered.length > 0) {
+      const toVerify = filtered.slice(0, 30);
+      const verifyResults = await Promise.allSettled(
+        toVerify.map(async (j: any) => {
+          try {
+            const q = encodeURIComponent(`${j.company} ${j.title} jobs`);
+            const url = `https://serpapi.com/search.json?engine=google_jobs&q=${q}&api_key=${SERP_API_KEY}&num=5`;
+            const res = await fetch(url);
+            if (!res.ok) return false;
+            const data = await res.json();
+            const results: any[] = data.jobs_results || [];
+            const titleLow = (j.title || '').toLowerCase();
+            const companyLow = (j.company || '').toLowerCase();
+            return results.some((r: any) => {
+              const t = (r.title || '').toLowerCase();
+              const c = (r.company_name || '').toLowerCase();
+              return t.includes(titleLow.substring(0, 10)) || c.includes(companyLow.substring(0, 8));
+            });
+          } catch {
+            return false;
+          }
+        })
+      );
+      toVerify.forEach((j: any, idx: number) => {
+        const r = verifyResults[idx];
+        if (r.status === 'fulfilled') {
+          j.isVerified = j.isVerified || (r.value as boolean);
+        }
+      });
+    }
+
     const resolvedGeo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
     const activeLocalCompanies =
       resolvedGeo && resolvedGeo.suggestedEmployers.length > 0
@@ -1581,6 +1688,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       jobs: filtered,
+      needsExpansion,
+      expansions,
       meta: {
         total: filtered.length,
         rawTotal: rawJobs.length,

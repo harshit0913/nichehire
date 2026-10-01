@@ -157,6 +157,8 @@ export default function JobDashboard() {
   const [applicants, setApplicants] = useState('Any Applicants');
   const [isStartupOnly, setIsStartupOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [radiusKm, setRadiusKm] = useState<number | undefined>(undefined);
+  const [showOlder, setShowOlder] = useState(false);
   const [govtSuggestion, setGovtSuggestion] = useState<any | null>(null);
 
   // Pagination State (Limit 30 jobs initially with next page navigation)
@@ -656,6 +658,8 @@ export default function JobDashboard() {
           applicants: applicantsToUse,
           isStartupOnly: startupToUse,
           verifiedOnly: verifiedToUse,
+          radiusKm,
+          showOlder,
         }),
       });
 
@@ -2017,8 +2021,40 @@ export default function JobDashboard() {
                 <span>Startups</span>
               </button>
 
+              {/* Radius (km) Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[#5B6478] font-medium">Radius (km):</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Any"
+                  value={radiusKm ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value ? Number(e.target.value) : undefined;
+                    setRadiusKm(val);
+                  }}
+                  onBlur={() => fetchJobs()}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
+                  className="w-20 px-2 py-1.5 bg-[#F7F8FA] border border-[#E4E7EC] rounded text-[#12172B] text-xs font-medium focus:outline-none focus:border-[#2B4EE6]"
+                />
+              </div>
+
+              {/* Show Older Jobs Checkbox */}
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-[#5B6478] hover:text-[#12172B] select-none">
+                <input
+                  type="checkbox"
+                  checked={showOlder}
+                  onChange={(e) => {
+                    setShowOlder(e.target.checked);
+                    fetchJobs();
+                  }}
+                  className="rounded border-[#E4E7EC] accent-[#2B4EE6]"
+                />
+                <span>Show jobs up to 14d old</span>
+              </label>
+
               {/* Reset */}
-              {(workMode !== 'Any Mode' || postedTime !== 'Any Time' || distance !== 'Any Distance' || applicants !== 'Any Applicants' || verifiedOnly || isStartupOnly) && (
+              {(workMode !== 'Any Mode' || postedTime !== 'Any Time' || distance !== 'Any Distance' || applicants !== 'Any Applicants' || verifiedOnly || isStartupOnly || radiusKm !== undefined || showOlder) && (
                 <button
                   onClick={() => {
                     setWorkMode('Any Mode');
@@ -2027,6 +2063,8 @@ export default function JobDashboard() {
                     setApplicants('Any Applicants');
                     setVerifiedOnly(false);
                     setIsStartupOnly(false);
+                    setRadiusKm(undefined);
+                    setShowOlder(false);
                     fetchJobs();
                   }}
                   className="ml-auto text-xs text-[#2B4EE6] hover:underline font-medium"
