@@ -1386,7 +1386,88 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- EXECUTE ALL SOURCES IN PARALLEL ---
+    // --- 11. JOBICY 100% FREE PUBLIC JOBS API (Zero Key Required) ---
+    async function fetchJobicy(): Promise<any[]> {
+      try {
+        const qParam = query ? `&tag=${encodeURIComponent(query)}` : '';
+        const url = `https://jobicy.com/api/v2/remote-jobs?count=40${qParam}`;
+        const res = await fetchWithTimeout(url, {}, 8000);
+        if (!res.ok) return [];
+        const data = await res.json();
+        const list = Array.isArray(data.jobs) ? data.jobs : [];
+
+        return list.map((j: any) => {
+          const pubTime = j.pubDate ? new Date(j.pubDate).getTime() : undefined;
+          const loc = j.jobGeo || 'Remote / India';
+          return {
+            id: `jobicy_${j.id || Math.random().toString(36).substring(2, 9)}`,
+            title: j.jobTitle || 'Opportunity',
+            company: j.companyName || 'Verified Employer',
+            location: loc,
+            type: normalizeType(j.jobType),
+            workMode: 'Remote' as const,
+            salary: j.salaryMin && j.salaryMax ? `${j.salaryCurrency || '$'} ${j.salaryMin.toLocaleString()} - ${j.salaryMax.toLocaleString()}` : undefined,
+            description: cleanDescription(j.jobDescription || j.jobExcerpt || '', 4000),
+            url: j.url || '#',
+            source: 'Jobicy (Verified)',
+            isStartup: true,
+            isVerified: true,
+            postedAt: pubTime,
+            postedText: 'Recent',
+            applicantCount: undefined,
+            applicantText: undefined,
+          };
+        });
+      } catch (e) {
+        return [];
+      }
+    }
+
+    // --- 12. THE MUSE 100% FREE PUBLIC JOBS API (Zero Key Required) ---
+    async function fetchTheMuse(): Promise<any[]> {
+      try {
+        const url = `https://www.themuse.com/api/public/jobs?page=1`;
+        const res = await fetchWithTimeout(url, {}, 8000);
+        if (!res.ok) return [];
+        const data = await res.json();
+        const list = Array.isArray(data.results) ? data.results : [];
+
+        const qLower = query.toLowerCase();
+        return list
+          .filter((j: any) => {
+            if (!qLower) return true;
+            const t = (j.name || '').toLowerCase();
+            const c = (j.company?.name || '').toLowerCase();
+            return t.includes(qLower) || c.includes(qLower);
+          })
+          .slice(0, 25)
+          .map((j: any) => {
+            const pubTime = j.publication_date ? new Date(j.publication_date).getTime() : undefined;
+            const loc = (j.locations && j.locations[0]?.name) || 'Pan India / Global';
+            return {
+              id: `muse_${j.id || Math.random().toString(36).substring(2, 9)}`,
+              title: j.name || 'Position',
+              company: j.company?.name || 'Enterprise Employer',
+              location: loc,
+              type: 'Full-Time' as const,
+              workMode: detectWorkMode(loc, j.name || '', ''),
+              description: cleanDescription(j.contents || '', 4000),
+              url: j.refs?.landing_page || '#',
+              source: 'The Muse (Verified Direct)',
+              isStartup: false,
+              isVerified: true,
+              postedAt: pubTime,
+              postedText: 'Recent',
+              applicantCount: undefined,
+              applicantText: undefined,
+            };
+          });
+      } catch (e) {
+        return [];
+      }
+    }
+
+    // --- EXECUTE ALL 12 SOURCES IN PARALLEL ---
     const sourceResults = await Promise.allSettled([
       fetchAdzuna(),
       fetchHimalayas(),
@@ -1398,7 +1479,10 @@ export async function POST(req: Request) {
       fetchLocalCareerPortals(),
       fetchDirectPortals(),
       fetchScrapingDog(),
+      fetchJobicy(),
+      fetchTheMuse(),
     ]);
+
 
     let allJobs: any[] = [];
     sourceResults.forEach((res) => {
