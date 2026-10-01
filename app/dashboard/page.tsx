@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from '../supabase';
 import { getCandidateSession, enforceSessionExpiry } from '../lib/authSession';
+import { isFounderEmail } from '../lib/authResolver';
 import FeedbackModal from '../components/FeedbackModal';
 
 import {
@@ -63,32 +65,70 @@ export default function CandidateDashboardPage() {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
 
+  const { isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn, user: clerkUser } = useUser();
+  const { getToken: getClerkToken } = useAuth();
+
   useEffect(() => {
     async function loadDashboard() {
+      if (!isClerkLoaded) return;
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeToken = session?.access_token;
-      let activeUserId = session?.user?.id;
 
-      if (!activeToken) {
-        const candidateSession = getCandidateSession();
-        if (candidateSession) {
-          activeToken = candidateSession.sessionToken;
-          activeUserId = candidateSession.user?.id;
+      let activeToken = '';
+      let activeUserId = '';
+      let activeEmail = '';
+
+      // 1. Clerk session
+      if (isClerkSignedIn && clerkUser) {
+        activeUserId = clerkUser.id;
+        activeEmail = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || '';
+        try {
+          activeToken = (await getClerkToken()) || '';
+        } catch {}
+      }
+
+      // 2. Supabase session
+      if (!activeToken && !activeUserId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          activeToken = session.access_token;
+          activeUserId = session.user?.id;
+          activeEmail = session.user?.email || '';
         }
       }
 
+      // 3. Candidate session (OTP)
+      if (!activeToken && !activeUserId) {
+        const candidateSession = getCandidateSession();
+        if (candidateSession) {
+          activeToken = candidateSession.sessionToken || '';
+          activeUserId = candidateSession.user?.id || '';
+          activeEmail = candidateSession.user?.email || '';
+        }
+      }
 
-      if (!activeToken || !activeUserId) {
+      if (!activeToken && !activeUserId) {
         setLoading(false);
         return;
       }
 
+      const isFounder = isFounderEmail(activeEmail);
+
       try {
-        const res = await fetch('/api/user/access-status', {
-          headers: { Authorization: `Bearer ${activeToken}` },
-        });
+        const headers: Record<string, string> = {};
+        if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+        if (activeEmail) headers['x-user-email'] = activeEmail;
+        if (activeUserId) headers['x-user-id'] = activeUserId;
+
+        const res = await fetch('/api/user/access-status', { headers });
         const access = await res.json();
+        if (isFounder) {
+          access.isFounder = true;
+          access.level = 'unlimited';
+          access.quotaBypass = true;
+          access.badge = 'founder';
+          access.referralCode = 'FOUNDER';
+          access.assignedRole = access.assignedRole || 'Founder & CEO';
+        }
         setData(access);
 
         // Fetch user's own submitted feedbacks & founder replies
@@ -109,7 +149,7 @@ export default function CandidateDashboardPage() {
     }
 
     loadDashboard();
-  }, []);
+  }, [isClerkLoaded, isClerkSignedIn, clerkUser]);
 
   const referralUrl = typeof window !== 'undefined' && data?.referralCode
     ? `${window.location.origin}/?ref=${data.referralCode}`

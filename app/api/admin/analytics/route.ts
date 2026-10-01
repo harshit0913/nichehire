@@ -2,44 +2,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
 import { getAnalyticsSummary } from '../../../lib/analyticsStore';
-import { verifyAuthToken } from '../../../lib/referralEngine';
+import { resolveAuthUser, isFounderEmail } from '../../../lib/authResolver';
 
 export const dynamic = 'force-dynamic';
 
-function isFounder(email?: string, dbIsFounder?: boolean): boolean {
-  if (dbIsFounder) return true;
-  if (!email) return false;
-  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
-    .toLowerCase()
-    .split(',')
-    .map((e) => e.trim());
-  return founderEmails.includes(email.toLowerCase().trim());
-}
-
 async function verifyAdminOrTeam(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return { authorized: false, error: 'Unauthorized: Missing token' };
-
-  const token = authHeader.replace(/^Bearer\s+/i, '');
-  let resolvedUser: { id: string; email?: string } | null = null;
-
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (user && !error) resolvedUser = user;
-  } catch {}
-
+  const resolvedUser = await resolveAuthUser(req);
   if (!resolvedUser) {
-    const customPayload = verifyAuthToken(token);
-    if (customPayload) {
-      resolvedUser = {
-        id: customPayload.userId,
-        email: customPayload.type === 'email' ? customPayload.identifier : undefined,
-      };
-    }
-  }
-
-  if (!resolvedUser) {
-    return { authorized: false, error: 'Unauthorized: Invalid token' };
+    return { authorized: false, error: 'Unauthorized: Invalid token or user' };
   }
 
   // Check founder status
@@ -49,7 +19,7 @@ async function verifyAdminOrTeam(req: Request) {
     .eq('user_id', resolvedUser.id)
     .maybeSingle();
 
-  if (isFounder(resolvedUser.email, profile?.is_founder)) {
+  if (resolvedUser.isFounder || isFounderEmail(resolvedUser.email) || profile?.is_founder) {
     return { authorized: true, user: resolvedUser, isFounder: true };
   }
 

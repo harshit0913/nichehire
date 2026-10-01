@@ -1,41 +1,27 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
 import { inMemoryPayments } from '../../../lib/paymentsStore';
+import { resolveAuthUser, isFounderEmail } from '../../../lib/authResolver';
 
 export const dynamic = 'force-dynamic';
 
-function isFounder(email?: string, dbIsFounder?: boolean): boolean {
-  if (dbIsFounder) return true;
-  if (!email) return false;
-  const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
-    .toLowerCase()
-    .split(',')
-    .map((e) => e.trim());
-  return founderEmails.includes(email.toLowerCase().trim());
-}
-
 async function verifyFounder(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return { authorized: false, error: 'Unauthorized: Missing token' };
-
-  const token = authHeader.replace(/^Bearer\s+/i, '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return { authorized: false, error: 'Unauthorized: Invalid token' };
+  const resolvedUser = await resolveAuthUser(req);
+  if (!resolvedUser) {
+    return { authorized: false, error: 'Unauthorized: Invalid token or user' };
   }
 
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('is_founder')
-    .eq('user_id', user.id)
+    .eq('user_id', resolvedUser.id)
     .maybeSingle();
 
-  if (!isFounder(user.email, profile?.is_founder)) {
+  if (!resolvedUser.isFounder && !isFounderEmail(resolvedUser.email) && !profile?.is_founder) {
     return { authorized: false, error: 'Forbidden: Founder access required' };
   }
 
-  return { authorized: true, user };
+  return { authorized: true, user: resolvedUser };
 }
 
 export async function GET(req: Request) {

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { SignInButton, SignUpButton, UserButton, useUser, useClerk } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, UserButton, useUser, useClerk, useAuth } from '@clerk/nextjs';
 import ReactMarkdown from 'react-markdown';
+import { isFounderEmail } from './lib/authResolver';
 import AuthModal from './components/AuthModal';
 import EmailDraftModal from './components/EmailDraftModal';
 import InterviewPrepModal from './components/InterviewPrepModal';
@@ -89,6 +90,7 @@ export default function JobDashboard() {
   const [user, setUser] = useState<any>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { isSignedIn: isClerkSignedIn, user: clerkUser } = useUser();
+  const { getToken: getClerkToken } = useAuth();
   const { openSignIn } = useClerk();
 
   // Modals state
@@ -267,10 +269,12 @@ export default function JobDashboard() {
 
   // ─── Auth Lifecycle & Saved Jobs ───────────────────────────────────────────
 
-  const fetchAccessStatus = async (token?: string) => {
+  const fetchAccessStatus = async (token?: string, emailHint?: string, userIdHint?: string) => {
     try {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (emailHint) headers['x-user-email'] = emailHint;
+      if (userIdHint) headers['x-user-id'] = userIdHint;
       const res = await fetch('/api/user/access-status', { headers });
       if (res.ok) {
         const data = await res.json();
@@ -299,7 +303,7 @@ export default function JobDashboard() {
       if (session?.user) {
         setUser(session.user);
         if (session?.access_token) {
-          fetchAccessStatus(session.access_token);
+          fetchAccessStatus(session.access_token, session.user.email);
         }
         loadCandidateData(session.user.id);
       } else {
@@ -307,7 +311,7 @@ export default function JobDashboard() {
         if (candidateSession?.user) {
           setUser(candidateSession.user);
           if (candidateSession.sessionToken) {
-            fetchAccessStatus(candidateSession.sessionToken);
+            fetchAccessStatus(candidateSession.sessionToken, candidateSession.user.email, candidateSession.user.id);
           }
           loadCandidateData(candidateSession.user.id);
         } else {
@@ -320,7 +324,7 @@ export default function JobDashboard() {
       if (session?.user) {
         setUser(session.user);
         if (session?.access_token) {
-          fetchAccessStatus(session.access_token);
+          fetchAccessStatus(session.access_token, session.user.email);
         }
         loadCandidateData(session.user.id);
       }
@@ -346,19 +350,43 @@ export default function JobDashboard() {
     };
   }, []);
 
-  // Sync Clerk authenticated user into local user profile state
+  // Sync Clerk authenticated user into local user profile state and fetch live access status
   useEffect(() => {
-    if (isClerkSignedIn && clerkUser) {
-      const mappedUser = {
-        id: clerkUser.id,
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        user_metadata: {
-          full_name: clerkUser.fullName || clerkUser.firstName || 'Candidate',
-        },
-      };
-      setUser(mappedUser);
-      loadCandidateData(clerkUser.id);
+    async function syncClerkUser() {
+      if (isClerkSignedIn && clerkUser) {
+        const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || '';
+        const mappedUser = {
+          id: clerkUser.id,
+          email,
+          user_metadata: {
+            full_name: clerkUser.fullName || clerkUser.firstName || 'Candidate',
+          },
+        };
+        setUser(mappedUser);
+        loadCandidateData(clerkUser.id);
+
+        // Instant optimistic unlock if account matches Founder
+        if (isFounderEmail(email)) {
+          setAccessStatus((prev: any) => ({
+            ...prev,
+            isFounder: true,
+            level: 'unlimited',
+            quotaBypass: true,
+            badge: 'founder',
+            referralCode: 'FOUNDER',
+            assignedRole: 'Founder & CEO',
+          }));
+        }
+
+        try {
+          const token = await getClerkToken();
+          await fetchAccessStatus(token || undefined, email, clerkUser.id);
+        } catch {
+          await fetchAccessStatus(undefined, email, clerkUser.id);
+        }
+      }
     }
+    syncClerkUser();
   }, [isClerkSignedIn, clerkUser]);
 
   const loadCandidateData = (userId?: string) => {
@@ -1037,7 +1065,7 @@ export default function JobDashboard() {
             </Link>
 
             {/* Founder Admin Direct Link if user is identified as founder */}
-            {accessStatus?.isFounder && (
+            {(accessStatus?.isFounder || isFounderEmail(user?.email)) && (
               <Link
                 href="/admin"
                 className="px-2.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
@@ -1055,7 +1083,18 @@ export default function JobDashboard() {
                     Hi, {candidateProfile?.fullName?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                   </span>
                   <UserTierBadge
-                    access={accessStatus}
+                    access={
+                      isFounderEmail(user?.email) || accessStatus?.isFounder
+                        ? {
+                            level: 'unlimited',
+                            quotaBypass: true,
+                            badge: 'founder',
+                            tier: 'premium',
+                            assignedRole: 'Founder & CEO',
+                            isFounder: true,
+                          }
+                        : accessStatus
+                    }
                     onClick={() => setPremiumModalOpen(true)}
                     compact={true}
                   />
@@ -2922,7 +2961,11 @@ export default function JobDashboard() {
         referralCount={accessStatus?.referralCount ?? 0}
         provisionalCount={accessStatus?.provisionalCount ?? 0}
         recentReferrals={accessStatus?.recentReferrals ?? []}
-        referralCode={accessStatus?.referralCode || (user?.id ? `REF-${user.id.slice(0, 8).toUpperCase()}` : 'REF-NICHE2026')}
+        referralCode={
+          isFounderEmail(user?.email) || accessStatus?.isFounder
+            ? 'FOUNDER'
+            : accessStatus?.referralCode || (user?.id ? `REF-${user.id.slice(0, 8).toUpperCase()}` : 'REF-NICHE2026')
+        }
         isLoggedIn={!!user}
         onLoginClick={() => {
           setPremiumModalOpen(false);

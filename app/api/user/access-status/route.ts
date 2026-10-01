@@ -2,51 +2,14 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../../supabase';
 import { resolveAccess, checkUsageLimit, calculateUserTier } from '../../../lib/premiumTierEngine';
 import { UserPremiumStatus, FounderOverride } from '../../../types/premium';
-import { verifyAuthToken, ensureUserReferralProfile } from '../../../lib/referralEngine';
+import { ensureUserReferralProfile } from '../../../lib/referralEngine';
+import { resolveAuthUser, isFounderEmail } from '../../../lib/authResolver';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        {
-          level: 'member',
-          quotaBypass: false,
-          badge: 'none',
-          referralCode: 'REF-NICHE2026',
-          referralCount: 0,
-          provisionalCount: 0,
-          recentReferrals: [],
-          remainingQuotas: { tailoredResumes: 0, hrEmailDrafts: 0 },
-        },
-        { status: 200 }
-      );
-    }
-
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    let resolvedUser: { id: string; email?: string } | null = null;
-
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (user && !authError) {
-        resolvedUser = user;
-      }
-    } catch {
-      // Supabase token failed, check custom token below
-    }
-
-    if (!resolvedUser) {
-      // Check custom OTP JWT token
-      const customPayload = verifyAuthToken(token);
-      if (customPayload) {
-        resolvedUser = {
-          id: customPayload.userId,
-          email: customPayload.type === 'email' ? customPayload.identifier : undefined,
-        };
-      }
-    }
+    const resolvedUser = await resolveAuthUser(req);
 
     if (!resolvedUser) {
       return NextResponse.json(
@@ -73,14 +36,8 @@ export async function GET(req: Request) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // 1b. Check Founder Status via Email or Database Flag
-    const founderEmails = (process.env.FOUNDER_EMAIL || 'harshitmishra7073@gmail.com,founder@nichehire.tech,harshit@nichehire.tech')
-      .toLowerCase()
-      .split(',')
-      .map((e) => e.trim());
-    
-    const userEmail = (user.email || '').toLowerCase().trim();
-    const isFounderUser = founderEmails.includes(userEmail) || profile?.is_founder === true;
+    // 1b. Check Founder Status via Email, Auth Resolver, or Database Flag
+    const isFounderUser = user.isFounder || isFounderEmail(user.email) || profile?.is_founder === true;
 
     // 2. Ensure each user has a unique referral code (Founder gets clean 'FOUNDER' code)
     let referralCode = isFounderUser ? 'FOUNDER' : profile?.referral_code;

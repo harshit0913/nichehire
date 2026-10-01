@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from '../supabase';
 import { getCandidateSession } from '../lib/authSession';
+import { isFounderEmail } from '../lib/authResolver';
 
 import {
   Activity,
@@ -147,7 +149,11 @@ export default function FounderAdminPage() {
   const [isFounderUser, setIsFounderUser] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [sessionToken, setSessionToken] = useState('');
+  const [activeUserId, setActiveUserId] = useState('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+
+  const { isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn, user: clerkUser } = useUser();
+  const { getToken: getClerkToken } = useAuth();
 
   // 10-Minute Daily Server Update & Govt Sync State
   const [syncLoading, setSyncLoading] = useState(false);
@@ -208,42 +214,82 @@ export default function FounderAdminPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const founderReferralLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=FOUNDER` : 'https://www.nichehire.tech/?ref=FOUNDER';
 
+  const getHeaders = (token?: string, extraHeaders?: Record<string, string>) => {
+    const headers: Record<string, string> = { ...extraHeaders };
+    const t = token || sessionToken;
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    if (userEmail) headers['x-user-email'] = userEmail;
+    if (activeUserId) headers['x-user-id'] = activeUserId;
+    return headers;
+  };
+
   useEffect(() => {
     async function initAdmin() {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      let activeToken = session?.access_token;
-      let activeEmail = session?.user?.email || '';
+      if (!isClerkLoaded) return;
 
+      setLoading(true);
+      let activeToken = '';
+      let activeEmail = '';
+      let uid = '';
+
+      // 1. Clerk session
+      if (isClerkSignedIn && clerkUser) {
+        activeEmail = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || '';
+        uid = clerkUser.id;
+        try {
+          activeToken = (await getClerkToken()) || '';
+        } catch {}
+      }
+
+      // 2. Supabase session
       if (!activeToken) {
-        const candidateSession = getCandidateSession();
-        if (candidateSession) {
-          activeToken = candidateSession.sessionToken;
-          activeEmail = candidateSession.user?.email || (candidateSession.user?.phone ? candidateSession.user.phone : '');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          activeToken = session.access_token;
+          activeEmail = session.user?.email || activeEmail;
+          uid = session.user?.id || uid;
         }
       }
 
-
+      // 3. Candidate session (OTP)
       if (!activeToken) {
-        setLoading(false);
-        return;
+        const candidateSession = getCandidateSession();
+        if (candidateSession) {
+          activeToken = candidateSession.sessionToken || '';
+          activeEmail = candidateSession.user?.email || (candidateSession.user?.phone ? candidateSession.user.phone : '') || activeEmail;
+          uid = candidateSession.user?.id || uid;
+        }
       }
 
       setSessionToken(activeToken);
       setUserEmail(activeEmail);
+      setActiveUserId(uid);
+
+      const isFounder = isFounderEmail(activeEmail);
+      if (isFounder) {
+        setIsFounderUser(true);
+      }
+
+      if (!activeToken && !activeEmail) {
+        setLoading(false);
+        return;
+      }
 
       try {
-        const res = await fetch('/api/user/access-status', {
-          headers: { Authorization: `Bearer ${activeToken}` },
-        });
+        const headers: Record<string, string> = {};
+        if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+        if (activeEmail) headers['x-user-email'] = activeEmail;
+        if (uid) headers['x-user-id'] = uid;
+
+        const res = await fetch('/api/user/access-status', { headers });
         const data = await res.json();
-        if (data.isFounder) {
+        if (data.isFounder || isFounder) {
           setIsFounderUser(true);
           await Promise.all([
-            loadAnalytics(activeToken),
-            loadTeam(activeToken),
-            loadPayments(activeToken),
-            loadFeedbacks(activeToken),
+            loadAnalytics(activeToken, activeEmail, uid),
+            loadTeam(activeToken, activeEmail, uid),
+            loadPayments(activeToken, activeEmail, uid),
+            loadFeedbacks(activeToken, activeEmail, uid),
             loadGovtSync(),
           ]);
         }
@@ -255,14 +301,20 @@ export default function FounderAdminPage() {
     }
 
     initAdmin();
-  }, []);
+  }, [isClerkLoaded, isClerkSignedIn, clerkUser]);
 
-  async function loadAnalytics(token: string) {
+  async function loadAnalytics(token?: string, email?: string, uid?: string) {
     setLoadingAnalytics(true);
     try {
-      const res = await fetch('/api/admin/analytics', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: Record<string, string> = {};
+      const t = token || sessionToken;
+      const em = email || userEmail;
+      const u = uid || activeUserId;
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      if (em) headers['x-user-email'] = em;
+      if (u) headers['x-user-id'] = u;
+
+      const res = await fetch('/api/admin/analytics', { headers });
       const data = await res.json();
       if (data.success) {
         setAnalytics(data);
@@ -274,11 +326,17 @@ export default function FounderAdminPage() {
     }
   }
 
-  async function loadTeam(token: string) {
+  async function loadTeam(token?: string, email?: string, uid?: string) {
     try {
-      const res = await fetch('/api/admin/team', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: Record<string, string> = {};
+      const t = token || sessionToken;
+      const em = email || userEmail;
+      const u = uid || activeUserId;
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      if (em) headers['x-user-email'] = em;
+      if (u) headers['x-user-id'] = u;
+
+      const res = await fetch('/api/admin/team', { headers });
       const data = await res.json();
       if (data.members) {
         setTeamMembers(data.members);
@@ -288,11 +346,17 @@ export default function FounderAdminPage() {
     }
   }
 
-  async function loadPayments(token: string) {
+  async function loadPayments(token?: string, email?: string, uid?: string) {
     try {
-      const res = await fetch('/api/admin/payments', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: Record<string, string> = {};
+      const t = token || sessionToken;
+      const em = email || userEmail;
+      const u = uid || activeUserId;
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      if (em) headers['x-user-email'] = em;
+      if (u) headers['x-user-id'] = u;
+
+      const res = await fetch('/api/admin/payments', { headers });
       const data = await res.json();
       if (data.payments) {
         setPayments(data.payments);
@@ -302,11 +366,17 @@ export default function FounderAdminPage() {
     }
   }
 
-  async function loadFeedbacks(token: string) {
+  async function loadFeedbacks(token?: string, email?: string, uid?: string) {
     try {
-      const res = await fetch('/api/admin/feedbacks', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: Record<string, string> = {};
+      const t = token || sessionToken;
+      const em = email || userEmail;
+      const u = uid || activeUserId;
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      if (em) headers['x-user-email'] = em;
+      if (u) headers['x-user-id'] = u;
+
+      const res = await fetch('/api/admin/feedbacks', { headers });
       const data = await res.json();
       if (data.feedbacks) {
         setFeedbacks(data.feedbacks);
@@ -361,10 +431,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: getHeaders(sessionToken, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           email: newMemberEmail.trim(),
           fullName: newMemberName.trim(),
@@ -407,10 +474,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch('/api/admin/team', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: getHeaders(sessionToken, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           targetUserId,
           roleTitle: editRoleTitle.trim(),
@@ -439,10 +503,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch('/api/admin/team', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: getHeaders(sessionToken, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           targetUserId: member.userId,
           status: newStatus,
@@ -473,7 +534,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch(`/api/admin/team?userId=${userId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${sessionToken}` },
+        headers: getHeaders(sessionToken),
       });
 
       const data = await res.json();
@@ -541,10 +602,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch('/api/admin/feedbacks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: getHeaders(sessionToken, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           feedbackId,
           replyMessage: text,
@@ -573,10 +631,7 @@ export default function FounderAdminPage() {
     try {
       const res = await fetch('/api/admin/payments', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionToken}`,
-        },
+        headers: getHeaders(sessionToken, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           paymentId,
           newStatus,
