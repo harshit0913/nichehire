@@ -60,16 +60,20 @@ graph TD
 ### 2.3 Error Tracking & Full-Stack Telemetry
 * **Tool**: **Sentry** (`@sentry/nextjs`)
   * **Dashboard**: [niche-hire.sentry.io](https://niche-hire.sentry.io)
+  * **Organization**: `niche-hire`
+  * **Project**: `javascript-nextjs`
   * **Role in NicheHire**:
     * Real-time crash reporting across client React components (`app/global-error.tsx`, `app/error.tsx`).
     * Server-side error capture (`sentry.server.config.ts`, `instrumentation.ts`).
     * Vercel Edge middleware exception detection (`sentry.edge.config.ts`).
+    * Automated release tracking & source map symbolication via Sentry Auth Token (`SENTRY_AUTH_TOKEN`).
     * Ad-blocker resistant error tunnel via `/monitoring`.
     * Live test verification endpoint at `/api/test-sentry`.
   * **Plan / Quota**: GitHub Student Developer Pack benefit (Includes 50,000 error events/month, 100,000 performance units).
   * **Expiration & Trial Details**:
     * The **14-day Business Tier trial** (which enables advanced team replays and metrics) expires around **October 14, 2026**.
     * **No action required**: After the 14 days, your account **automatically reverts to the permanent Free Developer Tier**. You will never be charged, and error tracking will continue running smoothly.
+  * **Build Authentication**: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` configured in Vercel project environment variables for production source map release management.
 
 ---
 

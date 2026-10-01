@@ -136,6 +136,12 @@ The following test suite was executed against the live production infrastructure
   Expected: Only harshit@nichehire.tech displayed (no personal Gmail)
   Actual: 100% compliant; harshit@nichehire.tech used exclusively
   Result: PASS (Verified)
+
+[TEST 14] Sentry Production Release & Source Map Upload
+  Request: Vercel deployment build with SENTRY_AUTH_TOKEN & SENTRY_ORG=niche-hire
+  Expected: Source maps uploaded to Sentry and release registered without warnings
+  Actual: "[@sentry/nextjs] Info: Successfully uploaded source maps to Sentry", release 76ae5de registered in project javascript-nextjs
+  Result: PASS (Verified via Sentry API & Vercel Build Telemetry)
 ```
 
 ---
