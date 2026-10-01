@@ -353,44 +353,32 @@ export function rankJobsStrictTierOrder(
   );
 
   if (hasSpecificLocation && !isGlobalRole) {
-    // 1. First try finding 10 jobs in Tier 1 cities
-    takeFrom(sortedT1, 10);
+    // 1. Give 100% of exact city/local (Tier 1) jobs first — if the city has 100 jobs, show ALL 100 first!
+    takeFrom(sortedT1, sortedT1.length);
 
-    // 2. If Tier 1 doesn't yield 10 jobs, move to Tier 2 (nearby satellite cities within state) to reach 10 jobs
-    if (result.length < 10) {
-      takeFrom(sortedT2, 10 - result.length);
+    // 2. If the searched city had fewer than 20 jobs (e.g. smaller Tier-2/3/4 town), expand to Tier 2 (district cluster)
+    if (result.length < 20) {
+      takeFrom(sortedT2, 20 - result.length);
     }
 
-    // 3. If that also fails or to expand within state, target a total of 15 jobs within the state
-    if (result.length < 15) {
-      takeFrom(sortedT2, 15 - result.length);
-      if (result.length < 15) {
-        takeFrom(sortedT3, 15 - result.length);
-      }
-      if (result.length < 15) {
-        takeFrom(sortedT4, 15 - result.length);
+    // 3. If still under 25 jobs, expand to Tier 3 (nearby cities in state) and Tier 4 (state-wide)
+    if (result.length < 25) {
+      takeFrom(sortedT3, 25 - result.length);
+      if (result.length < 25) {
+        takeFrom(sortedT4, 25 - result.length);
       }
     }
 
-    // 4. Move to Tier 4 / Domestic India targeting at least 20-22 jobs within India
-    if (result.length < 22) {
-      takeFrom(sortedT5Dom, 22 - result.length);
-    }
-
-    // 5. Target remote options to fill up to 30 jobs
+    // 4. If still under 30 jobs, supplement with verified remote postings
     if (result.length < 30) {
       takeFrom(sortedRemote, 30 - result.length);
     }
 
-    // 6. If still under 30, backfill from remaining domestic or international
+    // 5. If still under 30, add domestic pan-India
     if (result.length < 30) {
-      takeFrom(sortedT1, 30 - result.length);
-      takeFrom(sortedT2, 30 - result.length);
-      takeFrom(sortedT3, 30 - result.length);
-      takeFrom(sortedT4, 30 - result.length);
       takeFrom(sortedT5Dom, 30 - result.length);
-      takeFrom(sortedT6, 30 - result.length);
     }
+
   } else if (isGlobalRole) {
     // Inherently global roles: include Tier 6 alongside domestic opportunities
     takeFrom(sortedT1, 10);

@@ -1149,10 +1149,11 @@ export async function POST(req: Request) {
       const q = query || 'developer';
       const loc = (location || '').trim();
 
-      // Only execute local portal scraper if candidate specifically queried Indore
-      if (!loc || !loc.toLowerCase().includes('indore')) {
+      // Search corporate portals for the candidate's exact location across India
+      if (!loc) {
         return [];
       }
+
 
       try {
         const yashUrl = `https://careers.yash.com/search/?q=${encodeURIComponent(q)}&locationsearch=${encodeURIComponent(loc)}`;
@@ -1178,7 +1179,7 @@ export async function POST(req: Request) {
               id: `yash_${Math.random().toString(36).substring(2, 9)}`,
               title,
               company: 'YASH Technologies',
-              location: location ? `${location}, Madhya Pradesh, India` : 'Indore, Madhya Pradesh, India',
+              location: location ? `${location}, India` : 'India',
               type: 'Full-Time' as const,
               workMode: detectWorkMode(location, title, ''),
               description: `Direct verified posting from YASH Technologies Official Corporate Careers Portal for ${title}. Responsibilities include enterprise application consulting, data systems delivery, and digital transformation.`,
