@@ -9,8 +9,10 @@ import {
 } from '../../../lib/searchRankingEngine';
 
 import { detectGovtCrossPortalSuggestion } from '../../../lib/govtCrossPortal';
+import { verifyJob } from '../../../lib/verifyJob';
 
 const FETCH_TIMEOUT_MS = 14000;
+
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -1647,38 +1649,21 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- SERP API VERIFICATION (first 30 jobs) ---
-    const SERP_API_KEY = process.env.SERP_API_KEY || '';
-    if (SERP_API_KEY && filtered.length > 0) {
+    // --- MULTI-TIER HYBRID JOB VERIFICATION (first 30 jobs) ---
+    // Progressive verification: Direct URL Ping -> Google Custom Search (3k/mo) -> SerpAPI (250/mo) -> DuckDuckGo
+    if (filtered.length > 0) {
       const toVerify = filtered.slice(0, 30);
       const verifyResults = await Promise.allSettled(
-        toVerify.map(async (j: any) => {
-          try {
-            const q = encodeURIComponent(`${j.company} ${j.title} jobs`);
-            const url = `https://serpapi.com/search.json?engine=google_jobs&q=${q}&api_key=${SERP_API_KEY}&num=5`;
-            const res = await fetch(url);
-            if (!res.ok) return false;
-            const data = await res.json();
-            const results: any[] = data.jobs_results || [];
-            const titleLow = (j.title || '').toLowerCase();
-            const companyLow = (j.company || '').toLowerCase();
-            return results.some((r: any) => {
-              const t = (r.title || '').toLowerCase();
-              const c = (r.company_name || '').toLowerCase();
-              return t.includes(titleLow.substring(0, 10)) || c.includes(companyLow.substring(0, 8));
-            });
-          } catch {
-            return false;
-          }
-        })
+        toVerify.map((j: any) => verifyJob(j.title || '', j.company || '', j.url))
       );
       toVerify.forEach((j: any, idx: number) => {
         const r = verifyResults[idx];
-        if (r.status === 'fulfilled') {
-          j.isVerified = j.isVerified || (r.value as boolean);
+        if (r.status === 'fulfilled' && r.value === true) {
+          j.isVerified = true;
         }
       });
     }
+
 
     const resolvedGeo = locQuery ? resolvePanIndiaLocation(locQuery) : null;
     const activeLocalCompanies =
