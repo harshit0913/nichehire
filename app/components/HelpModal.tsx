@@ -1,5 +1,3 @@
-'use client';
-
 import { X, HelpCircle } from './icons';
 import { ICON_STROKE_WIDTH, ICON_SIZES } from '../lib/iconRules';
 
@@ -22,11 +20,11 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
     },
     {
       q: 'What platforms does NicheHire scrape?',
-      a: 'NicheHire aggregates live verified jobs from Adzuna (on-site & local worldwide), LinkedIn public postings, Himalayas (high-growth startups), Remotive, Arbeitnow, and RemoteOK.'
+      a: 'NicheHire aggregates live verified jobs from Adzuna (on‑site & local worldwide), LinkedIn public postings, Himalayas (high‑growth startups), Remotive, Arbeitnow, and RemoteOK.'
     },
     {
       q: 'Can I export my tailored resume as a PDF?',
-      a: 'Yes! Inside the tailored resume drawer, click "Download ATS PDF" to get a clean, standard 1-page Harvard/Tech formatted resume ready to submit.'
+      a: 'Yes! Inside the tailored resume drawer, click "Download ATS PDF" to get a clean, standard 1‑page Harvard/Tech formatted resume ready to submit.'
     },
     {
       q: 'Is my resume private and secure?',
@@ -72,6 +70,21 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             className="inline-flex items-center justify-center px-3.5 py-1.5 bg-[#2B4EE6] hover:bg-[#1E3BB8] text-white rounded-lg font-semibold text-xs transition-colors shrink-0 shadow-xs"
           >
             harshit@nichehire.tech
+          </a>
+        </div>
+
+        {/* LinkedIn Follow button */}
+        <div className="mt-4 flex justify-center">
+          <a
+            href="https://www.linkedin.com/company/nichehire"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0A66C2] hover:bg-[#084E8A] text-white rounded-md text-sm font-medium transition-colors"
+          >
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM0 8h5V24H0V8zm7.5 0h4.7v2.25h.07c.66-1.25 2.27-2.57 4.68-2.57 5 0 5.92 3.28 5.92 7.55V24h-5v-8.8c0-2.1-.04-4.8-2.93-4.8-2.93 0-3.38 2.28-3.38 4.63V24h-5V8z"/>
+            </svg>
+            Follow us on LinkedIn
           </a>
         </div>
 
